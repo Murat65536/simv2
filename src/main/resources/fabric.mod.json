@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "sim-v2",
+	"version": "${version}",
+	"name": "Sim V2",
+	"description": "This is an example description! Tell everyone what your mod is about!",
+	"authors": [
+		"Me!"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/sim-v2/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"murat.simv2.SimV2"
+		]
+	},
+	"mixins": [
+		"sim-v2.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.18.5",
+		"minecraft": "~1.21.5",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
