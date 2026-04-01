@@ -25,7 +25,7 @@ application {
 }
 
 run {
-    jvmArgs = ['-Xmx32g']
+    jvmArgs = ['-Xmx64g']
 
     // Find a linemapped JAR + sources JAR pair from the same hash
     def loomCache = file("${rootProject.projectDir}/.gradle/loom-cache/minecraftMaven/net/minecraft")
