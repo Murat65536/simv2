@@ -25,7 +25,7 @@ application {
 }
 
 run {
-    jvmArgs = ['-Xmx1024g', '-XX:+UseZGC', '-XX:+ZGenerational']
+    jvmArgs = ['-Xmx1024g', '-Xms256G', '-XX:+UseZGC', '-XX:+ZGenerational']
 
     // Find a linemapped JAR + sources JAR pair from the same hash
     def loomCache = file("${rootProject.projectDir}/.gradle/loom-cache/minecraftMaven/net/minecraft")
