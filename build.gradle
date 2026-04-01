@@ -10,6 +10,21 @@ base {
 	archivesName = project.archives_base_name
 }
 
+loom {
+	def generatedAw = file("src/main/generated/sim-v2.accesswidener")
+	def fallbackAw = file("src/main/resources/sim-v2.accesswidener")
+	accessWidenerPath = generatedAw.exists() ? generatedAw : fallbackAw
+}
+
+sourceSets {
+	main {
+		java {
+			srcDir 'src/main/generated/java'
+			exclude 'murat/simv2/simulation/sliced/**'
+		}
+	}
+}
+
 repositories {
 	// Add repositories to retrieve artifacts from in here.
 	// You should only use this when depending on other mods because
