@@ -9,6 +9,7 @@ import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.slicer.NormalStatement;
+import com.ibm.wala.ipa.slicer.SDG;
 import com.ibm.wala.ipa.slicer.Slicer;
 import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
 import com.ibm.wala.ipa.slicer.Slicer.DataDependenceOptions;
@@ -59,39 +60,51 @@ public class BackwardSliceExporter {
 
         // Phase 1: data deps with heap tracking (NO_BASE_PTRS)
         // Container-CFA provides precise heap model for collections
+        System.out.println("Building SDG (data deps, NO_BASE_PTRS)...");
+        long sdgStart = System.currentTimeMillis();
+        SDG<InstanceKey> dataSDG = new SDG<>(cg, pa,
+            DataDependenceOptions.NO_BASE_PTRS,
+            ControlDependenceOptions.NONE);
+        long sdgTime = System.currentTimeMillis() - sdgStart;
+        System.out.println("SDG built in " + (sdgTime / 1000) + "s (" + dataSDG.getNumberOfNodes() + " nodes)");
+
         Set<Statement> allSliced = new HashSet<>();
         int succeeded = 0;
         int failed = 0;
         for (Statement seed : seeds) {
             try {
-                Collection<Statement> slice = Slicer.computeBackwardSlice(
-                    seed, cg, pa,
-                    DataDependenceOptions.NO_BASE_PTRS,
-                    ControlDependenceOptions.NONE
-                );
+                Collection<Statement> slice = Slicer.computeBackwardSlice(dataSDG, seed);
                 allSliced.addAll(slice);
                 succeeded++;
+                System.out.println("  Seed " + (succeeded + failed) + "/" + seeds.size()
+                    + ": +" + slice.size() + " stmts (total: " + allSliced.size() + ")");
             } catch (OutOfMemoryError | Exception e) {
                 failed++;
-                System.err.println("  Slice failed for seed #" + (succeeded + failed) + ": " + e.getClass().getSimpleName());
+                System.err.println("  Seed " + (succeeded + failed) + "/" + seeds.size()
+                    + ": FAILED " + e.getClass().getSimpleName());
             }
         }
         System.out.println("Phase 1 complete: " + succeeded + " succeeded, " + failed + " failed, "
             + allSliced.size() + " statements in slice");
 
         // Phase 2: add control-dependent statements
-        System.out.println("Phase 2: Adding control-dependent statements...");
+        System.out.println("Building SDG (control deps, NO_EXCEPTIONAL_EDGES)...");
+        sdgStart = System.currentTimeMillis();
+        SDG<InstanceKey> ctrlSDG = new SDG<>(cg, pa,
+            DataDependenceOptions.NO_BASE_PTRS,
+            ControlDependenceOptions.NO_EXCEPTIONAL_EDGES);
+        sdgTime = System.currentTimeMillis() - sdgStart;
+        System.out.println("SDG built in " + (sdgTime / 1000) + "s (" + ctrlSDG.getNumberOfNodes() + " nodes)");
+
         int phase2Count = 0;
-        for (Statement seed : seeds) {
+        for (int i = 0; i < seeds.size(); i++) {
             try {
-                Collection<Statement> slice = Slicer.computeBackwardSlice(
-                    seed, cg, pa,
-                    DataDependenceOptions.NO_BASE_PTRS,
-                    ControlDependenceOptions.NO_EXCEPTIONAL_EDGES
-                );
+                Collection<Statement> slice = Slicer.computeBackwardSlice(ctrlSDG, seeds.get(i));
                 int before = allSliced.size();
                 allSliced.addAll(slice);
                 phase2Count += allSliced.size() - before;
+                System.out.println("  Seed " + (i + 1) + "/" + seeds.size()
+                    + ": +" + (allSliced.size() - before) + " new stmts");
             } catch (OutOfMemoryError | Exception e) {
                 // Control dep slice is optional — continue if it fails
             }

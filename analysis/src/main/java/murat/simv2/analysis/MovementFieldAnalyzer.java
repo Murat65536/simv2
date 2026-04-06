@@ -86,7 +86,7 @@ public class MovementFieldAnalyzer {
                 options, cache, cha, scope);
 
             long cgStart = System.currentTimeMillis();
-            cg = builder.makeCallGraph(options, null);
+            cg = builder.makeCallGraph(options, new PrintingProgressMonitor());
             pa = builder.getPointerAnalysis();
             long cgTime = System.currentTimeMillis() - cgStart;
             System.out.println("0-1-Container-CFA call graph: " + cg.getNumberOfNodes() + " nodes in " + (cgTime / 1000) + "s");
