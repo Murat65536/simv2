@@ -25,7 +25,7 @@ application {
 }
 
 run {
-    jvmArgs = ['-Xmx55g', '-XX:+UseParallelGC']
+    jvmArgs = ['-Xmx55g', '-XX:+UseParallelGC', '-Dcom.ibm.wala.fixedpoint.impl.verbose=true']
 
     // Find a linemapped JAR + sources JAR pair from the same hash
     def loomCache = file("${rootProject.projectDir}/.gradle/loom-cache/minecraftMaven/net/minecraft")
