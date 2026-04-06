@@ -98,6 +98,7 @@ public final class AnalysisConfig {
         "net/minecraft/client/tutorial/.*",
         "net/minecraft/client/resource/.*",
         "net/minecraft/client/search/.*",
+        "net/minecraft/client/option/.*",
         // Server
         "net/minecraft/server/.*",
         "net/minecraft/dedicated/.*",
@@ -113,12 +114,46 @@ public final class AnalysisConfig {
         "net/minecraft/text/.*",
         "net/minecraft/nbt/.*",
         "net/minecraft/datafixer/.*",
-        // Java stdlib
+        "net/minecraft/stat/.*",
+        "net/minecraft/village/.*",
+        "net/minecraft/structure/.*",
+        "net/minecraft/screen/.*",
+        "net/minecraft/inventory/.*",
+        "net/minecraft/enchantment/.*",
+        "net/minecraft/component/.*",
+        "net/minecraft/registry/.*",
+        "net/minecraft/resource/.*",
+        "net/minecraft/predicate/.*",
+        "net/minecraft/particle/.*",
+        "net/minecraft/sound/.*",
+        // Java stdlib — aggressive exclusions to shrink CG/SDG
         "java/awt/.*",
         "javax/.*",
         "sun/.*",
         "com/sun/.*",
-        "jdk/.*"
+        "jdk/.*",
+        "java/lang/invoke/.*",
+        "java/lang/reflect/.*",
+        "java/lang/ref/.*",
+        "java/io/.*",
+        "java/nio/.*",
+        "java/net/.*",
+        "java/security/.*",
+        "java/text/.*",
+        "java/time/.*",
+        "java/util/concurrent/.*",
+        "java/util/logging/.*",
+        "java/util/regex/.*",
+        "java/util/stream/.*",
+        "java/util/zip/.*",
+        "java/util/jar/.*",
+        // Third-party libs pulled in by MC
+        "com/google/.*",
+        "com/mojang/.*",
+        "org/apache/.*",
+        "org/slf4j/.*",
+        "io/netty/.*",
+        "it/unimi/dsi/fastutil/.*"
     );
 
     // Methods to extract via backward slicing + Spoon pruning
