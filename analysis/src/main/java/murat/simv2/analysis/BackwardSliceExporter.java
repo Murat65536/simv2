@@ -8,12 +8,15 @@ import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
+import com.ibm.wala.ipa.modref.ModRef;
+import com.ibm.wala.ipa.slicer.HeapExclusions;
 import com.ibm.wala.ipa.slicer.NormalStatement;
 import com.ibm.wala.ipa.slicer.SDG;
 import com.ibm.wala.ipa.slicer.Slicer;
 import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
 import com.ibm.wala.ipa.slicer.Slicer.DataDependenceOptions;
 import com.ibm.wala.ipa.slicer.Statement;
+import com.ibm.wala.util.config.FileOfClasses;
 import com.ibm.wala.ssa.IR;
 import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 import com.ibm.wala.ssa.SSAInstruction;
@@ -23,7 +26,9 @@ import com.ibm.wala.types.TypeReference;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -60,11 +65,16 @@ public class BackwardSliceExporter {
 
         // Phase 1: data deps with heap tracking (NO_BASE_PTRS)
         // Container-CFA provides precise heap model for collections
-        System.out.println("Building SDG (data deps, NO_BASE_PTRS)...");
+        // HeapExclusions prevent the SDG from tracking heap flow through
+        // noisy JDK types (String, collections, etc.) that explode the solver
+        System.out.println("Building SDG (data deps, NO_BASE_PTRS + heap exclusions)...");
+        HeapExclusions heapExcl = buildHeapExclusions();
         long sdgStart = System.currentTimeMillis();
         SDG<InstanceKey> dataSDG = new SDG<>(cg, pa,
+            ModRef.make(),
             DataDependenceOptions.NO_BASE_PTRS,
-            ControlDependenceOptions.NONE);
+            ControlDependenceOptions.NONE,
+            heapExcl);
         long sdgTime = System.currentTimeMillis() - sdgStart;
         System.out.println("SDG built in " + (sdgTime / 1000) + "s (" + dataSDG.getNumberOfNodes() + " nodes)");
 
@@ -88,11 +98,13 @@ public class BackwardSliceExporter {
             + allSliced.size() + " statements in slice");
 
         // Phase 2: add control-dependent statements
-        System.out.println("Building SDG (control deps, NO_EXCEPTIONAL_EDGES)...");
+        System.out.println("Building SDG (control deps, NO_EXCEPTIONAL_EDGES + heap exclusions)...");
         sdgStart = System.currentTimeMillis();
         SDG<InstanceKey> ctrlSDG = new SDG<>(cg, pa,
+            ModRef.make(),
             DataDependenceOptions.NO_BASE_PTRS,
-            ControlDependenceOptions.NO_EXCEPTIONAL_EDGES);
+            ControlDependenceOptions.NO_EXCEPTIONAL_EDGES,
+            heapExcl);
         sdgTime = System.currentTimeMillis() - sdgStart;
         System.out.println("SDG built in " + (sdgTime / 1000) + "s (" + ctrlSDG.getNumberOfNodes() + " nodes)");
 
@@ -167,9 +179,7 @@ public class BackwardSliceExporter {
             // Only keep lines in target classes
             if (!isTargetClass(className)) continue;
 
-            // Only keep lines in target methods
             String methodName = method.getName().toString();
-            if (!AnalysisConfig.TARGET_METHODS.contains(methodName)) continue;
 
             // Get source line number
             int line = getSourceLine(method, ns.getInstructionIndex());
@@ -215,6 +225,57 @@ public class BackwardSliceExporter {
             }
         }
         System.out.println("Total: " + totalMethods + " methods, " + totalLines + " slice lines");
+    }
+
+    private HeapExclusions buildHeapExclusions() {
+        // These types stay in the CG/CHA but the SDG won't track heap data flow through them.
+        // This prevents the IFDS solver from exploding on String/collection internals.
+        String patterns = String.join("\n",
+            // JDK types that dominate SDG solver time
+            "java/lang/String",
+            "java/lang/AbstractStringBuilder",
+            "java/lang/StringBuilder",
+            "java/lang/StringBuffer",
+            "java/lang/StringUTF16",
+            "java/lang/StringLatin1",
+            "java/lang/StringConcatHelper",
+            "java/lang/Throwable",
+            "java/lang/Exception",
+            "java/lang/RuntimeException",
+            "java/lang/NullPointerException",
+            "java/lang/NumberFormatException",
+            "java/lang/Integer",
+            "java/lang/Enum",
+            "java/lang/Class",
+            "java/lang/Thread",
+            "java/lang/Module.*",
+            "java/lang/SecurityManager",
+            "java/util/.*",
+            // MC types with massive <clinit>s irrelevant to movement
+            "net/minecraft/item/.*",
+            "net/minecraft/block/.*",
+            "net/minecraft/state/.*",
+            "net/minecraft/entity/EntityType",
+            "net/minecraft/entity/EntityType\\$.*",
+            "net/minecraft/entity/damage/.*",
+            "net/minecraft/entity/attribute/.*",
+            "net/minecraft/entity/effect/StatusEffects",
+            "net/minecraft/world/event/GameEvent",
+            "net/minecraft/world/Difficulty",
+            "net/minecraft/world/GameMode",
+            "net/minecraft/world/GameRules.*",
+            "net/minecraft/util/Identifier",
+            "net/minecraft/util/Formatting",
+            "net/minecraft/util/DyeColor",
+            "net/minecraft/util/Rarity"
+        ) + "\n";
+        try {
+            FileOfClasses classes = new FileOfClasses(
+                new ByteArrayInputStream(patterns.getBytes(StandardCharsets.UTF_8)));
+            return new HeapExclusions(classes);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to build heap exclusions", e);
+        }
     }
 
     private boolean isTargetClass(String className) {

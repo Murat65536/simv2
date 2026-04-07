@@ -22,7 +22,8 @@ public final class AnalysisConfig {
     public static final String CLIENT_PLAYER_CLASS = "Lnet/minecraft/client/network/ClientPlayerEntity";
 
     public static final List<EntryMethod> ENTRY_METHODS = List.of(
-        new EntryMethod(LIVING_ENTITY_CLASS, "tickMovement", "()V")
+        new EntryMethod(LIVING_ENTITY_CLASS, "tickMovement", "()V"),
+        new EntryMethod(LIVING_ENTITY_CLASS, "travel", "(Lnet/minecraft/util/math/Vec3d;)V")
     );
 
     public static final Set<String> SEED_FIELDS = Set.of(
@@ -126,12 +127,31 @@ public final class AnalysisConfig {
         "net/minecraft/predicate/.*",
         "net/minecraft/particle/.*",
         "net/minecraft/sound/.*",
-        // Java stdlib — aggressive exclusions to shrink CG/SDG
+        // Entity registries — truly irrelevant to movement
+        "net/minecraft/entity/EntityType",
+        "net/minecraft/entity/EntityType\\$.*",
+        "net/minecraft/entity/SpawnGroup",
+        "net/minecraft/entity/SpawnReason",
+        "net/minecraft/entity/ExperienceOrbEntity",
+        "net/minecraft/entity/damage/.*",
+        // World systems irrelevant to movement
+        "net/minecraft/world/chunk/.*",
+        "net/minecraft/world/biome/.*",
+        "net/minecraft/world/gen/.*",
+        "net/minecraft/world/dimension/.*",
+        "net/minecraft/world/event/GameEvent",
+        "net/minecraft/world/GameRules.*",
+        // Java stdlib — scope exclusions (keeps classes out of CG entirely)
         "java/awt/.*",
         "javax/.*",
         "sun/.*",
         "com/sun/.*",
         "jdk/.*",
+        "java/lang/Module.*",
+        "java/lang/StackStreamFactory",
+        "java/lang/Thread",
+        "java/lang/ClassLoader",
+        "java/lang/SecurityManager",
         "java/lang/invoke/.*",
         "java/lang/reflect/.*",
         "java/lang/ref/.*",
@@ -141,12 +161,7 @@ public final class AnalysisConfig {
         "java/security/.*",
         "java/text/.*",
         "java/time/.*",
-        "java/util/concurrent/.*",
-        "java/util/logging/.*",
-        "java/util/regex/.*",
-        "java/util/stream/.*",
-        "java/util/zip/.*",
-        "java/util/jar/.*",
+        "java/util/.*",
         // Third-party libs pulled in by MC
         "com/google/.*",
         "com/mojang/.*",
@@ -158,7 +173,8 @@ public final class AnalysisConfig {
 
     // Methods to extract via backward slicing + Spoon pruning
     public static final Set<String> TARGET_METHODS = Set.of(
-        "tickMovement"
+        "tickMovement",
+        "travel"
     );
 
     // Dot-notation class names for Spoon

@@ -48,3 +48,106 @@ accessible field net/minecraft/entity/LivingEntity upwardSpeed F
 accessible field net/minecraft/entity/player/PlayerEntity abilityResyncCountdown I
 accessible field net/minecraft/entity/player/PlayerEntity lastStrideDistance F
 accessible field net/minecraft/entity/player/PlayerEntity strideDistance F
+
+# Access widener entries for sliced classes
+accessible class net/minecraft/entity/Entity$QueuedCollisionCheck
+accessible field net/minecraft/entity/Entity FLAGS Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/Entity FROZEN_TICKS Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/Entity GLIDING_FLAG_INDEX I
+accessible field net/minecraft/entity/Entity NO_GRAVITY Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/Entity NULL_BOX Lnet/minecraft/util/math/Box;
+accessible field net/minecraft/entity/Entity POSE Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/Entity SILENT Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/Entity SNEAKING_FLAG_INDEX I
+accessible field net/minecraft/entity/Entity SPRINTING_FLAG_INDEX I
+accessible field net/minecraft/entity/Entity SWIMMING_FLAG_INDEX I
+accessible field net/minecraft/entity/LivingEntity HEALTH Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/LivingEntity LIVING_FLAGS Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/LivingEntity SLEEPING_POSITION Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/player/PlayerEntity ABSORPTION_AMOUNT Lnet/minecraft/entity/data/TrackedData;
+accessible method net/minecraft/client/network/ClientPlayerEntity applyDirectionalMovementSpeedFactors (Lnet/minecraft/util/math/Vec2f;)Lnet/minecraft/util/math/Vec2f;
+accessible method net/minecraft/entity/Entity adjustMovementForCollisions (Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Box;Ljava/util/List;)Lnet/minecraft/util/math/Vec3d;
+accessible method net/minecraft/entity/Entity collectStepHeights (Lnet/minecraft/util/math/Box;Ljava/util/List;FF)[F
+accessible method net/minecraft/entity/Entity findCollisionsForMovement (Lnet/minecraft/entity/Entity;Lnet/minecraft/world/World;Ljava/util/List;Lnet/minecraft/util/math/Box;)Ljava/util/List;
+accessible method net/minecraft/entity/Entity getAxisCheckOrder (Lnet/minecraft/util/math/Vec3d;)Ljava/lang/Iterable;
+accessible method net/minecraft/entity/Entity isControlledByMainPlayer ()Z
+accessible method net/minecraft/entity/Entity movementInputToVelocity (Lnet/minecraft/util/math/Vec3d;FF)Lnet/minecraft/util/math/Vec3d;
+accessible method net/minecraft/entity/LivingEntity canGlide ()Z
+
+# ── Bootstrap (Objenesis constructor bypass) ──────────────────────────
+
+# Entity — static fields
+accessible field net/minecraft/entity/Entity CURRENT_ID Ljava/util/concurrent/atomic/AtomicInteger;
+
+# Entity — final instance fields
+accessible field net/minecraft/entity/Entity type Lnet/minecraft/entity/EntityType;
+mutable field net/minecraft/entity/Entity type Lnet/minecraft/entity/EntityType;
+mutable field net/minecraft/entity/Entity random Lnet/minecraft/util/math/random/Random;
+mutable field net/minecraft/entity/Entity dataTracker Lnet/minecraft/entity/data/DataTracker;
+accessible field net/minecraft/entity/Entity trackedPosition Lnet/minecraft/entity/TrackedPosition;
+mutable field net/minecraft/entity/Entity trackedPosition Lnet/minecraft/entity/TrackedPosition;
+accessible field net/minecraft/entity/Entity submergedFluidTag Ljava/util/Set;
+mutable field net/minecraft/entity/Entity submergedFluidTag Ljava/util/Set;
+accessible field net/minecraft/entity/Entity commandTags Ljava/util/Set;
+mutable field net/minecraft/entity/Entity commandTags Ljava/util/Set;
+accessible field net/minecraft/entity/Entity pistonMovementDelta [D
+mutable field net/minecraft/entity/Entity pistonMovementDelta [D
+accessible field net/minecraft/entity/Entity queuedCollisionChecks Ljava/util/List;
+mutable field net/minecraft/entity/Entity queuedCollisionChecks Ljava/util/List;
+accessible field net/minecraft/entity/Entity currentlyCheckedCollisions Ljava/util/List;
+mutable field net/minecraft/entity/Entity currentlyCheckedCollisions Ljava/util/List;
+accessible field net/minecraft/entity/Entity collidedBlockPositions Lit/unimi/dsi/fastutil/longs/LongSet;
+mutable field net/minecraft/entity/Entity collidedBlockPositions Lit/unimi/dsi/fastutil/longs/LongSet;
+accessible field net/minecraft/entity/Entity collisionHandler Lnet/minecraft/entity/EntityCollisionHandler$Impl;
+mutable field net/minecraft/entity/Entity collisionHandler Lnet/minecraft/entity/EntityCollisionHandler$Impl;
+
+# Entity — non-final private fields
+accessible field net/minecraft/entity/Entity id I
+accessible field net/minecraft/entity/Entity world Lnet/minecraft/world/World;
+accessible field net/minecraft/entity/Entity changeListener Lnet/minecraft/world/entity/EntityChangeListener;
+accessible field net/minecraft/entity/Entity passengerList Lcom/google/common/collect/ImmutableList;
+accessible field net/minecraft/entity/Entity uuid Ljava/util/UUID;
+accessible field net/minecraft/entity/Entity uuidString Ljava/lang/String;
+
+# LivingEntity — final instance fields
+accessible field net/minecraft/entity/LivingEntity attributes Lnet/minecraft/entity/attribute/AttributeContainer;
+mutable field net/minecraft/entity/LivingEntity attributes Lnet/minecraft/entity/attribute/AttributeContainer;
+accessible field net/minecraft/entity/LivingEntity damageTracker Lnet/minecraft/entity/damage/DamageTracker;
+mutable field net/minecraft/entity/LivingEntity damageTracker Lnet/minecraft/entity/damage/DamageTracker;
+accessible field net/minecraft/entity/LivingEntity activeStatusEffects Ljava/util/Map;
+mutable field net/minecraft/entity/LivingEntity activeStatusEffects Ljava/util/Map;
+accessible field net/minecraft/entity/LivingEntity lastEquipmentStacks Ljava/util/Map;
+mutable field net/minecraft/entity/LivingEntity lastEquipmentStacks Ljava/util/Map;
+mutable field net/minecraft/entity/LivingEntity limbAnimator Lnet/minecraft/entity/LimbAnimator;
+mutable field net/minecraft/entity/LivingEntity defaultMaxHealth I
+mutable field net/minecraft/entity/LivingEntity elytraFlightController Lnet/minecraft/entity/mob/ElytraFlightController;
+accessible field net/minecraft/entity/LivingEntity locationBasedEnchantmentEffects Ljava/util/EnumMap;
+mutable field net/minecraft/entity/LivingEntity locationBasedEnchantmentEffects Ljava/util/EnumMap;
+mutable field net/minecraft/entity/LivingEntity equipment Lnet/minecraft/entity/EntityEquipment;
+accessible field net/minecraft/entity/LivingEntity activeItemStack Lnet/minecraft/item/ItemStack;
+
+# PlayerEntity — final instance fields
+mutable field net/minecraft/entity/player/PlayerEntity playerScreenHandler Lnet/minecraft/screen/PlayerScreenHandler;
+accessible field net/minecraft/entity/player/PlayerEntity abilities Lnet/minecraft/entity/player/PlayerAbilities;
+mutable field net/minecraft/entity/player/PlayerEntity abilities Lnet/minecraft/entity/player/PlayerAbilities;
+accessible field net/minecraft/entity/player/PlayerEntity gameProfile Lcom/mojang/authlib/GameProfile;
+mutable field net/minecraft/entity/player/PlayerEntity gameProfile Lcom/mojang/authlib/GameProfile;
+accessible field net/minecraft/entity/player/PlayerEntity itemCooldownManager Lnet/minecraft/entity/player/ItemCooldownManager;
+mutable field net/minecraft/entity/player/PlayerEntity itemCooldownManager Lnet/minecraft/entity/player/ItemCooldownManager;
+accessible field net/minecraft/entity/player/PlayerEntity inventory Lnet/minecraft/entity/player/PlayerInventory;
+mutable field net/minecraft/entity/player/PlayerEntity inventory Lnet/minecraft/entity/player/PlayerInventory;
+
+# ClientPlayerEntity — final instance fields
+mutable field net/minecraft/client/network/ClientPlayerEntity networkHandler Lnet/minecraft/client/network/ClientPlayNetworkHandler;
+accessible field net/minecraft/client/network/ClientPlayerEntity statHandler Lnet/minecraft/stat/StatHandler;
+mutable field net/minecraft/client/network/ClientPlayerEntity statHandler Lnet/minecraft/stat/StatHandler;
+accessible field net/minecraft/client/network/ClientPlayerEntity recipeBook Lnet/minecraft/client/recipebook/ClientRecipeBook;
+mutable field net/minecraft/client/network/ClientPlayerEntity recipeBook Lnet/minecraft/client/recipebook/ClientRecipeBook;
+accessible field net/minecraft/client/network/ClientPlayerEntity itemDropCooldown Lnet/minecraft/util/Cooldown;
+mutable field net/minecraft/client/network/ClientPlayerEntity itemDropCooldown Lnet/minecraft/util/Cooldown;
+accessible field net/minecraft/client/network/ClientPlayerEntity tickables Ljava/util/List;
+mutable field net/minecraft/client/network/ClientPlayerEntity tickables Ljava/util/List;
+mutable field net/minecraft/client/network/ClientPlayerEntity client Lnet/minecraft/client/MinecraftClient;
+
+# Accessible classes
+accessible class net/minecraft/entity/EntityCollisionHandler$Impl

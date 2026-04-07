@@ -20,7 +20,7 @@ sourceSets {
 	main {
 		java {
 			srcDir 'src/main/generated/java'
-			exclude 'murat/simv2/simulation/sliced/**'
+			//exclude 'murat/simv2/simulation/sliced/**'
 		}
 	}
 }
@@ -41,7 +41,9 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-	
+
+	implementation 'org.objenesis:objenesis:3.4'
+	include 'org.objenesis:objenesis:3.4'
 }
 
 processResources {

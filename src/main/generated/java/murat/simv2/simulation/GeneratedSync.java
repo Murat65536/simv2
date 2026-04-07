@@ -105,5 +105,15 @@ public final class GeneratedSync {
         }
 
         sim.setPose(real.getPose());
+
+        // DataTracker flags (bit flags in a tracked byte, not individual fields)
+        sim.setSprinting(real.isSprinting());
+        sim.setSneaking(real.isSneaking());
+        sim.setSwimming(real.isSwimming());
+        if (real.isGliding()) {
+            sim.startGliding();
+        } else if (sim.isGliding()) {
+            sim.stopGliding();
+        }
     }
 }

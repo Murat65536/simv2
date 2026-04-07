@@ -86,6 +86,16 @@ public class SyncCodeGenerator {
         sb.append("        }\n");
         sb.append("\n");
         sb.append("        sim.setPose(real.getPose());\n");
+        sb.append("\n");
+        sb.append("        // DataTracker flags (bit flags in a tracked byte, not individual fields)\n");
+        sb.append("        sim.setSprinting(real.isSprinting());\n");
+        sb.append("        sim.setSneaking(real.isSneaking());\n");
+        sb.append("        sim.setSwimming(real.isSwimming());\n");
+        sb.append("        if (real.isGliding()) {\n");
+        sb.append("            sim.startGliding();\n");
+        sb.append("        } else if (sim.isGliding()) {\n");
+        sb.append("            sim.stopGliding();\n");
+        sb.append("        }\n");
 
         sb.append("    }\n");
         sb.append("}\n");

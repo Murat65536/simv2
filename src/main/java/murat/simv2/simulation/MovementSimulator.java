@@ -17,7 +17,7 @@ public class MovementSimulator {
         if (client.player == null || client.world == null) {
             throw new IllegalStateException("Cannot init MovementSimulator: player or world is null");
         }
-        this.simPlayer = new SimulatedPlayer(client, client.world, client.player.networkHandler);
+        this.simPlayer = SimulatedPlayerFactory.create(client, client.world, client.player.networkHandler);
     }
 
     public boolean isInitialized() {
