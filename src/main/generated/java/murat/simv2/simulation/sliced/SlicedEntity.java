@@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -48,6 +49,7 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult.Type;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -90,11 +92,11 @@ public Entity vehicle;
     private World world;
     public Vec3d pos;
     public BlockPos blockPos;
-    public Vec3d velocity = Vec3d.ZERO;
-    public float yaw;
-    public float pitch;
-    public Box boundingBox = NULL_BOX;
-    public boolean onGround;
+    private Vec3d velocity = Vec3d.ZERO;
+    private float yaw;
+    private float pitch;
+    private Box boundingBox = NULL_BOX;
+    private boolean onGround;
     public boolean horizontalCollision;
     public boolean verticalCollision;
     public boolean groundCollision;
@@ -114,7 +116,7 @@ private Entity.RemovalReason removalReason;
     private final Set<TagKey<Fluid>> submergedFluidTag = new HashSet();
     protected boolean firstUpdate = true;
     protected final DataTracker dataTracker;
-    public boolean invulnerable;
+    private boolean invulnerable;
     private final double[] pistonMovementDelta = new double[]{ 0.0, 0.0, 0.0 };
     public EntityDimensions dimensions;
     public float standingEyeHeight;
@@ -133,7 +135,7 @@ public BlockState stateAtPos = null;
         return Entity.adjustMovementForCollisions(movement, entityBoundingBox, list);
     }
 
-    private Vec3d adjustMovementForCollisions(Vec3d movement) {
+    protected Vec3d adjustMovementForCollisions(Vec3d movement) {
         Box box = this.getBoundingBox();
         List<VoxelShape> list = this.getWorld().getEntityCollisions( (Entity) this.entityBridge, box.stretch(movement));
         Vec3d vec3d = (movement.lengthSquared() == 0.0) ? movement : Entity.adjustMovementForCollisions( (Entity) this.entityBridge, movement, box, this.getWorld(), list);
@@ -160,7 +162,7 @@ public BlockState stateAtPos = null;
         return vec3d;
     }
 
-    private static Vec3d adjustMovementForCollisions(Vec3d movement, Box entityBoundingBox, List<VoxelShape> collisions) {
+    protected static Vec3d adjustMovementForCollisions(Vec3d movement, Box entityBoundingBox, List<VoxelShape> collisions) {
         if (collisions.isEmpty()) {
             return movement;
         } else {
@@ -196,7 +198,7 @@ public BlockState stateAtPos = null;
         }
     }
 
-    private void applyMoveEffect(Entity.MoveEffect moveEffect, Vec3d movement, BlockPos landingPos, BlockState landingState) {
+    protected void applyMoveEffect(Entity.MoveEffect moveEffect, Vec3d movement, BlockPos landingPos, BlockState landingState) {
         float g = ((float) (movement.length() * 0.6F));
         float h = ((float) (movement.horizontalLength() * 0.6F));
         BlockPos blockPos = this.getSteppingPos();
@@ -213,7 +215,7 @@ public BlockState stateAtPos = null;
         }
     }
 
-    protected final Box calculateBoundingBox() {
+    protected Box calculateBoundingBox() {
         return this.calculateDefaultBoundingBox(this.pos);
     }
 
@@ -329,7 +331,7 @@ public BlockState stateAtPos = null;
         return this.stateAtPos;
     }
 
-    public final Box getBoundingBox() {
+    public Box getBoundingBox() {
         return this.boundingBox;
     }
 
@@ -362,7 +364,7 @@ public BlockState stateAtPos = null;
         return this.type.getDimensions();
     }
 
-    public final double getFinalGravity() {
+    public double getFinalGravity() {
         return this.hasNoGravity() ? 0.0 : this.getGravity();
     }
 
@@ -401,7 +403,7 @@ public BlockState stateAtPos = null;
     /**
      * {@return the height of the entity's current dimension}
      */
-    public final float getHeight() {
+    public float getHeight() {
         return this.dimensions.height();
     }
 
@@ -425,7 +427,7 @@ public BlockState stateAtPos = null;
         return this.getPosWithYOffset(0.2F);
     }
 
-    public final Vec3d getLastRenderPos() {
+    public Vec3d getLastRenderPos() {
         return new Vec3d(this.lastRenderX, this.lastRenderY, this.lastRenderZ);
     }
 
@@ -505,7 +507,7 @@ public BlockState stateAtPos = null;
         return this.getRotationVector(this.getPitch(), this.getYaw());
     }
 
-    public final Vec3d getRotationVector(float pitch, float yaw) {
+    public Vec3d getRotationVector(float pitch, float yaw) {
         float f = pitch * ((float) (Math.PI / 180.0));
         float g = (-yaw) * ((float) (Math.PI / 180.0));
         float h = MathHelper.cos(g);
@@ -522,7 +524,7 @@ public BlockState stateAtPos = null;
      *
      * @see #getLeashOffset
      */
-    public final float getStandingEyeHeight() {
+    public float getStandingEyeHeight() {
         return this.standingEyeHeight;
     }
 
@@ -587,7 +589,7 @@ public BlockState stateAtPos = null;
     /**
      * {@return the width of the entity's current dimension}
      */
-    public final float getWidth() {
+    public float getWidth() {
         return this.dimensions.width();
     }
 
@@ -595,11 +597,11 @@ public BlockState stateAtPos = null;
         return this.world;
     }
 
-    public final double getX() {
+    public double getX() {
         return this.pos.x;
     }
 
-    public final double getY() {
+    public double getY() {
         return this.pos.y;
     }
 
@@ -607,7 +609,7 @@ public BlockState stateAtPos = null;
         return this.yaw;
     }
 
-    public final double getZ() {
+    public double getZ() {
         return this.pos.z;
     }
 
@@ -635,7 +637,7 @@ public BlockState stateAtPos = null;
         return this.getVehicle() != null;
     }
 
-    protected final boolean isAlwaysInvulnerableTo(DamageSource damageSource) {
+    protected boolean isAlwaysInvulnerableTo(DamageSource damageSource) {
         return ((this.isRemoved() || ((this.invulnerable && (!damageSource.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY))) && (!damageSource.isSourceCreativePlayer()))) || (damageSource.isIn(DamageTypeTags.IS_FIRE) && this.isFireImmune())) || (damageSource.isIn(DamageTypeTags.IS_FALL) && this.getType().isIn(EntityTypeTags.FALL_DAMAGE_IMMUNE));
     }
 
@@ -678,11 +680,11 @@ public BlockState stateAtPos = null;
         return (!this.firstUpdate) && (this.fluidHeight.getDouble(FluidTags.LAVA) > 0.0);
     }
 
-    public final boolean isInterpolating() {
+    public boolean isInterpolating() {
         return (this.getInterpolator() != null) && this.getInterpolator().isInterpolating();
     }
 
-    public final boolean isLogicalSideForUpdatingMovement() {
+    public boolean isLogicalSideForUpdatingMovement() {
         return this.world.isClient() ? this.isControlledByMainPlayer() : !this.isControlledByPlayer();
     }
 
@@ -714,7 +716,7 @@ public BlockState stateAtPos = null;
         return !this.getWorld().isRegionLoaded(i, k, j, l);
     }
 
-    public final boolean isRemoved() {
+    public boolean isRemoved() {
         return this.removalReason != null;
     }
 
@@ -901,13 +903,13 @@ public BlockState stateAtPos = null;
     }
 
     @Deprecated
-    public final void serverDamage(DamageSource source, float amount) {
+    public void serverDamage(DamageSource source, float amount) {
         if (this.world instanceof ServerWorld serverWorld) {
             this.damage(serverWorld, source, amount);
         }
     }
 
-    public final void setBoundingBox(Box boundingBox) {
+    public void setBoundingBox(Box boundingBox) {
         this.boundingBox = boundingBox;
     }
 
@@ -926,7 +928,7 @@ public BlockState stateAtPos = null;
      * @see #setPosition(double, double, double)
      * @see #refreshPositionAndAngles(double, double, double, float, float)
      */
-    public final void setPos(double x, double y, double z) {
+    public void setPos(double x, double y, double z) {
         if (((this.pos.x != x) || (this.pos.y != y)) || (this.pos.z != z)) {
             this.pos = new Vec3d(x, y, z);
             int i = MathHelper.floor(x);
@@ -962,7 +964,7 @@ public BlockState stateAtPos = null;
      * @see #refreshPositionAndAngles
      * @see #teleportTo
      */
-    public final void setPosition(Vec3d pos) {
+    public void setPosition(Vec3d pos) {
         this.setPosition(pos.getX(), pos.getY(), pos.getZ());
     }
 
@@ -1238,5 +1240,20 @@ public BlockState stateAtPos = null;
      */
     public SoundCategory getSoundCategory() {
         return SoundCategory.NEUTRAL;
+    }
+
+    /**
+     * Emits a game event originating from another entity at this entity's position.
+     *
+     * <p>A common example is a game event called in {@link #interact}, where the player
+     * interacting with the entity is the emitter of the event.
+     *
+     * @see #emitGameEvent(RegistryEntry)
+     * @param entity
+     * 		the entity that emitted the game event, or {@code null} if there is none
+     */
+    public void emitGameEvent(RegistryEntry<GameEvent> event, @Nullable
+    Entity entity) {
+        this.getWorld().emitGameEvent(entity, event, this.pos);
     }
 }

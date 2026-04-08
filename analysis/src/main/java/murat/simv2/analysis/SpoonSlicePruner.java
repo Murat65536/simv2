@@ -40,6 +40,17 @@ public class SpoonSlicePruner {
         "ClientPlayerEntity", "SlicedClientPlayerEntity"
     );
 
+    /**
+     * Methods that should expose sliced peer parameters inside generated sliced code.
+     * Vanilla-facing APIs, overrides, and bridge helpers intentionally keep vanilla types.
+     */
+    private static final Set<String> SLICED_PARAM_METHODS = Set.of();
+
+    private static final Set<String> SUBCLASS_VISIBLE_HELPERS = Set.of(
+        "adjustMovementForCollisions",
+        "applyMoveEffect"
+    );
+
     private final Path sourcesJar;
     private final Map<String, Map<String, Set<Integer>>> sliceLines;
 
@@ -171,7 +182,7 @@ public class SpoonSlicePruner {
 
         // ── Phase 1: Clone WALA-sliced methods with pruning ──
         List<CtMethod<?>> clonedMethods = new ArrayList<>();
-        Set<String> definedSigs = new LinkedHashSet<>(); // "name(paramCount)"
+        Set<String> definedSigs = new LinkedHashSet<>();
         Set<String> definedNames = new LinkedHashSet<>();
 
         for (var entry : methodLines.entrySet()) {
@@ -180,17 +191,23 @@ public class SpoonSlicePruner {
 
             String methodName = methodSelector.substring(0, methodSelector.indexOf('('));
             String descriptor = methodSelector.substring(methodSelector.indexOf('('));
-            int paramCount = countDescriptorParams(descriptor);
-            CtMethod<?> original = findMethod(type, methodName, paramCount);
+            CtMethod<?> original = findMethod(type, methodName, descriptor);
             if (original == null) {
                 System.out.println("  Method not found: " + methodName + " in " + simpleName);
                 continue;
             }
 
-            String sig = methodName + "(" + original.getParameters().size() + ")";
-            if (definedSigs.contains(sig)) continue; // skip duplicates
-
             CtMethod<?> cloned = original.clone();
+            rewriteMethodSignature(cloned, original);
+            relaxHelperVisibility(cloned);
+            String sig = methodKey(original);
+            String rewrittenSig = methodKey(cloned);
+            if (definedSigs.contains(sig) || definedSigs.contains(rewrittenSig)
+                || hierarchyDefinedMethods.contains(sig) || hierarchyDefinedMethods.contains(rewrittenSig)) {
+                continue;
+            }
+            definedSigs.add(sig);
+            definedSigs.add(rewrittenSig);
 
             int before = countStatements(cloned);
             pruneByWalaLines(cloned, walaLines);
@@ -200,7 +217,6 @@ public class SpoonSlicePruner {
                 + before + " → " + after + " statements (" + walaLines.size() + " WALA lines)");
 
             clonedMethods.add(cloned);
-            definedSigs.add(sig);
             definedNames.add(methodName);
         }
 
@@ -211,26 +227,29 @@ public class SpoonSlicePruner {
 
         // ── Phase 2: Transitive method closure (fixpoint) ──
         // Find this.xxx() calls not defined in this class or parent sliced classes
-        Set<String> allKnownNames = new LinkedHashSet<>(definedNames);
-        for (String parentSig : hierarchyDefinedMethods) {
-            allKnownNames.add(parentSig.substring(0, parentSig.indexOf('(')));
-        }
+        Set<String> allKnownSigs = new LinkedHashSet<>(definedSigs);
+        allKnownSigs.addAll(hierarchyDefinedMethods);
 
         int transitiveClosed = 0;
         boolean changed = true;
         while (changed) {
             changed = false;
-            Set<MethodCall> unresolvedCalls = findUnresolvedThisCalls(clonedMethods, allKnownNames);
+            Set<MethodCall> unresolvedCalls = findUnresolvedThisCalls(clonedMethods, allKnownSigs);
             for (MethodCall call : unresolvedCalls) {
-                CtMethod<?> found = findMethodInHierarchy(call.name, call.argCount, type, typeIndex);
+                CtMethod<?> found = findMethodInHierarchy(call, type, typeIndex);
                 if (found != null) {
-                    String sig = call.name + "(" + found.getParameters().size() + ")";
-                    if (!definedSigs.contains(sig)) {
-                        CtMethod<?> cloned = found.clone();
+                    String originalSig = methodKey(found);
+                    CtMethod<?> cloned = found.clone();
+                    rewriteMethodSignature(cloned, found);
+                    relaxHelperVisibility(cloned);
+                    String rewrittenSig = methodKey(cloned);
+                    if (!definedSigs.contains(originalSig) && !definedSigs.contains(rewrittenSig)) {
                         clonedMethods.add(cloned);
-                        definedSigs.add(sig);
+                        definedSigs.add(originalSig);
+                        definedSigs.add(rewrittenSig);
                         definedNames.add(call.name);
-                        allKnownNames.add(call.name);
+                        allKnownSigs.add(originalSig);
+                        allKnownSigs.add(rewrittenSig);
                         transitiveClosed++;
                         changed = true;
                     }
@@ -245,7 +264,7 @@ public class SpoonSlicePruner {
         List<String> methodTexts = new ArrayList<>();
         Set<String> emittedSigs = new LinkedHashSet<>();
         for (CtMethod<?> m : clonedMethods) {
-            String sig = m.getSimpleName() + "(" + m.getParameters().size() + ")";
+            String sig = methodKey(m);
             if (emittedSigs.contains(sig)) continue;
             emittedSigs.add(sig);
 
@@ -262,19 +281,26 @@ public class SpoonSlicePruner {
 
         // ── Phase 5: Generate abstract stubs for remaining unresolved calls ──
         // Re-scan after transitive closure for still-unresolved methods
-        Set<String> finalKnownNames = new LinkedHashSet<>(allKnownNames);
-        Set<MethodCall> stillUnresolved = findUnresolvedThisCalls(clonedMethods, finalKnownNames);
+        Set<String> finalKnownSigs = new LinkedHashSet<>(allKnownSigs);
+        Set<MethodCall> stillUnresolved = findUnresolvedThisCalls(clonedMethods, finalKnownSigs);
         List<String> abstractStubs = new ArrayList<>();
         Set<String> stubNames = new LinkedHashSet<>();
         for (MethodCall call : stillUnresolved) {
-            if (stubNames.contains(call.name + "(" + call.argCount + ")")) continue;
+            String callKey = methodKey(call.name, call.argTypes);
+            if (stubNames.contains(callKey)) continue;
             // Find the method in the original MC hierarchy to get its signature
-            CtMethod<?> originalMethod = findMethodInHierarchy(call.name, call.argCount, type, typeIndex);
+            CtMethod<?> originalMethod = findMethodInHierarchy(call, type, typeIndex);
             if (originalMethod != null) {
                 String stub = generateAbstractStub(originalMethod);
                 if (stub != null) {
+                    String rewrittenSig = rewrittenMethodKey(originalMethod);
+                    if (emittedSigs.contains(rewrittenSig)) {
+                        continue;
+                    }
                     abstractStubs.add(stub);
-                    stubNames.add(call.name + "(" + call.argCount + ")");
+                    stubNames.add(callKey);
+                    stubNames.add(methodKey(originalMethod));
+                    stubNames.add(rewrittenSig);
                     definedNames.add(call.name);
                 }
             } else {
@@ -369,13 +395,13 @@ public class SpoonSlicePruner {
 
     // ── Method resolution helpers ──
 
-    private record MethodCall(String name, int argCount) {}
+    private record MethodCall(String name, int argCount, List<String> argTypes) {}
 
     /**
      * Finds all this.xxx() invocations in the given methods that are not defined
-     * in the known method name set.
+     * in the known method signature set.
      */
-    private Set<MethodCall> findUnresolvedThisCalls(List<CtMethod<?>> methods, Set<String> knownNames) {
+    private Set<MethodCall> findUnresolvedThisCalls(List<CtMethod<?>> methods, Set<String> knownSigs) {
         Set<MethodCall> unresolved = new LinkedHashSet<>();
         for (CtMethod<?> m : methods) {
             for (var inv : m.getElements(new TypeFilter<>(CtInvocation.class))) {
@@ -387,8 +413,10 @@ public class SpoonSlicePruner {
 
                 String name = inv.getExecutable().getSimpleName();
                 int argCount = inv.getArguments().size();
-                if (!knownNames.contains(name)) {
-                    unresolved.add(new MethodCall(name, argCount));
+                List<String> argTypes = invocationArgTypes(inv);
+                String sig = methodKey(name, argTypes);
+                if (!knownSigs.contains(sig)) {
+                    unresolved.add(new MethodCall(name, argCount, argTypes));
                 }
             }
         }
@@ -396,30 +424,126 @@ public class SpoonSlicePruner {
     }
 
     /**
-     * Searches the type hierarchy (within target classes) for a method by name and arg count.
+     * Searches the type hierarchy (within target classes) for the best matching overload.
      */
-    private CtMethod<?> findMethodInHierarchy(String name, int argCount,
-                                               CtType<?> startType,
-                                               Map<String, CtType<?>> typeIndex) {
-        // Check current type first
-        CtMethod<?> found = findMethod(startType, name, argCount);
-        if (found != null) return found;
+    private CtMethod<?> findMethodInHierarchy(MethodCall call,
+                                              CtType<?> startType,
+                                              Map<String, CtType<?>> typeIndex) {
+        List<CtType<?>> hierarchy = new ArrayList<>();
+        hierarchy.add(startType);
 
-        // Walk up hierarchy through loaded target classes
         if (startType instanceof CtClass<?> ctClass) {
             CtTypeReference<?> superRef = ctClass.getSuperclass();
             while (superRef != null) {
                 CtType<?> superType = typeIndex.get(superRef.getQualifiedName());
                 if (superType != null) {
-                    found = findMethod(superType, name, argCount);
-                    if (found != null) return found;
+                    hierarchy.add(superType);
                     if (superType instanceof CtClass<?> sc) {
                         superRef = sc.getSuperclass();
                     } else break;
                 } else break;
             }
         }
+
+        for (CtType<?> current : hierarchy) {
+            CtMethod<?> found = findBestOverload(current, call);
+            if (found != null) {
+                return found;
+            }
+        }
+
         return null;
+    }
+
+    private CtMethod<?> findBestOverload(CtType<?> type, MethodCall call) {
+        CtMethod<?> fallback = null;
+        int bestScore = Integer.MIN_VALUE;
+
+        for (CtMethod<?> method : type.getMethods()) {
+            if (!method.getSimpleName().equals(call.name) || method.getParameters().size() != call.argCount) {
+                continue;
+            }
+
+            if (fallback == null) {
+                fallback = method;
+            }
+
+            int score = scoreOverload(method, call.argTypes);
+            if (score > bestScore) {
+                bestScore = score;
+                fallback = method;
+            }
+        }
+
+        return fallback;
+    }
+
+    private int scoreOverload(CtMethod<?> method, List<String> argTypes) {
+        int score = 0;
+        List<CtParameter<?>> params = method.getParameters();
+        for (int i = 0; i < params.size(); i++) {
+            String paramType = typeKey(params.get(i).getType());
+            String argType = (i < argTypes.size()) ? argTypes.get(i) : "?";
+
+            if (argType.equals(paramType)) {
+                score += 4;
+            } else if ("null".equals(argType) && !isPrimitiveType(paramType)) {
+                score += 2;
+            } else if ("?".equals(argType)) {
+                score += 1;
+            } else if (rewriteTypeName(argType).equals(rewriteTypeName(paramType))) {
+                score += 3;
+            } else {
+                score -= 2;
+            }
+        }
+        return score;
+    }
+
+    private boolean isPrimitiveType(String typeName) {
+        return switch (typeName) {
+            case "boolean", "byte", "char", "short", "int", "long", "float", "double" -> true;
+            default -> false;
+        };
+    }
+
+    private List<String> invocationArgTypes(CtInvocation<?> invocation) {
+        List<String> argTypes = new ArrayList<>();
+        for (CtExpression<?> arg : invocation.getArguments()) {
+            CtTypeReference<?> type = arg.getType();
+            argTypes.add(type != null ? typeKey(type) : inferArgType(arg));
+        }
+        return argTypes;
+    }
+
+    private String inferArgType(CtExpression<?> arg) {
+        if (arg instanceof CtLiteral<?> literal && literal.getValue() == null) {
+            return "null";
+        }
+        if (arg instanceof CtConstructorCall<?> ctor) {
+            return typeKey(ctor.getType());
+        }
+        if (arg instanceof CtVariableAccess<?> access && access.getType() != null) {
+            return typeKey(access.getType());
+        }
+        return "?";
+    }
+
+    private String methodKey(CtMethod<?> method) {
+        List<String> paramTypes = new ArrayList<>();
+        for (CtParameter<?> parameter : method.getParameters()) {
+            paramTypes.add(typeKey(parameter.getType()));
+        }
+        return methodKey(method.getSimpleName(), paramTypes);
+    }
+
+    private String methodKey(String name, List<String> argTypes) {
+        return name + "(" + String.join(",", argTypes) + ")";
+    }
+
+    private String typeKey(CtTypeReference<?> ref) {
+        if (ref == null) return "?";
+        return ref.getSimpleName();
     }
 
     // ── Type reference rewriting ──
@@ -429,7 +553,10 @@ public class SpoonSlicePruner {
      * This is intentionally targeted — we don't rewrite return types, local variables,
      * inner class references (Entity.MoveEffect), static field access, etc.
      */
-    private void rewriteParameterTypes(CtMethod<?> method) {
+    private void rewriteParameterTypes(CtMethod<?> method, CtMethod<?> originalMethod) {
+        if (!shouldRewriteParameterTypes(originalMethod)) {
+            return;
+        }
         for (CtParameter<?> param : method.getParameters()) {
             CtTypeReference<?> ref = param.getType();
             String simpleName = ref.getSimpleName();
@@ -438,6 +565,23 @@ public class SpoonSlicePruner {
                 ref.setSimpleName(replacement);
                 try { ref.setPackage(null); } catch (Exception ignored) {}
             }
+        }
+    }
+
+    private void rewriteMethodSignature(CtMethod<?> method, CtMethod<?> originalMethod) {
+        rewriteParameterTypes(method, originalMethod);
+    }
+
+    private void relaxHelperVisibility(CtMethod<?> method) {
+        if (method.hasModifier(ModifierKind.FINAL)) {
+            method.removeModifier(ModifierKind.FINAL);
+        }
+        if (!SUBCLASS_VISIBLE_HELPERS.contains(method.getSimpleName())) {
+            return;
+        }
+        if (method.hasModifier(ModifierKind.PRIVATE)) {
+            method.removeModifier(ModifierKind.PRIVATE);
+            method.addModifier(ModifierKind.PROTECTED);
         }
     }
 
@@ -464,6 +608,7 @@ public class SpoonSlicePruner {
         // Identity comparisons: `entity == this` → `entity == this.entityBridge`
         methodText = methodText.replaceAll("==\\s*this(?![.A-Za-z0-9_])", "== this.entityBridge");
         methodText = methodText.replaceAll("!=\\s*this(?![.A-Za-z0-9_])", "!= this.entityBridge");
+        methodText = methodText.replace("this instanceof ServerPlayerEntity", "this.entityBridge instanceof ServerPlayerEntity");
 
         // instanceof rewrites: `this instanceof Entity` → `this instanceof SlicedEntity`
         for (var entry : TYPE_REMAP.entrySet()) {
@@ -494,8 +639,8 @@ public class SpoonSlicePruner {
         StringBuilder sb = new StringBuilder();
         sb.append("public abstract ");
 
-        // Return type (with type rewriting)
-        String returnType = rewriteTypeName(original.getType().getSimpleName());
+        // Keep full type text so generic signatures survive erasure-sensitive overloads.
+        String returnType = original.getType().toString();
         sb.append(returnType).append(" ");
 
         sb.append(original.getSimpleName()).append("(");
@@ -505,7 +650,9 @@ public class SpoonSlicePruner {
         for (int i = 0; i < params.size(); i++) {
             if (i > 0) sb.append(", ");
             CtParameter<?> p = params.get(i);
-            String paramType = rewriteTypeName(p.getType().getSimpleName());
+            String paramType = shouldRewriteParameterTypes(original)
+                ? rewriteTypeText(p.getType().toString())
+                : p.getType().toString();
             sb.append(paramType).append(" ").append(p.getSimpleName());
         }
 
@@ -516,6 +663,31 @@ public class SpoonSlicePruner {
     /** Applies TYPE_REMAP to a simple type name if it matches. */
     private String rewriteTypeName(String simpleName) {
         return TYPE_REMAP.getOrDefault(simpleName, simpleName);
+    }
+
+    private String rewriteTypeText(String typeText) {
+        String rewritten = typeText;
+        for (var entry : TYPE_REMAP.entrySet()) {
+            rewritten = rewritten.replaceAll("\\b" + entry.getKey() + "\\b", entry.getValue());
+        }
+        return rewritten;
+    }
+
+    private boolean shouldRewriteParameterTypes(CtMethod<?> method) {
+        if (method == null) return false;
+        CtType<?> declaringType = method.getDeclaringType();
+        if (declaringType == null) return false;
+        return SLICED_PARAM_METHODS.contains(declaringType.getSimpleName() + "#" + method.getSimpleName());
+    }
+
+    private String rewrittenMethodKey(CtMethod<?> method) {
+        List<String> paramTypes = new ArrayList<>();
+        boolean rewriteParams = shouldRewriteParameterTypes(method);
+        for (CtParameter<?> parameter : method.getParameters()) {
+            String typeName = typeKey(parameter.getType());
+            paramTypes.add(rewriteParams ? rewriteTypeName(typeName) : typeName);
+        }
+        return methodKey(method.getSimpleName(), paramTypes);
     }
 
     // ── Statement pruning ──
@@ -618,17 +790,23 @@ public class SpoonSlicePruner {
         return "";
     }
 
-    private CtMethod<?> findMethod(CtType<?> type, String methodName, int paramCount) {
-        CtMethod<?> fallback = null;
+    private CtMethod<?> findMethod(CtType<?> type, String methodName, String descriptor) {
+        int paramCount = countDescriptorParams(descriptor);
         for (CtMethod<?> m : type.getMethods()) {
             if (m.getSimpleName().equals(methodName)) {
-                if (m.getParameters().size() == paramCount) {
+                if (m.getParameters().size() == paramCount && getMethodDescriptor(m).equals(descriptor)) {
                     return m;
                 }
-                if (fallback == null) fallback = m;
             }
         }
-        return fallback;
+
+        for (CtMethod<?> m : type.getMethods()) {
+            if (m.getSimpleName().equals(methodName) && m.getParameters().size() == paramCount) {
+                return m;
+            }
+        }
+
+        return null;
     }
 
     private int countDescriptorParams(String descriptor) {
@@ -703,14 +881,27 @@ public class SpoonSlicePruner {
         knownTypes.put("PlayerAbilities", "import net.minecraft.entity.player.PlayerAbilities;");
         knownTypes.put("DamageSources", "import net.minecraft.entity.damage.DamageSources;");
         knownTypes.put("DamageUtil", "import net.minecraft.entity.DamageUtil;");
+        knownTypes.put("EntityAttribute", "import net.minecraft.entity.attribute.EntityAttribute;");
         knownTypes.put("ItemEntity", "import net.minecraft.entity.ItemEntity;");
         knownTypes.put("ExperienceOrbEntity", "import net.minecraft.entity.ExperienceOrbEntity;");
         knownTypes.put("ProjectileDeflection", "import net.minecraft.entity.ProjectileDeflection;");
+        knownTypes.put("Fluid", "import net.minecraft.fluid.Fluid;");
+        knownTypes.put("RegistryEntry", "import net.minecraft.registry.entry.RegistryEntry;");
+        knownTypes.put("StatusEffect", "import net.minecraft.entity.effect.StatusEffect;");
+        knownTypes.put("TagKey", "import net.minecraft.registry.tag.TagKey;");
         knownTypes.put("RaycastContext", "import net.minecraft.world.RaycastContext;");
+        knownTypes.put("BlockHitResult", "import net.minecraft.util.hit.BlockHitResult;");
         knownTypes.put("UUID", "import java.util.UUID;");
+        knownTypes.put("Map", "import java.util.Map;");
+        knownTypes.put("Set", "import java.util.Set;");
+        knownTypes.put("HashSet", "import java.util.HashSet;");
+        knownTypes.put("Maps", "import com.google.common.collect.Maps;");
         knownTypes.put("Random", "import net.minecraft.util.math.random.Random;");
         knownTypes.put("DataTracker", "import net.minecraft.entity.data.DataTracker;");
         knownTypes.put("TrackedData", "import net.minecraft.entity.data.TrackedData;");
+        knownTypes.put("Object2DoubleMap", "import it.unimi.dsi.fastutil.objects.Object2DoubleMap;");
+        knownTypes.put("Object2DoubleArrayMap", "import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;");
+        knownTypes.put("ObjectArrayList", "import it.unimi.dsi.fastutil.objects.ObjectArrayList;");
 
         // Inner types that Spoon resolves to simple names in no-classpath mode
         Map<String, String> innerTypes = new LinkedHashMap<>();
@@ -721,6 +912,7 @@ public class SpoonSlicePruner {
         innerTypes.put("MoveEffect", "import net.minecraft.entity.Entity.MoveEffect;");
         innerTypes.put("RemovalReason", "import net.minecraft.entity.Entity.RemovalReason;");
         innerTypes.put("QueuedCollisionCheck", "import net.minecraft.entity.Entity.QueuedCollisionCheck;");
+        innerTypes.put("Type", "import net.minecraft.util.hit.HitResult.Type;");
 
         for (var entry : innerTypes.entrySet()) {
             if (code.contains(entry.getKey())) {
