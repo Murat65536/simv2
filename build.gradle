@@ -11,9 +11,7 @@ base {
 }
 
 loom {
-	def generatedAw = file("src/main/generated/sim-v2.accesswidener")
-	def fallbackAw = file("src/main/resources/sim-v2.accesswidener")
-	accessWidenerPath = generatedAw.exists() ? generatedAw : fallbackAw
+	accessWidenerPath = file("src/main/resources/sim-v2.accesswidener")
 }
 
 sourceSets {
