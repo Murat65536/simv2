@@ -20,7 +20,7 @@ sourceSets {
 	main {
 		java {
 			srcDir 'src/main/generated/java'
-			//exclude 'murat/simv2/simulation/sliced/**'
+			exclude 'murat/simv2/simulation/sliced/**'
 		}
 	}
 }
@@ -66,6 +66,9 @@ java {
 
 	sourceCompatibility = JavaVersion.VERSION_21
 	targetCompatibility = JavaVersion.VERSION_21
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
 }
 
 jar {
