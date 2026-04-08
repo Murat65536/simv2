@@ -27,6 +27,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
+import net.minecraft.entity.PositionInterpolator;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -805,7 +806,7 @@ public BlockState stateAtPos = null;
             if ((d > 1.0E-7) || ((movement.lengthSquared() - d) < 1.0E-7)) {
                 if ((this.fallDistance != 0.0) && (d >= 1.0)) {
                     BlockHitResult blockHitResult = this.getWorld().raycast(new RaycastContext(this.getPos(), this.getPos().add(vec3d), ShapeType.FALLDAMAGE_RESETTING, FluidHandling.WATER, (Entity) this.entityBridge));
-                    if (blockHitResult.getType() != HitResult.Type.MISS) {
+                    if (blockHitResult.getType() != Type.MISS) {
                         this.onLanding();
                     }
                 }
@@ -1096,7 +1097,7 @@ public BlockState stateAtPos = null;
     }
 
     @Nullable
-    public SlicedPositionInterpolator getInterpolator() {
+    public PositionInterpolator getInterpolator() {
         return null;
     }
 
@@ -1210,9 +1211,6 @@ public BlockState stateAtPos = null;
      */
     public void emitGameEvent(RegistryEntry<GameEvent> event) {
         this.emitGameEvent(event, (Entity) this.entityBridge);
-    }
-
-    protected void emitGameEvent(RegistryEntry<GameEvent> event, Entity sourceEntity) {
     }
 
     public boolean isInPose(EntityPose pose) {
