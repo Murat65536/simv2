@@ -7,13 +7,11 @@ import it.unimi.dsi.fastutil.doubles.DoubleDoubleImmutablePair;
 import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -21,6 +19,7 @@ import net.minecraft.block.LadderBlock;
 import net.minecraft.block.PowderSnowBlock;
 import net.minecraft.block.TrapdoorBlock;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.AttributeModifierSlot;
 import net.minecraft.component.type.BlocksAttacksComponent;
 import net.minecraft.component.type.DeathProtectionComponent;
 import net.minecraft.enchantment.Enchantment;
@@ -38,6 +37,7 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LazyEntityReference;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
+import net.minecraft.entity.PositionInterpolator;
 import net.minecraft.entity.attribute.AttributeContainer;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -59,20 +59,15 @@ import net.minecraft.fluid.FluidState;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.particle.BlockStateParticleEffect;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.registry.tag.EntityTypeTags;
 import net.minecraft.registry.tag.FluidTags;
+import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.Arm;
 import net.minecraft.util.Hand;
@@ -113,19 +108,17 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     private final DamageTracker damageTracker = new DamageTracker( (LivingEntity) this.entityBridge);
     private final Map<RegistryEntry<StatusEffect>, StatusEffectInstance> activeStatusEffects = Maps.<RegistryEntry<StatusEffect>, StatusEffectInstance>newHashMap();
     private boolean noDrag = false;
-    public int hurtTime;
-    public int maxHurtTime;
     public float headYaw;
     @Nullable
 protected LazyEntityReference<PlayerEntity> attackingPlayer;
     protected int playerHitTimer;
     protected boolean dead;
-    protected int despawnCounter;
     protected float lastDamageTaken;
     public boolean jumping;
     public float sidewaysSpeed;
     public float upwardSpeed;
     public float forwardSpeed;
+    protected PositionInterpolator interpolator = new PositionInterpolator( (LivingEntity) this.entityBridge);
     protected double serverHeadYaw;
     protected int headTrackingIncrements;
     @Nullable
@@ -137,10 +130,6 @@ private LivingEntity attacking;
     private float absorptionAmount;
     public ItemStack activeItemStack = ItemStack.EMPTY;
     public int itemUseTimeLeft;
-    public Optional<BlockPos> climbingPos = Optional.empty();
-    @Nullable
-private DamageSource lastDamageSource;
-    private long lastDamageTime;
     public int riptideTicks;
     private boolean experienceDroppingDisabled;
     protected EntityEquipment equipment;
@@ -150,7 +139,6 @@ private DamageSource lastDamageSource;
     public boolean verticalCollision;
     public boolean groundCollision;
     public boolean collidedSoftly;
-    public boolean velocityModified;
     public Vec3d movementMultiplier = Vec3d.ZERO;
     public double fallDistance;
     public boolean noClip;
@@ -241,6 +229,19 @@ private DamageSource lastDamageSource;
         }
     }
 
+    public boolean canFreeze() {
+        if (this.isSpectator()) {
+            return false;
+        } else {
+            for (EquipmentSlot equipmentSlot : AttributeModifierSlot.ARMOR) {
+                if (this.getEquippedStack(equipmentSlot).isIn(ItemTags.FREEZE_IMMUNE_WEARABLES)) {
+                    return false;
+                }
+            }
+            return this.canFreeze();
+        }
+    }
+
     public boolean canWalkOnFluid(FluidState state) {
         return false;
     }
@@ -255,6 +256,59 @@ private DamageSource lastDamageSource;
         }
     }
 
+    public void damage(ServerWorld world, DamageSource source, float amount) {
+        if (this.isInvulnerableTo(world, source)) {
+        } else if (this.isDead()) {
+        } else if (source.isIn(DamageTypeTags.IS_FIRE) && this.hasStatusEffect(StatusEffects.FIRE_RESISTANCE)) {
+        } else {
+            if (this.isSleeping()) {
+                this.wakeUp();
+            }
+            float g = this.getDamageBlockedAmount(world, source, amount);
+            amount -= g;
+            boolean bl = g > 0.0F;
+            if (source.isIn(DamageTypeTags.IS_FREEZING) && this.getType().isIn(EntityTypeTags.FREEZE_HURTS_EXTRA_TYPES)) {
+                amount *= 5.0F;
+            }
+            if (source.isIn(DamageTypeTags.DAMAGES_HELMET) && (!this.getEquippedStack(EquipmentSlot.HEAD).isEmpty())) {
+                amount *= 0.75F;
+            }
+            boolean bl2 = true;
+            if ((this.timeUntilRegen > 10.0F) && (!source.isIn(DamageTypeTags.BYPASSES_COOLDOWN))) {
+                this.applyDamage(world, source, amount - this.lastDamageTaken);
+                this.lastDamageTaken = amount;
+            } else {
+                this.lastDamageTaken = amount;
+                this.timeUntilRegen = 20;
+                this.applyDamage(world, source, amount);
+            }
+            this.becomeAngry(source);
+            this.setAttackingPlayer(source);
+            if (bl2) {
+                BlocksAttacksComponent blocksAttacksComponent = this.getActiveItem().get(DataComponentTypes.BLOCKS_ATTACKS);
+                if (!source.isIn(DamageTypeTags.NO_KNOCKBACK)) {
+                    double d = 0.0;
+                    double e = 0.0;
+                    if (source.getSource() instanceof ProjectileEntity projectileEntity) {
+                        DoubleDoubleImmutablePair doubleDoubleImmutablePair = projectileEntity.getKnockback( (LivingEntity) this.entityBridge, source);
+                        d = -doubleDoubleImmutablePair.leftDouble();
+                        e = -doubleDoubleImmutablePair.rightDouble();
+                    } else if (source.getPosition() != null) {
+                        d = source.getPosition().getX() - this.getX();
+                        e = source.getPosition().getZ() - this.getZ();
+                    }
+                    this.takeKnockback(0.4F, d, e);
+                }
+            }
+            if (this.isDead()) {
+                if (!this.tryUseDeathProtector(source)) {
+                    this.onDeath(source);
+                }
+            }
+            boolean bl3 = (!bl) || (amount > 0.0F);
+        }
+    }
+
     protected void drop(ServerWorld world, DamageSource damageSource) {
         boolean bl = this.playerHitTimer > 0;
         this.dropExperience(world, damageSource.getAttacker());
@@ -265,6 +319,13 @@ private DamageSource lastDamageSource;
         if ((!this.isExperienceDroppingDisabled()) && (this.shouldAlwaysDropExperience() || (((this.playerHitTimer > 0) && this.shouldDropExperience()) && world.getGameRules().getBoolean(GameRules.DO_MOB_LOOT)))) {
             ExperienceOrbEntity.spawn(world, this.getPos(), this.getExperienceToDrop(world, attacker));
         }
+    }
+
+    protected void fall(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition) {
+        if (!this.isTouchingWater()) {
+            this.checkWaterState();
+        }
+        this.fall(heightDifference, onGround, state, landedPosition);
     }
 
     public int getArmor() {
@@ -344,12 +405,20 @@ private DamageSource lastDamageSource;
         return EnchantmentHelper.getMobExperience(world, attacker, (LivingEntity) this.entityBridge, this.getExperienceToDrop(world));
     }
 
+    protected double getGravity() {
+        return this.getAttributeValue(EntityAttributes.GRAVITY);
+    }
+
     public float getHeadYaw() {
         return this.headYaw;
     }
 
     public float getHealth() {
         return this.dataTracker.get(HEALTH);
+    }
+
+    public PositionInterpolator getInterpolator() {
+        return this.interpolator;
     }
 
     public float getJumpBoostVelocityModifier() {
@@ -388,6 +457,15 @@ private DamageSource lastDamageSource;
     @Nullable
     public StatusEffectInstance getStatusEffect(RegistryEntry<StatusEffect> effect) {
         return ((StatusEffectInstance) (this.activeStatusEffects.get(effect)));
+    }
+
+    public float getStepHeight() {
+        float f = ((float) (this.getAttributeValue(EntityAttributes.STEP_HEIGHT)));
+        return this.getControllingPassenger() instanceof PlayerEntity ? Math.max(f, 1.0F) : f;
+    }
+
+    protected float getVelocityMultiplier() {
+        return MathHelper.lerp(((float) (this.getAttributeValue(EntityAttributes.MOVEMENT_EFFICIENCY))), this.getVelocityMultiplier(), 1.0F);
     }
 
     public boolean hasNoDrag() {
@@ -922,6 +1000,14 @@ private DamageSource lastDamageSource;
         }
     }
 
+    public boolean isSpectator() {
+        return false;
+    }
+
+    public ItemStack getEquippedStack(EquipmentSlot slot) {
+        return this.equipment.get(slot);
+    }
+
     @Deprecated
     public void serverDamage(DamageSource source, float amount) {
         if (this.world instanceof ServerWorld serverWorld) {
@@ -931,6 +1017,29 @@ private DamageSource lastDamageSource;
 
     public DamageSources getDamageSources() {
         return this.getWorld().getDamageSources();
+    }
+
+    protected void applyDamage(ServerWorld world, DamageSource source, float amount) {
+        if (!this.isInvulnerableTo(world, source)) {
+            amount = this.applyArmorToDamage(source, amount);
+            amount = this.modifyAppliedDamage(source, amount);
+            float var10 = Math.max(amount - this.getAbsorptionAmount(), 0.0F);
+            this.setAbsorptionAmount(this.getAbsorptionAmount() - (amount - var10));
+            float g = amount - var10;
+            if (((g > 0.0F) && (g < 3.4028235E37F)) && (source.getAttacker() instanceof ServerPlayerEntity serverPlayerEntity)) {
+                serverPlayerEntity.increaseStat(Stats.DAMAGE_DEALT_ABSORBED, Math.round(g * 10.0F));
+            }
+            if (var10 != 0.0F) {
+                this.getDamageTracker().onDamage(source, var10);
+                this.setHealth(this.getHealth() - var10);
+                this.setAbsorptionAmount(this.getAbsorptionAmount() - var10);
+                this.emitGameEvent(GameEvent.ENTITY_DAMAGE);
+            }
+        }
+    }
+
+    public ItemStack getActiveItem() {
+        return this.activeItemStack;
     }
 
     protected boolean shouldAlwaysDropExperience() {
@@ -962,10 +1071,6 @@ private DamageSource lastDamageSource;
         return this.getControllingPassenger() instanceof PlayerEntity ? this.getMovementSpeed() * 0.1F : 0.02F;
     }
 
-    public boolean isSpectator() {
-        return false;
-    }
-
     public Optional<BlockPos> getSleepingPosition() {
         return this.dataTracker.get(SLEEPING_POSITION);
     }
@@ -980,111 +1085,6 @@ private DamageSource lastDamageSource;
 
     protected void setAbsorptionAmountUnclamped(float absorptionAmount) {
         this.absorptionAmount = absorptionAmount;
-    }
-
-    public boolean damage(ServerWorld world, DamageSource source, float amount) {
-        if (this.isInvulnerableTo(world, source)) {
-            return false;
-        } else if (this.isDead()) {
-            return false;
-        } else if (source.isIn(DamageTypeTags.IS_FIRE) && this.hasStatusEffect(StatusEffects.FIRE_RESISTANCE)) {
-            return false;
-        } else {
-            if (this.isSleeping()) {
-                this.wakeUp();
-            }
-            this.despawnCounter = 0;
-            if (amount < 0.0F) {
-                amount = 0.0F;
-            }
-            float g = this.getDamageBlockedAmount(world, source, amount);
-            amount -= g;
-            boolean bl = g > 0.0F;
-            if (source.isIn(DamageTypeTags.IS_FREEZING) && this.getType().isIn(EntityTypeTags.FREEZE_HURTS_EXTRA_TYPES)) {
-                amount *= 5.0F;
-            }
-            if (source.isIn(DamageTypeTags.DAMAGES_HELMET) && (!this.getEquippedStack(EquipmentSlot.HEAD).isEmpty())) {
-                this.damageHelmet(source, amount);
-                amount *= 0.75F;
-            }
-            if (Float.isNaN(amount) || Float.isInfinite(amount)) {
-                amount = Float.MAX_VALUE;
-            }
-            boolean bl2 = true;
-            if ((this.timeUntilRegen > 10.0F) && (!source.isIn(DamageTypeTags.BYPASSES_COOLDOWN))) {
-                if (amount <= this.lastDamageTaken) {
-                    return false;
-                }
-                this.applyDamage(world, source, amount - this.lastDamageTaken);
-                this.lastDamageTaken = amount;
-                bl2 = false;
-            } else {
-                this.lastDamageTaken = amount;
-                this.timeUntilRegen = 20;
-                this.applyDamage(world, source, amount);
-                this.maxHurtTime = 10;
-                this.hurtTime = this.maxHurtTime;
-            }
-            this.becomeAngry(source);
-            this.setAttackingPlayer(source);
-            if (bl2) {
-                BlocksAttacksComponent blocksAttacksComponent = this.getActiveItem().get(DataComponentTypes.BLOCKS_ATTACKS);
-                if (bl && (blocksAttacksComponent != null)) {
-                    blocksAttacksComponent.playBlockSound(world, (LivingEntity) this.entityBridge);
-                } else {
-                    world.sendEntityDamage( (LivingEntity) this.entityBridge, source);
-                }
-                if ((!source.isIn(DamageTypeTags.NO_IMPACT)) && ((!bl) || (amount > 0.0F))) {
-                    this.scheduleVelocityUpdate();
-                }
-                if (!source.isIn(DamageTypeTags.NO_KNOCKBACK)) {
-                    double d = 0.0;
-                    double e = 0.0;
-                    if (source.getSource() instanceof ProjectileEntity projectileEntity) {
-                        DoubleDoubleImmutablePair doubleDoubleImmutablePair = projectileEntity.getKnockback( (LivingEntity) this.entityBridge, source);
-                        d = -doubleDoubleImmutablePair.leftDouble();
-                        e = -doubleDoubleImmutablePair.rightDouble();
-                    } else if (source.getPosition() != null) {
-                        d = source.getPosition().getX() - this.getX();
-                        e = source.getPosition().getZ() - this.getZ();
-                    }
-                    this.takeKnockback(0.4F, d, e);
-                    if (!bl) {
-                        this.tiltScreen(d, e);
-                    }
-                }
-            }
-            if (this.isDead()) {
-                if (!this.tryUseDeathProtector(source)) {
-                    if (bl2) {
-                        this.playSound(this.getDeathSound());
-                        this.playThornsSound(source);
-                    }
-                    this.onDeath(source);
-                }
-            } else if (bl2) {
-                this.playHurtSound(source);
-                this.playThornsSound(source);
-            }
-            boolean bl3 = (!bl) || (amount > 0.0F);
-            if (bl3) {
-                this.lastDamageSource = source;
-                this.lastDamageTime = this.getWorld().getTime();
-                for (StatusEffectInstance statusEffectInstance : this.getStatusEffects()) {
-                    statusEffectInstance.onEntityDamage(world, (LivingEntity) this.entityBridge, source, amount);
-                }
-            }
-            if (this.entityBridge instanceof ServerPlayerEntity serverPlayerEntity) {
-                Criteria.ENTITY_HURT_PLAYER.trigger(serverPlayerEntity, source, amount, amount, bl);
-                if ((g > 0.0F) && (g < 3.4028235E37F)) {
-                    serverPlayerEntity.increaseStat(Stats.DAMAGE_BLOCKED_BY_SHIELD, Math.round(g * 10.0F));
-                }
-            }
-            if (source.getAttacker() instanceof ServerPlayerEntity serverPlayerEntityx) {
-                Criteria.PLAYER_HURT_ENTITY.trigger(serverPlayerEntityx, (LivingEntity) this.entityBridge, source, amount, amount, bl);
-            }
-            return bl3;
-        }
     }
 
     public boolean canMoveVoluntarily() {
@@ -1125,116 +1125,6 @@ private DamageSource lastDamageSource;
         return false;
     }
 
-    protected void fall(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition) {
-        if (!this.isTouchingWater()) {
-            this.checkWaterState();
-        }
-        if (((this.getWorld() instanceof ServerWorld serverWorld) && onGround) && (this.fallDistance > 0.0)) {
-            this.applyMovementEffects(serverWorld, landedPosition);
-            double d = Math.max(0, MathHelper.floor(this.getUnsafeFallDistance(this.fallDistance)));
-            if ((d > 0.0) && (!state.isAir())) {
-                double e = this.getX();
-                double f = this.getY();
-                double g = this.getZ();
-                BlockPos blockPos = this.getBlockPos();
-                if ((landedPosition.getX() != blockPos.getX()) || (landedPosition.getZ() != blockPos.getZ())) {
-                    double h = (e - landedPosition.getX()) - 0.5;
-                    double i = (g - landedPosition.getZ()) - 0.5;
-                    double j = Math.max(Math.abs(h), Math.abs(i));
-                    e = (landedPosition.getX() + 0.5) + ((h / j) * 0.5);
-                    g = (landedPosition.getZ() + 0.5) + ((i / j) * 0.5);
-                }
-                double h = Math.min(0.2F + (d / 15.0), 2.5);
-                int k = ((int) (150.0 * h));
-                serverWorld.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, state), e, f, g, k, 0.0, 0.0, 0.0, 0.15F);
-            }
-        }
-        this.fall(heightDifference, onGround, state, landedPosition);
-        if (onGround) {
-            this.climbingPos = Optional.empty();
-        }
-    }
-
-    public ItemStack getMainHandStack() {
-        return this.getEquippedStack(EquipmentSlot.MAINHAND);
-    }
-
-    public ItemStack getEquippedStack(EquipmentSlot slot) {
-        return this.equipment.get(slot);
-    }
-
-    public void damageHelmet(DamageSource source, float amount) {
-    }
-
-    protected void applyDamage(ServerWorld world, DamageSource source, float amount) {
-        if (!this.isInvulnerableTo(world, source)) {
-            amount = this.applyArmorToDamage(source, amount);
-            amount = this.modifyAppliedDamage(source, amount);
-            float var10 = Math.max(amount - this.getAbsorptionAmount(), 0.0F);
-            this.setAbsorptionAmount(this.getAbsorptionAmount() - (amount - var10));
-            float g = amount - var10;
-            if (((g > 0.0F) && (g < 3.4028235E37F)) && (source.getAttacker() instanceof ServerPlayerEntity serverPlayerEntity)) {
-                serverPlayerEntity.increaseStat(Stats.DAMAGE_DEALT_ABSORBED, Math.round(g * 10.0F));
-            }
-            if (var10 != 0.0F) {
-                this.getDamageTracker().onDamage(source, var10);
-                this.setHealth(this.getHealth() - var10);
-                this.setAbsorptionAmount(this.getAbsorptionAmount() - var10);
-                this.emitGameEvent(GameEvent.ENTITY_DAMAGE);
-            }
-        }
-    }
-
-    public ItemStack getActiveItem() {
-        return this.activeItemStack;
-    }
-
-    protected void scheduleVelocityUpdate() {
-        this.velocityModified = true;
-    }
-
-    public void tiltScreen(double deltaX, double deltaZ) {
-    }
-
-    public void playSound(@Nullable
-    SoundEvent sound) {
-        if (sound != null) {
-            this.playSound(sound, this.getSoundVolume(), this.getSoundPitch());
-        }
-    }
-
-    @Nullable
-    protected SoundEvent getDeathSound() {
-        return SoundEvents.ENTITY_GENERIC_DEATH;
-    }
-
-    private void playThornsSound(DamageSource damageSource) {
-        if (damageSource.isOf(DamageTypes.THORNS)) {
-            SoundCategory soundCategory = (this instanceof SlicedPlayerEntity) ? SoundCategory.PLAYERS : SoundCategory.HOSTILE;
-            this.getWorld().playSound(null, this.getPos().x, this.getPos().y, this.getPos().z, SoundEvents.ENCHANT_THORNS_HIT, soundCategory);
-        }
-    }
-
-    protected void playHurtSound(DamageSource damageSource) {
-        this.playSound(this.getHurtSound(damageSource));
-    }
-
-    public Collection<StatusEffectInstance> getStatusEffects() {
-        return this.activeStatusEffects.values();
-    }
-
-    private boolean doesNotCollide(Box box) {
-        return this.getWorld().isSpaceEmpty( (LivingEntity) this.entityBridge, box) && (!this.getWorld().containsFluid(box));
-    }
-
-    protected void applyMovementEffects(ServerWorld world, BlockPos pos) {
-        EnchantmentHelper.applyLocationBasedEffects(world, (LivingEntity) this.entityBridge);
-    }
-
-    private double getUnsafeFallDistance(double fallDistance) {
-        return (fallDistance + 1.0E-6) - this.getAttributeValue(EntityAttributes.SAFE_FALL_DISTANCE);
-    }
-
     public float getAbsorptionAmount() {
         return this.absorptionAmount;
     }
@@ -1247,16 +1137,11 @@ private DamageSource lastDamageSource;
         this.emitGameEvent(event, (LivingEntity) this.entityBridge);
     }
 
-    protected float getSoundVolume() {
-        return 1.0F;
+    public ItemStack getMainHandStack() {
+        return this.getEquippedStack(EquipmentSlot.MAINHAND);
     }
 
-    public float getSoundPitch() {
-        return this.isBaby() ? ((this.random.nextFloat() - this.random.nextFloat()) * 0.2F) + 1.5F : ((this.random.nextFloat() - this.random.nextFloat()) * 0.2F) + 1.0F;
-    }
-
-    @Nullable
-    protected SoundEvent getHurtSound(DamageSource source) {
-        return SoundEvents.ENTITY_GENERIC_HURT;
+    private boolean doesNotCollide(Box box) {
+        return this.getWorld().isSpaceEmpty( (LivingEntity) this.entityBridge, box) && (!this.getWorld().containsFluid(box));
     }
 }

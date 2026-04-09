@@ -202,8 +202,7 @@ public class SpoonSlicePruner {
             relaxHelperVisibility(cloned);
             String sig = methodKey(original);
             String rewrittenSig = methodKey(cloned);
-            if (definedSigs.contains(sig) || definedSigs.contains(rewrittenSig)
-                || hierarchyDefinedMethods.contains(sig) || hierarchyDefinedMethods.contains(rewrittenSig)) {
+            if (definedSigs.contains(sig) || definedSigs.contains(rewrittenSig)) {
                 continue;
             }
             definedSigs.add(sig);

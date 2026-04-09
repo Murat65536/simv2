@@ -1,7 +1,9 @@
 package murat.simv2.simulation.sliced;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.StreamSupport;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
@@ -9,7 +11,18 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.input.Input;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityPose;
+import net.minecraft.entity.JumpingMount;
+import net.minecraft.entity.MovementType;
+import net.minecraft.entity.attribute.EntityAttribute;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.player.PlayerAbilities;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.FluidTags;
+import net.minecraft.registry.tag.TagKey;
+import net.minecraft.util.hit.HitResult.Type;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction.Axis;
@@ -19,6 +32,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
+import org.jetbrains.annotations.Nullable;
 import static net.minecraft.client.network.AbstractClientPlayerEntity.*;
 import static net.minecraft.client.network.ClientPlayerEntity.*;
 import static net.minecraft.entity.Entity.*;
@@ -34,8 +48,18 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
     public boolean inSneakingPose;
     public Input input = new Input();
     protected MinecraftClient client;
+    public boolean usingItem;
     public boolean autoJumpEnabled = true;
     public int ticksToNextAutoJump;
+    public int abilityResyncCountdown;
+    public boolean jumping;
+    public float sidewaysSpeed;
+    public float forwardSpeed;
+    @Nullable
+public Entity vehicle;
+    private Vec3d velocity = Vec3d.ZERO;
+    public boolean noClip;
+    private final Set<TagKey<Fluid>> submergedFluidTag = new HashSet();
 
     protected void autoJump(float dx, float dz) {
         if (this.shouldAutoJump()) {
@@ -99,12 +123,33 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
         return this.client.getCameraEntity() == this.entityBridge;
     }
 
+    public boolean isHoldingOntoLadder() {
+        return (!this.getAbilities().flying) && this.isHoldingOntoLadder();
+    }
+
     public boolean isInSneakingPose() {
         return this.inSneakingPose;
     }
 
     public boolean isMainPlayer() {
         return true;
+    }
+
+    public boolean isSneaking() {
+        return this.input.playerInput.sneak();
+    }
+
+    public boolean isUsingItem() {
+        return this.usingItem;
+    }
+
+    public void move(MovementType type, Vec3d movement) {
+        double d = this.getX();
+        double e = this.getZ();
+        this.move(type, movement);
+        float f = ((float) (this.getX() - d));
+        float g = ((float) (this.getZ() - e));
+        this.autoJump(f, g);
     }
 
     private void pushOutOfBlocks(double x, double z) {
@@ -134,6 +179,67 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
         return (((((this.isAutoJumpEnabled() && (this.ticksToNextAutoJump <= 0)) && this.isOnGround()) && (!this.clipAtLedge())) && (!this.hasVehicle())) && this.hasMovementInput()) && (this.getJumpVelocityMultiplier() >= 1.0);
     }
 
+    public void tickMovement() {
+        boolean bl = this.input.playerInput.jump();
+        boolean bl2 = this.input.playerInput.sneak();
+        boolean bl3 = this.input.hasForwardMovement();
+        PlayerAbilities playerAbilities = this.getAbilities();
+        this.inSneakingPose = ((((!playerAbilities.flying) && (!this.isSwimming())) && (!this.hasVehicle())) && this.canChangeIntoPose(EntityPose.CROUCHING)) && (this.isSneaking() || ((!this.isSleeping()) && (!this.canChangeIntoPose(EntityPose.STANDING))));
+        boolean bl4 = false;
+        if (this.ticksToNextAutoJump > 0) {
+            this.ticksToNextAutoJump--;
+        }
+        if (!this.noClip) {
+            this.pushOutOfBlocks(this.getX() - (this.getWidth() * 0.35), this.getZ() + (this.getWidth() * 0.35));
+            this.pushOutOfBlocks(this.getX() - (this.getWidth() * 0.35), this.getZ() - (this.getWidth() * 0.35));
+            this.pushOutOfBlocks(this.getX() + (this.getWidth() * 0.35), this.getZ() - (this.getWidth() * 0.35));
+            this.pushOutOfBlocks(this.getX() + (this.getWidth() * 0.35), this.getZ() + (this.getWidth() * 0.35));
+        }
+        boolean bl5 = false;
+        if (playerAbilities.allowFlying) {
+            if (this.client.interactionManager.isFlyingLocked()) {
+            } else if (((!bl) && this.input.playerInput.jump()) && (!bl4)) {
+                if (this.abilityResyncCountdown == 0) {
+                } else if (!this.isSwimming()) {
+                    if (playerAbilities.flying && this.isOnGround()) {
+                        this.jump();
+                    }
+                }
+            }
+        }
+        if ((this.isTouchingWater() && this.input.playerInput.sneak()) && this.shouldSwimInFluids()) {
+            this.knockDownwards();
+        }
+        if (this.isSubmergedIn(FluidTags.WATER)) {
+            int i = (this.isSpectator()) ? 10 : 1;
+        }
+        if (playerAbilities.flying && this.isCamera()) {
+            int i = 0;
+            if (this.input.playerInput.sneak()) {
+                i--;
+            }
+            if (this.input.playerInput.jump()) {
+                i++;
+            }
+            if (i != 0) {
+                this.setVelocity(this.getVelocity().add(0.0, (i * playerAbilities.getFlySpeed()) * 3.0F, 0.0));
+            }
+        }
+        JumpingMount jumpingMount = this.getJumpingMount();
+        this.tickMovement();
+    }
+
+    public void tickMovementInput() {
+        if (this.isCamera()) {
+            Vec2f vec2f = this.applyMovementSpeedFactors(this.input.getMovementInput());
+            this.sidewaysSpeed = vec2f.x;
+            this.forwardSpeed = vec2f.y;
+            this.jumping = this.input.playerInput.jump();
+        } else {
+            this.tickMovementInput();
+        }
+    }
+
     private boolean wouldCollideAt(BlockPos pos) {
         Box box = this.getBoundingBox();
         Box box2 = new Box(pos.getX(), box.minY, pos.getZ(), pos.getX() + 1.0, box.maxY, pos.getZ() + 1.0).contract(1.0E-7);
@@ -142,5 +248,63 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
 
     public void setVelocity(double x, double y, double z) {
         this.setVelocity(new Vec3d(x, y, z));
+    }
+
+    protected boolean canChangeIntoPose(EntityPose pose) {
+        return this.getWorld().isSpaceEmpty( (ClientPlayerEntity) this.entityBridge, this.getDimensions(pose).getBoxAt(this.getPos()).contract(1.0E-7));
+    }
+
+    public boolean isSubmergedIn(TagKey<Fluid> fluidTag) {
+        return this.submergedFluidTag.contains(fluidTag);
+    }
+
+    public void setVelocity(Vec3d velocity) {
+        this.velocity = velocity;
+    }
+
+    @Nullable
+    public JumpingMount getJumpingMount() {
+        return (this.getControllingVehicle() instanceof JumpingMount jumpingMount) && jumpingMount.canJump() ? jumpingMount : null;
+    }
+
+    private Vec2f applyMovementSpeedFactors(Vec2f input) {
+        if (input.lengthSquared() == 0.0F) {
+            return input;
+        } else {
+            Vec2f vec2f = input.multiply(0.98F);
+            if (this.isUsingItem() && (!this.hasVehicle())) {
+                vec2f = vec2f.multiply(0.2F);
+            }
+            if (this.shouldSlowDown()) {
+                float f = ((float) (this.getAttributeValue(EntityAttributes.SNEAKING_SPEED)));
+                vec2f = vec2f.multiply(f);
+            }
+            return applyDirectionalMovementSpeedFactors(vec2f);
+        }
+    }
+
+    @Nullable
+    public Entity getControllingVehicle() {
+        return (this.vehicle != null) && (this.vehicle.getControllingPassenger() == this.entityBridge) ? this.vehicle : null;
+    }
+
+    public boolean shouldSlowDown() {
+        return this.isInSneakingPose() || this.isCrawling();
+    }
+
+    public double getAttributeValue(RegistryEntry<EntityAttribute> attribute) {
+        return this.getAttributes().getValue(attribute);
+    }
+
+    public boolean isCrawling() {
+        return this.isInSwimmingPose() && (!this.isTouchingWater());
+    }
+
+    public boolean isInSwimmingPose() {
+        return this.isInSwimmingPose() || ((!this.isGliding()) && this.isInPose(EntityPose.GLIDING));
+    }
+
+    public boolean isInPose(EntityPose pose) {
+        return this.getPose() == pose;
     }
 }

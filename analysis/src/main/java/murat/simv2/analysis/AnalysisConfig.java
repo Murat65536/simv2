@@ -22,8 +22,7 @@ public final class AnalysisConfig {
     public static final String CLIENT_PLAYER_CLASS = "Lnet/minecraft/client/network/ClientPlayerEntity";
 
     public static final List<EntryMethod> ENTRY_METHODS = List.of(
-        new EntryMethod(LIVING_ENTITY_CLASS, "tickMovement", "()V"),
-        new EntryMethod(LIVING_ENTITY_CLASS, "travel", "(Lnet/minecraft/util/math/Vec3d;)V")
+        new EntryMethod(CLIENT_PLAYER_CLASS, "tickMovement", "()V")
     );
 
     public static final Set<String> SEED_FIELDS = Set.of(
