@@ -186,7 +186,7 @@ private DamageSource lastDamageSource;
 
     public Vec3d applyFluidMovingSpeed(double gravity, boolean falling, Vec3d motion) {
         if ((gravity != 0.0) && (!this.isSprinting())) {
-            double d;
+            double d = 0.0;
             if ((falling && (Math.abs(motion.y - 0.005) >= 0.003)) && (Math.abs(motion.y - (gravity / 16.0)) < 0.003)) {
             } else {
                 d = motion.y - (gravity / 16.0);
@@ -331,7 +331,7 @@ private DamageSource lastDamageSource;
                         return 0.0F;
                     } else {
                         Vec3d vec3d = source.getPosition();
-                        double d;
+                        double d = 0.0;
                         if (vec3d != null) {
                             Vec3d vec3d2 = this.getRotationVector(0.0F, this.getHeadYaw());
                             Vec3d vec3d3 = vec3d.subtract(this.getPos());
@@ -527,7 +527,7 @@ private DamageSource lastDamageSource;
             } else if (source.isIn(DamageTypeTags.BYPASSES_ENCHANTMENTS)) {
                 return amount;
             } else {
-                float k;
+                float k = 0.0F;
                 if (this.getWorld() instanceof ServerWorld serverWorld) {
                 } else {
                 }
@@ -714,7 +714,7 @@ private DamageSource lastDamageSource;
         } else {
         }
         if (this.jumping && this.shouldSwimInFluids()) {
-            double g;
+            double g = 0.0;
             if (this.isInLava()) {
                 g = this.getFluidHeight(FluidTags.LAVA);
             } else {

@@ -706,6 +706,7 @@ public class SpoonSlicePruner {
         }
 
         pruneBlock(method.getBody(), walaLines, neededVars);
+        initializeUninitializedLocals(method);
     }
 
     private void pruneBlock(CtBlock<?> block, Set<Integer> walaLines, Set<String> neededVars) {
@@ -766,6 +767,36 @@ public class SpoonSlicePruner {
             }
         }
         return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void initializeUninitializedLocals(CtMethod<?> method) {
+        if (method.getBody() == null) return;
+        Factory factory = method.getFactory();
+        for (CtLocalVariable<?> localVar : method.getBody().getElements(new TypeFilter<>(CtLocalVariable.class))) {
+            if (localVar.getDefaultExpression() != null) continue;
+            if (!(localVar.getParent() instanceof CtBlock)) continue;
+            CtTypeReference<?> type = localVar.getType();
+            if (type == null) continue;
+            CtExpression<?> defaultValue = createDefaultValue(factory, type);
+            if (defaultValue != null) {
+                ((CtLocalVariable<Object>) localVar).setDefaultExpression((CtExpression<Object>) defaultValue);
+            }
+        }
+    }
+
+    private CtExpression<?> createDefaultValue(Factory factory, CtTypeReference<?> type) {
+        return switch (type.getSimpleName()) {
+            case "boolean" -> factory.createLiteral(false);
+            case "byte"    -> factory.createLiteral((byte) 0);
+            case "char"    -> factory.createLiteral((char) 0);
+            case "short"   -> factory.createLiteral((short) 0);
+            case "int"     -> factory.createLiteral(0);
+            case "long"    -> factory.createLiteral(0L);
+            case "float"   -> factory.createLiteral(0.0F);
+            case "double"  -> factory.createLiteral(0.0);
+            default        -> factory.createLiteral(null);
+        };
     }
 
     // ── Hierarchy and method resolution ──

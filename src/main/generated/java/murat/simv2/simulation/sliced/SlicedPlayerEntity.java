@@ -61,7 +61,7 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
                 if ((target.getType().isIn(EntityTypeTags.REDIRECTABLE_PROJECTILE) && (target instanceof ProjectileEntity projectileEntity)) && projectileEntity.deflect(ProjectileDeflection.REDIRECTED, (PlayerEntity) this.entityBridge, (PlayerEntity) this.entityBridge, true)) {
                 } else if ((f > 0.0F) || (g > 0.0F)) {
                     boolean bl = h > 0.9F;
-                    boolean bl2;
+                    boolean bl2 = false;
                     if (this.isSprinting() && bl) {
                     } else {
                     }
