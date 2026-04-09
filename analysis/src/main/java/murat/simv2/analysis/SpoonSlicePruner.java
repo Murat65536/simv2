@@ -260,6 +260,9 @@ public class SpoonSlicePruner {
             System.out.println("  Transitively included " + transitiveClosed + " methods");
         }
 
+        // ── Phase 2b: Voidify non-void methods whose return statements were pruned ──
+        voidifyUnusedReturns(clonedMethods);
+
         // ── Phase 3: Remove @Override, deduplicate, convert to text + text rewrites ──
         List<String> methodTexts = new ArrayList<>();
         Set<String> emittedSigs = new LinkedHashSet<>();
@@ -806,6 +809,54 @@ public class SpoonSlicePruner {
         };
     }
 
+    @SuppressWarnings("unchecked")
+    private void addDefaultReturn(CtMethod<?> method) {
+        Factory factory = method.getFactory();
+        CtTypeReference<?> returnType = method.getType();
+        CtExpression<?> defaultValue = createDefaultValue(factory, returnType);
+        CtReturn<?> ret = factory.createReturn();
+        ((CtReturn<Object>) ret).setReturnedExpression((CtExpression<Object>) defaultValue);
+        method.getBody().addStatement(ret);
+    }
+
+    private void voidifyUnusedReturns(List<CtMethod<?>> methods) {
+        // Collect names of methods that lost all return statements after pruning
+        Set<String> noReturnMethods = new HashSet<>();
+        for (CtMethod<?> m : methods) {
+            if (m.getBody() == null) continue;
+            if (m.getType() == null || m.getType().getSimpleName().equals("void")) continue;
+            if (m.getBody().getElements(new TypeFilter<>(CtReturn.class)).isEmpty()) {
+                noReturnMethods.add(m.getSimpleName());
+            }
+        }
+        if (noReturnMethods.isEmpty()) return;
+
+        // Check if any method in the class uses the return value of a no-return method
+        Set<String> returnValueUsed = new HashSet<>();
+        for (CtMethod<?> m : methods) {
+            if (m.getBody() == null) continue;
+            for (CtInvocation<?> inv : m.getBody().getElements(new TypeFilter<>(CtInvocation.class))) {
+                String calledName = inv.getExecutable().getSimpleName();
+                if (noReturnMethods.contains(calledName) && !(inv.getParent() instanceof CtBlock)) {
+                    // Called in an expression context (assigned, passed as arg, etc.)
+                    returnValueUsed.add(calledName);
+                }
+            }
+        }
+
+        // Voidify methods whose return value is never used;
+        // add default return for methods whose return value IS used
+        for (CtMethod<?> m : methods) {
+            if (!noReturnMethods.contains(m.getSimpleName())) continue;
+            if (returnValueUsed.contains(m.getSimpleName())) {
+                // Return value is used — add a default return statement
+                addDefaultReturn(m);
+            } else {
+                m.setType(m.getFactory().Type().voidPrimitiveType());
+            }
+        }
+    }
+
     // ── Hierarchy and method resolution ──
 
     private String resolveExtendsClause(CtType<?> type, Set<String> emittedSimpleNames,
@@ -1104,7 +1155,10 @@ public class SpoonSlicePruner {
             case "double" -> "D";
             default -> {
                 if (name.endsWith("[]")) {
-                    yield "[L" + name.substring(0, name.length() - 2).replace('.', '/') + ";";
+                    String component = name.substring(0, name.length() - 2);
+                    // Create a temporary reference for the component type to handle primitives
+                    CtTypeReference<?> componentRef = ref.getFactory().Type().createReference(component);
+                    yield "[" + toDescriptor(componentRef);
                 }
                 yield "L" + name.replace('.', '/') + ";";
             }

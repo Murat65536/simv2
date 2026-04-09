@@ -204,6 +204,7 @@ private DamageSource lastDamageSource;
         if ((this.horizontalCollision || this.jumping) && (this.isClimbing() || (this.wasInPowderSnow && PowderSnowBlock.canWalkOnPowderSnow( (LivingEntity) this.entityBridge)))) {
             vec3d = new Vec3d(vec3d.x, 0.2, vec3d.z);
         }
+        return null;
     }
 
     protected void becomeAngry(DamageSource damageSource) {
@@ -574,7 +575,7 @@ private DamageSource lastDamageSource;
     }
 
     @Nullable
-    protected PlayerEntity setAttackingPlayer(DamageSource damageSource) {
+    protected void setAttackingPlayer(DamageSource damageSource) {
         Entity entity = damageSource.getAttacker();
         if (entity instanceof PlayerEntity playerEntity) {
             this.setAttacking(playerEntity, 100);

@@ -641,7 +641,7 @@ public BlockState stateAtPos = null;
         }
     }
 
-    public boolean recalculateDimensions(EntityDimensions previous) {
+    public void recalculateDimensions(EntityDimensions previous) {
         EntityDimensions entityDimensions = this.getDimensions(this.getPose());
         Vec3d vec3d = this.getPos().add(0.0, previous.height() / 2.0, 0.0);
         double d = Math.max(0.0F, entityDimensions.width() - previous.width()) + 1.0E-6;
@@ -717,6 +717,7 @@ public BlockState stateAtPos = null;
             } else {
             }
         }
+        return false;
     }
 
     protected void tickBlockCollision() {
