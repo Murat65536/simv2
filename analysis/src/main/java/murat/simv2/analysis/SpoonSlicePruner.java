@@ -1,7 +1,5 @@
 package murat.simv2.analysis;
 
-import com.google.googlejavaformat.java.Formatter;
-
 import spoon.Launcher;
 import spoon.reflect.CtModel;
 import spoon.reflect.code.*;
@@ -61,7 +59,7 @@ public class SpoonSlicePruner {
         this.sliceLines = sliceLines;
     }
 
-    public void pruneAndWrite(Path outputDir) throws Exception {
+    public void pruneAndWrite(Path outputDir) throws IOException {
         Path tempDir = Files.createTempDirectory("mc-sources-");
         try {
             extractTargetSources(tempDir);
@@ -165,7 +163,7 @@ public class SpoonSlicePruner {
                                    Set<String> emittedSimpleNames,
                                    Map<String, CtType<?>> typeIndex,
                                    Set<String> hierarchyDefinedMethods,
-                                   Set<String> awEntries) throws Exception {
+                                   Set<String> awEntries) throws IOException {
         String simpleName = type.getSimpleName();
         String slicedName = "Sliced" + simpleName;
         System.out.println("Pruning " + type.getQualifiedName() + "...");
@@ -391,11 +389,9 @@ public class SpoonSlicePruner {
 
         sb.append("}\n");
 
-        String formattedCode = new Formatter().formatSource(sb.toString());
-
         Path outFile = outputDir.resolve(slicedName + ".java");
         Files.createDirectories(outFile.getParent());
-        Files.writeString(outFile, formattedCode);
+        Files.writeString(outFile, sb.toString());
         System.out.println("  Wrote " + outFile.getFileName());
 
         // Update hierarchy tracking

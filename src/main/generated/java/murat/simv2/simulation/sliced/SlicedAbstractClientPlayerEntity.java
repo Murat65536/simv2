@@ -18,25 +18,25 @@ import static net.minecraft.entity.player.PlayerEntity.*;
 
 public abstract class SlicedAbstractClientPlayerEntity extends SlicedPlayerEntity {
 
-  @Nullable private PlayerListEntry playerListEntry;
-  protected UUID uuid = MathHelper.randomUuid(this.random);
+    @Nullable
+private PlayerListEntry playerListEntry;
+    protected UUID uuid = MathHelper.randomUuid(this.random);
 
-  @Nullable
-  public GameMode getGameMode() {
-    PlayerListEntry playerListEntry = this.getPlayerListEntry();
-    return playerListEntry != null ? playerListEntry.getGameMode() : null;
-  }
-
-  @Nullable
-  protected PlayerListEntry getPlayerListEntry() {
-    if (this.playerListEntry == null) {
-      this.playerListEntry =
-          MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(this.getUuid());
+    @Nullable
+    public GameMode getGameMode() {
+        PlayerListEntry playerListEntry = this.getPlayerListEntry();
+        return playerListEntry != null ? playerListEntry.getGameMode() : null;
     }
-    return this.playerListEntry;
-  }
 
-  public UUID getUuid() {
-    return this.uuid;
-  }
+    @Nullable
+    protected PlayerListEntry getPlayerListEntry() {
+        if (this.playerListEntry == null) {
+            this.playerListEntry = MinecraftClient.getInstance().getNetworkHandler().getPlayerListEntry(this.getUuid());
+        }
+        return this.playerListEntry;
+    }
+
+    public UUID getUuid() {
+        return this.uuid;
+    }
 }
