@@ -274,8 +274,15 @@ public class SpoonSlicePruner {
                 }
             }
 
+            // Remove javadoc comments (parameters may have been pruned, making them inaccurate)
+            for (var comment : new ArrayList<>(m.getComments())) {
+                comment.delete();
+            }
+            m.setDocComment(null);
+
             // Convert to text and apply instanceof/cast rewrites
             String text = applyTextTypeRewrites(m.toString(), definedNames, simpleName);
+            text = text.replaceAll("(?s)/\\*\\*\\s*\\*/\\s*", "");
             methodTexts.add(text);
         }
 

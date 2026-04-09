@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.block.Block;
@@ -263,13 +262,6 @@ private DamageSource lastDamageSource;
         this.dropExperience(world, damageSource.getAttacker());
     }
 
-    /**
-     * Drops experience when this entity is killed.
-     *
-     * <p>To control the details of experience dropping, consider overriding
-     * {@link #shouldAlwaysDropExperience()}, {@link #shouldDropExperience()}, and
-     * {@link #getExperienceToDrop()}.
-     */
     protected void dropExperience(ServerWorld world, @Nullable
     Entity attacker) {
         if ((!this.isExperienceDroppingDisabled()) && (this.shouldAlwaysDropExperience() || (((this.playerHitTimer > 0) && this.shouldDropExperience()) && world.getGameRules().getBoolean(GameRules.DO_MOB_LOOT)))) {
@@ -294,9 +286,6 @@ private DamageSource lastDamageSource;
         return 0.8F;
     }
 
-    /**
-     * {@return the item stack currently being used for blocking, such as shields}
-     */
     @Nullable
     public ItemStack getBlockingItem() {
         if (!this.isUsingItem()) {
@@ -452,11 +441,6 @@ private DamageSource lastDamageSource;
         return this.getFlag(Entity.GLIDING_FLAG_INDEX);
     }
 
-    /**
-     *
-     * @return {@code true} if this entity should not lose height while in a climbing state
-     * @see net.minecraft.entity.LivingEntity
-     */
     public boolean isHoldingOntoLadder() {
         return this.isSneaking();
     }
@@ -498,13 +482,6 @@ private DamageSource lastDamageSource;
         this.headYaw = ((float) (MathHelper.lerpAngleDegrees(1.0 / headTrackingIncrements, ((double) (this.headYaw)), serverHeadYaw)));
     }
 
-    /**
-     * {@return the modified damage value for the applied {@code damage}}
-     *
-     * @apiNote Subclasses should override this to make the entity take reduced damage.
-     * @implNote This applies enchantments and the resistance effect. {@link net.minecraft.entity.mob.WitchEntity} uses this to negate their own damage and reduce the
-    applied status effect damage.
-     */
     protected float modifyAppliedDamage(DamageSource source, float amount) {
         if (source.isIn(DamageTypeTags.BYPASSES_EFFECTS)) {
             return amount;
@@ -556,14 +533,6 @@ private DamageSource lastDamageSource;
         }
     }
 
-    /**
-     * Performs secondary effects after this mob has been killed.
-     *
-     * <p> The default behavior spawns a wither rose if {@code adversary} is a {@code WitherEntity}.
-     *
-     * @param adversary
-     * 		the main adversary responsible for this entity's death
-     */
     protected void onKilledBy(@Nullable
     LivingEntity adversary) {
         if (this.getWorld() instanceof ServerWorld serverWorld) {
@@ -623,16 +592,6 @@ private DamageSource lastDamageSource;
         this.dataTracker.set(HEALTH, MathHelper.clamp(health, 0.0F, this.getMaxHealth()));
     }
 
-    /**
-     * Returns if this entity should drop experience on death when the {@linkplain net.minecraft.world.GameRules#DO_MOB_LOOT doMobLoot} game rule is
-     * enabled and has been attacked by a player.
-     *
-     * <p>If {@link #shouldAlwaysDropExperience() shouldAlwaysDropExperience()} returns {@code true}, this check is disregarded.
-     *
-     * @see #dropExperience
-     * @see #shouldAlwaysDropExperience()
-     * @see #getExperienceToDrop()
-     */
     public boolean shouldDropExperience() {
         return !this.isBaby();
     }
@@ -786,16 +745,6 @@ private DamageSource lastDamageSource;
         }
     }
 
-    /**
-     * Allows you to do certain speed and velocity calculations. This is useful for custom vehicle behavior, or custom entity movement. This is not to be confused with AI.
-     *
-     * <p>See vanilla examples of {@linkplain net.minecraft.entity.passive.AbstractHorseEntity#travel
-     * custom horse vehicle} and {@linkplain net.minecraft.entity.mob.FlyingEntity#travel
-     * flying entities}.
-     *
-     * @param movementInput
-     * 		represents the sidewaysSpeed, upwardSpeed, and forwardSpeed of the entity in that order
-     */
     public void travel(Vec3d movementInput) {
         FluidState fluidState = this.getWorld().getFluidState(this.getBlockPos());
         if (((this.isTouchingWater() || this.isInLava()) && this.shouldSwimInFluids()) && (!this.canWalkOnFluid(fluidState))) {
@@ -917,11 +866,6 @@ private DamageSource lastDamageSource;
         }
     }
 
-    /**
-     * Wakes this entity up.
-     *
-     * @see net.minecraft.entity.player.PlayerEntity#wakeUp(boolean, boolean) a more specific overload for players
-     */
     public void wakeUp() {
         Vec3d vec3d = this.getPos();
         this.setPosition(vec3d.x, vec3d.y, vec3d.z);
@@ -1024,13 +968,6 @@ private DamageSource lastDamageSource;
         return this.getWorld().getDamageSources();
     }
 
-    /**
-     * Returns if this entity may always drop experience, skipping any
-     * other checks.
-     *
-     * @see #dropXp
-     * @see #getXpToDrop()
-     */
     protected boolean shouldAlwaysDropExperience() {
         return false;
     }
@@ -1048,14 +985,6 @@ private DamageSource lastDamageSource;
         return (this.dataTracker.get(LIVING_FLAGS) & 1) > 0;
     }
 
-    /**
-     * Called when this entity is killed and returns the amount of experience
-     * to drop.
-     *
-     * @see #dropXp
-     * @see #shouldAlwaysDropXp()
-     * @see #shouldDropXp()
-     */
     protected int getExperienceToDrop(ServerWorld world) {
         return 0;
     }
@@ -1068,11 +997,6 @@ private DamageSource lastDamageSource;
         return this.getControllingPassenger() instanceof PlayerEntity ? this.getMovementSpeed() * 0.1F : 0.02F;
     }
 
-    /**
-     * {@return whether the entity is a spectator}
-     *
-     * <p>This returns {@code false} unless the entity is a player in spectator game mode.
-     */
     public boolean isSpectator() {
         return false;
     }
@@ -1206,9 +1130,6 @@ private DamageSource lastDamageSource;
         return true;
     }
 
-    /**
-     * {@return the height of the fluid in {@code fluid} tag}
-     */
     public double getFluidHeight(TagKey<Fluid> fluid) {
         return this.fluidHeight.getDouble(fluid);
     }
@@ -1216,10 +1137,6 @@ private DamageSource lastDamageSource;
     protected void attackLivingEntity(LivingEntity target) {
     }
 
-    /**
-     * {@return whether the bounding box with the given offsets do not collide with
-     * blocks or fluids}
-     */
     public boolean doesNotCollide(double offsetX, double offsetY, double offsetZ) {
         return this.doesNotCollide(this.getBoundingBox().offset(offsetX, offsetY, offsetZ));
     }
@@ -1234,15 +1151,6 @@ private DamageSource lastDamageSource;
         }
     }
 
-    /**
-     * Sets the position and refreshes the bounding box.
-     *
-     * <p>This should be called after creating an instance of non-living entities.
-     * For living entities, {@link #refreshPositionAndAngles} should be used instead.
-     *
-     * @see #refreshPositionAndAngles
-     * @see #teleportTo
-     */
     public void setPosition(double x, double y, double z) {
         this.setPos(x, y, z);
         this.setBoundingBox(this.calculateBoundingBox());
@@ -1370,11 +1278,6 @@ private DamageSource lastDamageSource;
         return this.damageTracker;
     }
 
-    /**
-     * Emits a game event originating from this entity at this entity's position.
-     *
-     * @see #emitGameEvent(RegistryEntry, Entity)
-     */
     public void emitGameEvent(RegistryEntry<GameEvent> event) {
         this.emitGameEvent(event, (LivingEntity) this.entityBridge);
     }

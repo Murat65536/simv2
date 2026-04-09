@@ -121,14 +121,6 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
         return this.isOnGround() || ((this.fallDistance < f) && (!this.isSpaceAroundPlayerEmpty(0.0, 0.0, f - this.fallDistance)));
     }
 
-    /**
-     * Wakes this player up.
-     *
-     * @param updateSleepingPlayers
-     * 		if {@code true} and called on the logical server, sends sleeping status updates to all players
-     * @param skipSleepTimer
-     * 		if {@code true}, the {@linkplain #sleepTimer sleep timer} will be set straight to 0 instead of 100
-     */
     public void wakeUp(boolean skipSleepTimer, boolean updateSleepingPlayers) {
         this.wakeUp();
     }

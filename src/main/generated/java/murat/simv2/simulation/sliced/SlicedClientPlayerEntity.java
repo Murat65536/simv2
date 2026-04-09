@@ -88,9 +88,6 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
         }
     }
 
-    /**
-     * {@return whether the player has movement input}
-     */
     private boolean hasMovementInput() {
         return this.input.getMovementInput().lengthSquared() > 0.0F;
     }
