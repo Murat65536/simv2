@@ -1,5 +1,7 @@
 package murat.simv2.analysis;
 
+import com.google.googlejavaformat.java.Formatter;
+
 import spoon.Launcher;
 import spoon.reflect.CtModel;
 import spoon.reflect.code.*;
@@ -59,7 +61,7 @@ public class SpoonSlicePruner {
         this.sliceLines = sliceLines;
     }
 
-    public void pruneAndWrite(Path outputDir) throws IOException {
+    public void pruneAndWrite(Path outputDir) throws Exception {
         Path tempDir = Files.createTempDirectory("mc-sources-");
         try {
             extractTargetSources(tempDir);
@@ -163,7 +165,7 @@ public class SpoonSlicePruner {
                                    Set<String> emittedSimpleNames,
                                    Map<String, CtType<?>> typeIndex,
                                    Set<String> hierarchyDefinedMethods,
-                                   Set<String> awEntries) throws IOException {
+                                   Set<String> awEntries) throws Exception {
         String simpleName = type.getSimpleName();
         String slicedName = "Sliced" + simpleName;
         System.out.println("Pruning " + type.getQualifiedName() + "...");
@@ -389,9 +391,11 @@ public class SpoonSlicePruner {
 
         sb.append("}\n");
 
+        String formattedCode = new Formatter().formatSource(sb.toString());
+
         Path outFile = outputDir.resolve(slicedName + ".java");
         Files.createDirectories(outFile.getParent());
-        Files.writeString(outFile, sb.toString());
+        Files.writeString(outFile, formattedCode);
         System.out.println("  Wrote " + outFile.getFileName());
 
         // Update hierarchy tracking
@@ -716,6 +720,7 @@ public class SpoonSlicePruner {
         }
 
         pruneBlock(method.getBody(), walaLines, neededVars);
+        removeEmptyBlocks(method.getBody());
         initializeUninitializedLocals(method);
     }
 
@@ -776,6 +781,33 @@ public class SpoonSlicePruner {
                 }
             }
         }
+        return false;
+    }
+
+    private void removeEmptyBlocks(CtBlock<?> block) {
+        if (block == null) return;
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (CtStatement stmt : new ArrayList<>(block.getElements(new TypeFilter<CtStatement>(CtStatement.class)))) {
+                if (stmt instanceof CtIf ctIf) {
+                    boolean thenEmpty = isEmpty(ctIf.getThenStatement());
+                    boolean elseEmpty = ctIf.getElseStatement() == null || isEmpty(ctIf.getElseStatement());
+
+                    if (thenEmpty && elseEmpty) {
+                        try { ctIf.delete(); changed = true; } catch (Exception ignored) {}
+                    } else if (elseEmpty && ctIf.getElseStatement() != null) {
+                        ctIf.setElseStatement(null);
+                        changed = true;
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isEmpty(CtStatement stmt) {
+        if (stmt == null) return true;
+        if (stmt instanceof CtBlock<?> b) return b.getStatements().isEmpty();
         return false;
     }
 
