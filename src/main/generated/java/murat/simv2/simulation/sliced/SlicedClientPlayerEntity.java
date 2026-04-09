@@ -32,7 +32,7 @@ import static net.minecraft.entity.player.PlayerEntity.*;
 public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlayerEntity {
 
     public Input input = new Input();
-    protected final MinecraftClient client;
+    protected MinecraftClient client;
     public boolean autoJumpEnabled = true;
     public int ticksToNextAutoJump;
 

@@ -82,7 +82,7 @@ public abstract class SlicedEntity {
     /** Real MC entity used as bridge for World and external API calls. */
     protected Entity entityBridge;
 
-    private final EntityType<?> type;
+    private EntityType<?> type;
     @Nullable
 public Entity vehicle;
     private World world;
@@ -111,7 +111,7 @@ private Entity.RemovalReason removalReason;
     public Object2DoubleMap<TagKey<Fluid>> fluidHeight = new Object2DoubleArrayMap<>(2);
     private final Set<TagKey<Fluid>> submergedFluidTag = new HashSet();
     protected boolean firstUpdate = true;
-    protected final DataTracker dataTracker;
+    protected DataTracker dataTracker;
     private boolean invulnerable;
     private final double[] pistonMovementDelta = new double[]{ 0.0, 0.0, 0.0 };
     public EntityDimensions dimensions;

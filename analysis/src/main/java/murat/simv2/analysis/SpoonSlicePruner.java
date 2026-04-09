@@ -882,6 +882,11 @@ public class SpoonSlicePruner {
                 if (!added.contains(name) && methodCode.contains("this." + name)) {
                     String fieldStr = field.toString();
                     if (!fieldStr.endsWith(";")) fieldStr += ";";
+                    // Remove 'final' from fields without initializers — there is no
+                    // constructor in the sliced class to assign them.
+                    if (field.getDefaultExpression() == null) {
+                        fieldStr = fieldStr.replaceFirst("\\bfinal\\s+", "");
+                    }
                     decls.add(fieldStr);
                     added.add(name);
                 }

@@ -109,7 +109,7 @@ import static net.minecraft.entity.player.PlayerEntity.*;
 
 public abstract class SlicedLivingEntity extends SlicedEntity {
 
-    private final AttributeContainer attributes;
+    private AttributeContainer attributes;
     private final DamageTracker damageTracker = new DamageTracker( (LivingEntity) this.entityBridge);
     private final Map<RegistryEntry<StatusEffect>, StatusEffectInstance> activeStatusEffects = Maps.<RegistryEntry<StatusEffect>, StatusEffectInstance>newHashMap();
     private boolean noDrag = false;
@@ -143,7 +143,7 @@ private DamageSource lastDamageSource;
     private long lastDamageTime;
     public int riptideTicks;
     private boolean experienceDroppingDisabled;
-    protected final EntityEquipment equipment;
+    protected EntityEquipment equipment;
     private World world;
     private Vec3d velocity = Vec3d.ZERO;
     public boolean horizontalCollision;
@@ -158,7 +158,7 @@ private DamageSource lastDamageSource;
     public int age;
     public Object2DoubleMap<TagKey<Fluid>> fluidHeight = new Object2DoubleArrayMap<>(2);
     public int timeUntilRegen;
-    protected final DataTracker dataTracker;
+    protected DataTracker dataTracker;
     public boolean inPowderSnow;
     public boolean wasInPowderSnow;
     private final List<List<Entity.QueuedCollisionCheck>> queuedCollisionChecks = new ObjectArrayList<>();
