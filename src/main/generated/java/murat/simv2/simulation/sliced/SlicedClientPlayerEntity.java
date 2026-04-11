@@ -296,8 +296,27 @@ public Entity vehicle;
         return this.getAttributes().getValue(attribute);
     }
 
+    private static Vec2f applyDirectionalMovementSpeedFactors(Vec2f vec) {
+        float f = vec.length();
+        if (f <= 0.0F) {
+            return vec;
+        } else {
+            Vec2f vec2f = vec.multiply(1.0F / f);
+            float g = getDirectionalMovementSpeedMultiplier(vec2f);
+            float h = Math.min(f * g, 1.0F);
+            return vec2f.multiply(h);
+        }
+    }
+
     public boolean isCrawling() {
         return this.isInSwimmingPose() && (!this.isTouchingWater());
+    }
+
+    private static float getDirectionalMovementSpeedMultiplier(Vec2f vec) {
+        float f = Math.abs(vec.x);
+        float g = Math.abs(vec.y);
+        float h = (g > f) ? f / g : g / f;
+        return MathHelper.sqrt(1.0F + MathHelper.square(h));
     }
 
     public boolean isInSwimmingPose() {

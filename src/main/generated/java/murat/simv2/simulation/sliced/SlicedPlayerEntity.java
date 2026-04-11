@@ -15,6 +15,8 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageSources;
 import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -31,6 +33,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.stat.Stat;
 import net.minecraft.util.Arm;
+import net.minecraft.util.Hand;
 import net.minecraft.util.hit.HitResult.Type;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -54,6 +57,7 @@ import static net.minecraft.entity.player.PlayerEntity.*;
 
 public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
 
+    private static final TrackedData<Float> ABSORPTION_AMOUNT = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.FLOAT);
     private final PlayerAbilities abilities = new PlayerAbilities();
     public int experienceLevel = 0;
     protected float damageTiltYaw;
@@ -172,6 +176,7 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
             }
             return amount == 0.0F ? false : this.damage(world, source, amount);
         }
+        return false;
     }
 
     public float getAbsorptionAmount() {

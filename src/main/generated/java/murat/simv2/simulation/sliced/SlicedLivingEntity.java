@@ -47,6 +47,8 @@ import net.minecraft.entity.damage.DamageSources;
 import net.minecraft.entity.damage.DamageTracker;
 import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -104,6 +106,10 @@ import static net.minecraft.entity.player.PlayerEntity.*;
 
 public abstract class SlicedLivingEntity extends SlicedEntity {
 
+    public static final double GRAVITY = 0.08;
+    protected static final TrackedData<Byte> LIVING_FLAGS = DataTracker.registerData(LivingEntity.class, TrackedDataHandlerRegistry.BYTE);
+    private static final TrackedData<Float> HEALTH = DataTracker.registerData(LivingEntity.class, TrackedDataHandlerRegistry.FLOAT);
+    private static final TrackedData<Optional<BlockPos>> SLEEPING_POSITION = DataTracker.registerData(LivingEntity.class, TrackedDataHandlerRegistry.OPTIONAL_BLOCK_POS);
     private AttributeContainer attributes;
     private final DamageTracker damageTracker = new DamageTracker( (LivingEntity) this.entityBridge);
     private final Map<RegistryEntry<StatusEffect>, StatusEffectInstance> activeStatusEffects = Maps.<RegistryEntry<StatusEffect>, StatusEffectInstance>newHashMap();
@@ -147,6 +153,7 @@ private LivingEntity attacking;
     public Object2DoubleMap<TagKey<Fluid>> fluidHeight = new Object2DoubleArrayMap<>(2);
     public int timeUntilRegen;
     protected DataTracker dataTracker;
+    protected static final int GLIDING_FLAG_INDEX = 7;
     public boolean wasInPowderSnow;
     private final List<List<Entity.QueuedCollisionCheck>> queuedCollisionChecks = new ObjectArrayList<>();
 
@@ -256,7 +263,7 @@ private LivingEntity attacking;
         }
     }
 
-    public void damage(ServerWorld world, DamageSource source, float amount) {
+    public boolean damage(ServerWorld world, DamageSource source, float amount) {
         if (this.isInvulnerableTo(world, source)) {
         } else if (this.isDead()) {
         } else if (source.isIn(DamageTypeTags.IS_FIRE) && this.hasStatusEffect(StatusEffects.FIRE_RESISTANCE)) {
@@ -307,6 +314,7 @@ private LivingEntity attacking;
             }
             boolean bl3 = (!bl) || (amount > 0.0F);
         }
+        return false;
     }
 
     protected void drop(ServerWorld world, DamageSource damageSource) {

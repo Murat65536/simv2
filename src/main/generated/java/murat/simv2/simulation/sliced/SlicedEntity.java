@@ -2,10 +2,14 @@ package murat.simv2.simulation.sliced;
 
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableList;
+import it.unimi.dsi.fastutil.floats.FloatArraySet;
+import it.unimi.dsi.fastutil.floats.FloatArrays;
+import it.unimi.dsi.fastutil.floats.FloatSet;
 import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +33,7 @@ import net.minecraft.entity.PositionInterpolator;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.vehicle.AbstractBoatEntity;
 import net.minecraft.fluid.Fluid;
@@ -82,6 +87,8 @@ public abstract class SlicedEntity {
     /** Real MC entity used as bridge for World and external API calls. */
     protected Entity entityBridge;
 
+    private static final ImmutableList<Direction.Axis> X_THEN_Z = ImmutableList.of(Direction.Axis.Y, Direction.Axis.X, Direction.Axis.Z);
+    private static final ImmutableList<Direction.Axis> Z_THEN_X = ImmutableList.of(Direction.Axis.Y, Direction.Axis.Z, Direction.Axis.X);
     private EntityType<?> type;
     @Nullable
 public Entity vehicle;
@@ -112,6 +119,14 @@ private Entity.RemovalReason removalReason;
     private final Set<TagKey<Fluid>> submergedFluidTag = new HashSet();
     protected boolean firstUpdate = true;
     protected DataTracker dataTracker;
+    protected static final TrackedData<Byte> FLAGS = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BYTE);
+    private static final int SNEAKING_FLAG_INDEX = 1;
+    private static final int SPRINTING_FLAG_INDEX = 3;
+    private static final int SWIMMING_FLAG_INDEX = 4;
+    private static final TrackedData<Boolean> SILENT = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Boolean> NO_GRAVITY = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    protected static final TrackedData<EntityPose> POSE = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.ENTITY_POSE);
+    private static final TrackedData<Integer> FROZEN_TICKS = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.INTEGER);
     private boolean invulnerable;
     private final double[] pistonMovementDelta = new double[]{ 0.0, 0.0, 0.0 };
     public EntityDimensions dimensions;
@@ -778,6 +793,28 @@ public BlockState stateAtPos = null;
 
     public float getStepHeight() {
         return 0.0F;
+    }
+
+    private static float[] collectStepHeights(Box collisionBox, List<VoxelShape> collisions, float f, float stepHeight) {
+        FloatSet floatSet = new FloatArraySet(4);
+        for (VoxelShape voxelShape : collisions) {
+            for (double d : voxelShape.getPointPositions(Axis.Y)) {
+                float g = ((float) (d - collisionBox.minY));
+                if ((!(g < 0.0F)) && (g != stepHeight)) {
+                    if (g > f) {
+                        break;
+                    }
+                    floatSet.add(g);
+                }
+            }
+        }
+        float[] fs = floatSet.toFloatArray();
+        FloatArrays.unstableSort(fs);
+        return fs;
+    }
+
+    private static Iterable<Direction.Axis> getAxisCheckOrder(Vec3d movement) {
+        return Math.abs(movement.x) < Math.abs(movement.z) ? Z_THEN_X : X_THEN_Z;
     }
 
     public EntityType<?> getType() {

@@ -184,6 +184,7 @@ public class SpoonSlicePruner {
         List<CtMethod<?>> clonedMethods = new ArrayList<>();
         Set<String> definedSigs = new LinkedHashSet<>();
         Set<String> definedNames = new LinkedHashSet<>();
+        Set<String> prunedReturnMethods = new HashSet<>();
 
         for (var entry : methodLines.entrySet()) {
             String methodSelector = entry.getKey();
@@ -208,9 +209,17 @@ public class SpoonSlicePruner {
             definedSigs.add(sig);
             definedSigs.add(rewrittenSig);
 
+            int returnsBefore = cloned.getBody() == null ? 0
+                : cloned.getBody().getElements(new TypeFilter<>(CtReturn.class)).size();
             int before = countStatements(cloned);
             pruneByWalaLines(cloned, walaLines);
             int after = countStatements(cloned);
+            int returnsAfter = cloned.getBody() == null ? 0
+                : cloned.getBody().getElements(new TypeFilter<>(CtReturn.class)).size();
+
+            if (returnsAfter < returnsBefore) {
+                prunedReturnMethods.add(methodKey(cloned));
+            }
 
             System.out.println("  " + simpleName + "." + methodName + "(): "
                 + before + " → " + after + " statements (" + walaLines.size() + " WALA lines)");
@@ -260,7 +269,7 @@ public class SpoonSlicePruner {
         }
 
         // ── Phase 2b: Voidify non-void methods whose return statements were pruned ──
-        voidifyUnusedReturns(clonedMethods);
+        voidifyUnusedReturns(clonedMethods, hierarchyDefinedMethods, prunedReturnMethods);
 
         // ── Phase 3: Remove @Override, deduplicate, convert to text + text rewrites ──
         List<String> methodTexts = new ArrayList<>();
@@ -415,9 +424,15 @@ public class SpoonSlicePruner {
         for (CtMethod<?> m : methods) {
             for (var inv : m.getElements(new TypeFilter<>(CtInvocation.class))) {
                 var target = inv.getTarget();
+                // Spoon no-classpath mode represents some implicit-this calls
+                // (especially to private methods) as CtTypeAccess instead of
+                // null/CtThisAccess. Include those as self-calls only when
+                // the accessed type is in our target hierarchy.
                 boolean isSelf = (target == null)
                     || (target instanceof CtThisAccess)
-                    || (target instanceof CtSuperAccess);
+                    || (target instanceof CtSuperAccess)
+                    || (target instanceof CtTypeAccess<?> ta
+                        && TYPE_REMAP.containsKey(ta.getAccessedType().getSimpleName()));
                 if (!isSelf) continue;
 
                 String name = inv.getExecutable().getSimpleName();
@@ -481,6 +496,24 @@ public class SpoonSlicePruner {
             if (score > bestScore) {
                 bestScore = score;
                 fallback = method;
+            }
+        }
+
+        // Fallback: getAllMethods() includes inherited methods and may resolve
+        // methods that getMethods() misses in no-classpath mode
+        if (fallback == null) {
+            for (CtMethod<?> method : type.getAllMethods()) {
+                if (!method.getSimpleName().equals(call.name) || method.getParameters().size() != call.argCount) {
+                    continue;
+                }
+                if (fallback == null) {
+                    fallback = method;
+                }
+                int score = scoreOverload(method, call.argTypes);
+                if (score > bestScore) {
+                    bestScore = score;
+                    fallback = method;
+                }
             }
         }
 
@@ -846,8 +879,10 @@ public class SpoonSlicePruner {
         method.getBody().addStatement(ret);
     }
 
-    private void voidifyUnusedReturns(List<CtMethod<?>> methods) {
-        // Collect names of methods that lost all return statements after pruning
+    private void voidifyUnusedReturns(List<CtMethod<?>> methods,
+                                      Set<String> hierarchyDefinedMethods,
+                                      Set<String> prunedReturnMethods) {
+        // Collect names of methods that lost ALL return statements after pruning
         Set<String> noReturnMethods = new HashSet<>();
         for (CtMethod<?> m : methods) {
             if (m.getBody() == null) continue;
@@ -856,30 +891,45 @@ public class SpoonSlicePruner {
                 noReturnMethods.add(m.getSimpleName());
             }
         }
-        if (noReturnMethods.isEmpty()) return;
 
-        // Check if any method in the class uses the return value of a no-return method
-        Set<String> returnValueUsed = new HashSet<>();
-        for (CtMethod<?> m : methods) {
-            if (m.getBody() == null) continue;
-            for (CtInvocation<?> inv : m.getBody().getElements(new TypeFilter<>(CtInvocation.class))) {
-                String calledName = inv.getExecutable().getSimpleName();
-                if (noReturnMethods.contains(calledName) && !(inv.getParent() instanceof CtBlock)) {
-                    // Called in an expression context (assigned, passed as arg, etc.)
-                    returnValueUsed.add(calledName);
+        if (!noReturnMethods.isEmpty()) {
+            // Check if any method in the class uses the return value of a no-return method
+            Set<String> returnValueUsed = new HashSet<>();
+            for (CtMethod<?> m : methods) {
+                if (m.getBody() == null) continue;
+                for (CtInvocation<?> inv : m.getBody().getElements(new TypeFilter<>(CtInvocation.class))) {
+                    String calledName = inv.getExecutable().getSimpleName();
+                    if (noReturnMethods.contains(calledName) && !(inv.getParent() instanceof CtBlock)) {
+                        returnValueUsed.add(calledName);
+                    }
+                }
+            }
+
+            // Voidify methods whose return value is never used;
+            // add default return for methods whose return value IS used or that override a parent
+            for (CtMethod<?> m : methods) {
+                if (!noReturnMethods.contains(m.getSimpleName())) continue;
+                boolean overridesParent = hierarchyDefinedMethods.contains(methodKey(m));
+                if (returnValueUsed.contains(m.getSimpleName()) || overridesParent) {
+                    addDefaultReturn(m);
+                } else {
+                    m.setType(m.getFactory().Type().voidPrimitiveType());
                 }
             }
         }
 
-        // Voidify methods whose return value is never used;
-        // add default return for methods whose return value IS used
+        // Add default return for methods that lost SOME (not all) returns during
+        // WALA pruning and can now fall through without returning.
         for (CtMethod<?> m : methods) {
-            if (!noReturnMethods.contains(m.getSimpleName())) continue;
-            if (returnValueUsed.contains(m.getSimpleName())) {
-                // Return value is used — add a default return statement
+            if (m.getBody() == null) continue;
+            if (m.getType() == null || m.getType().getSimpleName().equals("void")) continue;
+            if (!prunedReturnMethods.contains(methodKey(m))) continue;
+            if (m.getBody().getElements(new TypeFilter<>(CtReturn.class)).isEmpty()) continue;
+            List<CtStatement> stmts = m.getBody().getStatements();
+            if (stmts.isEmpty()) continue;
+            CtStatement last = stmts.get(stmts.size() - 1);
+            if (!(last instanceof CtReturn)) {
                 addDefaultReturn(m);
-            } else {
-                m.setType(m.getFactory().Type().voidPrimitiveType());
             }
         }
     }
@@ -957,7 +1007,11 @@ public class SpoonSlicePruner {
         while (current != null) {
             for (CtField<?> field : current.getFields()) {
                 String name = field.getSimpleName();
-                if (!added.contains(name) && methodCode.contains("this." + name)) {
+                boolean isStatic = field.hasModifier(ModifierKind.STATIC);
+                boolean referenced = isStatic
+                    ? methodCode.matches("(?s).*\\b" + name + "\\b.*")
+                    : methodCode.contains("this." + name);
+                if (!added.contains(name) && referenced) {
                     String fieldStr = field.toString();
                     if (!fieldStr.endsWith(";")) fieldStr += ";";
                     // Remove 'final' from fields without initializers — there is no
