@@ -84,6 +84,8 @@ public class SpoonSlicePruner {
             Set<String> hierarchyDefinedMethods = new LinkedHashSet<>();
             // Collect access widener entries needed for private members
             Set<String> awEntries = new TreeSet<>();
+            // Methods found during a child's transitive closure that belong to a parent class
+            Map<String, List<CtMethod<?>>> deferredMethods = new LinkedHashMap<>();
 
             for (String className : AnalysisConfig.TARGET_CLASSES_DOT) {
                 Map<String, Set<Integer>> methodLines = sliceLines.get(className);
@@ -98,9 +100,30 @@ public class SpoonSlicePruner {
                     continue;
                 }
 
+                // Include any methods deferred from child classes
+                List<CtMethod<?>> extraMethods = deferredMethods.remove(type.getSimpleName());
+
                 buildSlicedClass(type, methodLines, outputDir, factory,
-                    emittedSimpleNames, typeIndex, hierarchyDefinedMethods, awEntries);
+                    emittedSimpleNames, typeIndex, hierarchyDefinedMethods, awEntries,
+                    deferredMethods, extraMethods);
                 emittedSimpleNames.add(type.getSimpleName());
+            }
+
+            // Re-process parent classes that gained deferred methods from later children
+            if (!deferredMethods.isEmpty()) {
+                for (String className : AnalysisConfig.TARGET_CLASSES_DOT) {
+                    CtType<?> type = typeIndex.get(className);
+                    if (type == null) continue;
+                    List<CtMethod<?>> extra = deferredMethods.remove(type.getSimpleName());
+                    if (extra == null || extra.isEmpty()) continue;
+
+                    Map<String, Set<Integer>> methodLines = sliceLines.getOrDefault(className, Map.of());
+                    System.out.println("Re-processing " + type.getSimpleName()
+                        + " with " + extra.size() + " deferred methods from children");
+                    buildSlicedClass(type, methodLines, outputDir, factory,
+                        emittedSimpleNames, typeIndex, hierarchyDefinedMethods, awEntries,
+                        deferredMethods, extra);
+                }
             }
 
             // Hardcoded AW entries for private/protected static fields and methods
@@ -163,7 +186,9 @@ public class SpoonSlicePruner {
                                    Set<String> emittedSimpleNames,
                                    Map<String, CtType<?>> typeIndex,
                                    Set<String> hierarchyDefinedMethods,
-                                   Set<String> awEntries) throws IOException {
+                                   Set<String> awEntries,
+                                   Map<String, List<CtMethod<?>>> deferredMethods,
+                                   List<CtMethod<?>> extraMethods) throws IOException {
         String simpleName = type.getSimpleName();
         String slicedName = "Sliced" + simpleName;
         System.out.println("Pruning " + type.getQualifiedName() + "...");
@@ -228,6 +253,23 @@ public class SpoonSlicePruner {
             definedNames.add(methodName);
         }
 
+        // Include methods deferred from child classes
+        if (extraMethods != null) {
+            for (CtMethod<?> extra : extraMethods) {
+                CtMethod<?> cloned = extra.clone();
+                rewriteMethodSignature(cloned, extra);
+                relaxHelperVisibility(cloned);
+                String sig = methodKey(extra);
+                String rewrittenSig = methodKey(cloned);
+                if (!definedSigs.contains(sig) && !definedSigs.contains(rewrittenSig)) {
+                    clonedMethods.add(cloned);
+                    definedSigs.add(sig);
+                    definedSigs.add(rewrittenSig);
+                    definedNames.add(extra.getSimpleName());
+                }
+            }
+        }
+
         if (clonedMethods.isEmpty()) {
             System.out.println("  No methods resolved for " + simpleName + " — skipping");
             return;
@@ -239,6 +281,7 @@ public class SpoonSlicePruner {
         allKnownSigs.addAll(hierarchyDefinedMethods);
 
         int transitiveClosed = 0;
+        int deferred = 0;
         boolean changed = true;
         while (changed) {
             changed = false;
@@ -246,26 +289,42 @@ public class SpoonSlicePruner {
             for (MethodCall call : unresolvedCalls) {
                 CtMethod<?> found = findMethodInHierarchy(call, type, typeIndex);
                 if (found != null) {
+                    // Check if method belongs to a parent class that has a sliced version
+                    CtType<?> declaringType = found.getDeclaringType();
+                    String declaringName = declaringType != null ? declaringType.getSimpleName() : simpleName;
+                    boolean belongsToParent = !declaringName.equals(simpleName)
+                        && emittedSimpleNames.contains(declaringName);
+
                     String originalSig = methodKey(found);
                     CtMethod<?> cloned = found.clone();
                     rewriteMethodSignature(cloned, found);
                     relaxHelperVisibility(cloned);
                     String rewrittenSig = methodKey(cloned);
                     if (!definedSigs.contains(originalSig) && !definedSigs.contains(rewrittenSig)) {
-                        clonedMethods.add(cloned);
-                        definedSigs.add(originalSig);
-                        definedSigs.add(rewrittenSig);
-                        definedNames.add(call.name);
-                        allKnownSigs.add(originalSig);
-                        allKnownSigs.add(rewrittenSig);
-                        transitiveClosed++;
-                        changed = true;
+                        if (belongsToParent) {
+                            // Defer to parent — don't include body here
+                            deferredMethods.computeIfAbsent(declaringName, k -> new ArrayList<>()).add(found);
+                            allKnownSigs.add(originalSig);
+                            allKnownSigs.add(rewrittenSig);
+                            deferred++;
+                            changed = true;
+                        } else {
+                            clonedMethods.add(cloned);
+                            definedSigs.add(originalSig);
+                            definedSigs.add(rewrittenSig);
+                            definedNames.add(call.name);
+                            allKnownSigs.add(originalSig);
+                            allKnownSigs.add(rewrittenSig);
+                            transitiveClosed++;
+                            changed = true;
+                        }
                     }
                 }
             }
         }
-        if (transitiveClosed > 0) {
-            System.out.println("  Transitively included " + transitiveClosed + " methods");
+        if (transitiveClosed > 0 || deferred > 0) {
+            System.out.println("  Transitively included " + transitiveClosed + " methods"
+                + (deferred > 0 ? ", deferred " + deferred + " to parent classes" : ""));
         }
 
         // ── Phase 2b: Voidify non-void methods whose return statements were pruned ──
@@ -499,23 +558,10 @@ public class SpoonSlicePruner {
             }
         }
 
-        // Fallback: getAllMethods() includes inherited methods and may resolve
-        // methods that getMethods() misses in no-classpath mode
-        if (fallback == null) {
-            for (CtMethod<?> method : type.getAllMethods()) {
-                if (!method.getSimpleName().equals(call.name) || method.getParameters().size() != call.argCount) {
-                    continue;
-                }
-                if (fallback == null) {
-                    fallback = method;
-                }
-                int score = scoreOverload(method, call.argTypes);
-                if (score > bestScore) {
-                    bestScore = score;
-                    fallback = method;
-                }
-            }
-        }
+        // Note: intentionally NOT using getAllMethods() here.
+        // getMethods() returns only declared methods, so findMethodInHierarchy
+        // walks up and finds each method in its declaring class, ensuring
+        // correct placement in the sliced hierarchy.
 
         return fallback;
     }
