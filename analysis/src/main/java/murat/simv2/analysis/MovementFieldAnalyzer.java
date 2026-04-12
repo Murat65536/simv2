@@ -26,13 +26,14 @@ public class MovementFieldAnalyzer {
 
     public static void main(String[] args) throws Exception {
         if (args.length < 3) {
-            System.err.println("Usage: MovementFieldAnalyzer <minecraft-jar> <output-dir> <sources-jar>");
+            System.err.println("Usage: MovementFieldAnalyzer <minecraft-jar> <output-dir> <sources-jar> [extra-spoon-classpath]");
             System.exit(1);
         }
 
         String minecraftJar = args[0];
         Path outputDir = Path.of(args[1]);
         String sourcesJar = args[2];
+        String extraSpoonClasspath = args.length >= 4 ? args[3] : "";
         Files.createDirectories(outputDir);
 
         System.out.println("=== WALA Movement Field Analysis ===");
@@ -139,7 +140,12 @@ public class MovementFieldAnalyzer {
             // Step 10: Spoon source pruning
             if (!sourcesJar.isEmpty() && Files.exists(Path.of(sourcesJar))) {
                 System.out.println("\nRunning Spoon source pruning...");
-                SpoonSlicePruner pruner = new SpoonSlicePruner(Path.of(sourcesJar), sliceLines);
+                SpoonSlicePruner pruner = new SpoonSlicePruner(
+                    Path.of(sourcesJar),
+                    Path.of(minecraftJar),
+                    extraSpoonClasspath,
+                    sliceLines
+                );
                 pruner.pruneAndWrite(outputDir.resolve("java/murat/simv2/simulation/sliced"));
             } else {
                 System.out.println("No sources JAR provided — skipping Spoon pruning.");

@@ -20,6 +20,7 @@ dependencies {
     implementation 'com.ibm.wala:com.ibm.wala.util:1.6.9'
     implementation 'com.ibm.wala:com.ibm.wala.shrike:1.6.9'
     implementation 'fr.inria.gforge.spoon:spoon-core:11.1.0'
+    implementation 'org.slf4j:slf4j-simple:2.0.16'
     implementation 'com.google.code.gson:gson:2.11.0'
 }
 
@@ -30,31 +31,35 @@ application {
 run {
     jvmArgs = ['-Xmx55g', '-XX:+UseParallelGC', '-Dcom.ibm.wala.fixedpoint.impl.verbose=true']
 
-    // Find a linemapped JAR + sources JAR pair from the same hash
-    def loomCache = file("${rootProject.projectDir}/.gradle/loom-cache/minecraftMaven/net/minecraft")
-    def linemappedJar = ""
-    def sourcesJar = ""
-    if (loomCache.exists()) {
-        loomCache.eachDir { hashDir ->
-            if (!hashDir.name.startsWith('minecraft-merged-')) return
-            hashDir.eachDir { versionDir ->
-                def sources = versionDir.listFiles()?.find { it.name.endsWith('-sources.jar') }
-                def jar = versionDir.listFiles()?.find {
-                    it.name.endsWith('.jar') && !it.name.contains('sources') && !it.name.contains('backup')
-                }
-                if (sources != null && jar != null) {
-                    linemappedJar = jar.absolutePath
-                    sourcesJar = sources.absolutePath
+    doFirst {
+        // Find a linemapped JAR + sources JAR pair from the same hash
+        def loomCache = file("${rootProject.projectDir}/.gradle/loom-cache/minecraftMaven/net/minecraft")
+        def linemappedJar = ""
+        def sourcesJar = ""
+        if (loomCache.exists()) {
+            loomCache.eachDir { hashDir ->
+                if (!hashDir.name.startsWith('minecraft-merged-')) return
+                hashDir.eachDir { versionDir ->
+                    def sources = versionDir.listFiles()?.find { it.name.endsWith('-sources.jar') }
+                    def jar = versionDir.listFiles()?.find {
+                        it.name.endsWith('.jar') && !it.name.contains('sources') && !it.name.contains('backup')
+                    }
+                    if (sources != null && jar != null) {
+                        linemappedJar = jar.absolutePath
+                        sourcesJar = sources.absolutePath
+                    }
                 }
             }
         }
-    }
-    def defaultMcJar = linemappedJar ?: "${gradle.gradleUserHomeDir}/caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-merged/1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2/minecraft-merged-1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2.jar"
-    def defaultOutputDir = file("${rootProject.projectDir}/src/main/generated").absolutePath
+        def defaultMcJar = linemappedJar ?: "${gradle.gradleUserHomeDir}/caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-merged/1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2/minecraft-merged-1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2.jar"
+        def defaultOutputDir = file("${rootProject.projectDir}/src/main/generated").absolutePath
+        def defaultSpoonClasspath = project.findProperty('spoonClasspath') ?: ""
 
-    args = [
-        project.findProperty('mcJar') ?: defaultMcJar,
-        project.findProperty('outputDir') ?: defaultOutputDir,
-        project.findProperty('sourcesJar') ?: sourcesJar
-    ]
+        setArgs([
+            project.findProperty('mcJar') ?: defaultMcJar,
+            project.findProperty('outputDir') ?: defaultOutputDir,
+            project.findProperty('sourcesJar') ?: sourcesJar,
+            defaultSpoonClasspath
+        ])
+    }
 }

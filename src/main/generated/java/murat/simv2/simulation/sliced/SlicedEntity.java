@@ -193,13 +193,13 @@ public BlockState stateAtPos = null;
         } else {
             long l = this.getWorld().getTime();
             if (movement.x != 0.0) {
-                double d = this.calculatePistonMovementFactor(Axis.X, movement.x);
+                double d = this.calculatePistonMovementFactor(Direction.Axis.X, movement.x);
                 return Math.abs(d) <= 1.0E-5F ? Vec3d.ZERO : new Vec3d(d, 0.0, 0.0);
             } else if (movement.y != 0.0) {
-                double d = this.calculatePistonMovementFactor(Axis.Y, movement.y);
+                double d = this.calculatePistonMovementFactor(Direction.Axis.Y, movement.y);
                 return Math.abs(d) <= 1.0E-5F ? Vec3d.ZERO : new Vec3d(0.0, d, 0.0);
             } else if (movement.z != 0.0) {
-                double d = this.calculatePistonMovementFactor(Axis.Z, movement.z);
+                double d = this.calculatePistonMovementFactor(Direction.Axis.Z, movement.z);
                 return Math.abs(d) <= 1.0E-5F ? Vec3d.ZERO : new Vec3d(0.0, 0.0, d);
             } else {
                 return Vec3d.ZERO;
@@ -583,8 +583,8 @@ public BlockState stateAtPos = null;
             double d = vec3d.lengthSquared();
             if ((d > 1.0E-7) || ((movement.lengthSquared() - d) < 1.0E-7)) {
                 if ((this.fallDistance != 0.0) && (d >= 1.0)) {
-                    BlockHitResult blockHitResult = this.getWorld().raycast(new RaycastContext(this.getPos(), this.getPos().add(vec3d), ShapeType.FALLDAMAGE_RESETTING, FluidHandling.WATER, (Entity) this.entityBridge));
-                    if (blockHitResult.getType() != Type.MISS) {
+                    BlockHitResult blockHitResult = this.getWorld().raycast(new RaycastContext(this.getPos(), this.getPos().add(vec3d), RaycastContext.ShapeType.FALLDAMAGE_RESETTING, RaycastContext.FluidHandling.WATER, (Entity) this.entityBridge));
+                    if (blockHitResult.getType() != HitResult.Type.MISS) {
                         this.onLanding();
                     }
                 }
@@ -798,7 +798,7 @@ public BlockState stateAtPos = null;
     private static float[] collectStepHeights(Box collisionBox, List<VoxelShape> collisions, float f, float stepHeight) {
         FloatSet floatSet = new FloatArraySet(4);
         for (VoxelShape voxelShape : collisions) {
-            for (double d : voxelShape.getPointPositions(Axis.Y)) {
+            for (double d : voxelShape.getPointPositions(Direction.Axis.Y)) {
                 float g = ((float) (d - collisionBox.minY));
                 if ((!(g < 0.0F)) && (g != stepHeight)) {
                     if (g > f) {

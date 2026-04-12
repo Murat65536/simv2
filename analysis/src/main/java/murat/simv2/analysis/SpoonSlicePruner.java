@@ -8,6 +8,7 @@ import spoon.reflect.factory.Factory;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.visitor.filter.TypeFilter;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
@@ -52,11 +53,18 @@ public class SpoonSlicePruner {
     );
 
     private final Path sourcesJar;
+    private final Path minecraftJar;
+    private final List<Path> extraClasspathOverride;
     private final Map<String, Map<String, Set<Integer>>> sliceLines;
 
-    public SpoonSlicePruner(Path sourcesJar, Map<String, Map<String, Set<Integer>>> sliceLines) {
-        this.sourcesJar = sourcesJar;
-        this.sliceLines = sliceLines;
+    public SpoonSlicePruner(Path sourcesJar,
+                            Path minecraftJar,
+                            String extraClasspathOverride,
+                            Map<String, Map<String, Set<Integer>>> sliceLines) {
+        this.sourcesJar = Objects.requireNonNull(sourcesJar, "sourcesJar");
+        this.minecraftJar = Objects.requireNonNull(minecraftJar, "minecraftJar");
+        this.extraClasspathOverride = parseClasspath(extraClasspathOverride);
+        this.sliceLines = Objects.requireNonNull(sliceLines, "sliceLines");
     }
 
     public void pruneAndWrite(Path outputDir) throws IOException {
@@ -67,9 +75,13 @@ public class SpoonSlicePruner {
             System.out.println("Building Spoon model...");
             Launcher launcher = new Launcher();
             launcher.addInputResource(tempDir.toString());
-            launcher.getEnvironment().setNoClasspath(true);
+            String[] sourceClasspath = buildSourceClasspath();
+            System.out.println("Spoon source classpath entries: " + sourceClasspath.length);
+            launcher.getEnvironment().setNoClasspath(false);
+            launcher.getEnvironment().setIgnoreSyntaxErrors(true);
             launcher.getEnvironment().setComplianceLevel(21);
             launcher.getEnvironment().setAutoImports(true);
+            launcher.getModelBuilder().setSourceClasspath(sourceClasspath);
             launcher.buildModel();
             CtModel model = launcher.getModel();
             Factory factory = launcher.getFactory();
@@ -155,6 +167,110 @@ public class SpoonSlicePruner {
         }
     }
 
+    private List<Path> parseClasspath(String rawClasspath) {
+        if (rawClasspath == null || rawClasspath.isBlank()) {
+            return List.of();
+        }
+        List<Path> entries = new ArrayList<>();
+        StringTokenizer tokenizer = new StringTokenizer(rawClasspath, File.pathSeparator);
+        while (tokenizer.hasMoreTokens()) {
+            String entry = tokenizer.nextToken().trim();
+            if (!entry.isEmpty()) {
+                entries.add(Path.of(entry));
+            }
+        }
+        return List.copyOf(entries);
+    }
+
+    private String[] buildSourceClasspath() throws IOException {
+        LinkedHashSet<String> validated = new LinkedHashSet<>();
+
+        Path normalizedMinecraftJar = minecraftJar.toAbsolutePath().normalize();
+        if (!Files.exists(normalizedMinecraftJar)) {
+            throw new IOException("Minecraft JAR not found for Spoon classpath: " + normalizedMinecraftJar);
+        }
+        validated.add(normalizedMinecraftJar.toString());
+
+        String runtimeClasspath = System.getProperty("java.class.path", "");
+        if (!runtimeClasspath.isBlank()) {
+            List<String> skippedRuntimeEntries = new ArrayList<>();
+            StringTokenizer runtimeEntries = new StringTokenizer(runtimeClasspath, File.pathSeparator);
+            while (runtimeEntries.hasMoreTokens()) {
+                String entry = runtimeEntries.nextToken().trim();
+                if (entry.isEmpty()) {
+                    continue;
+                }
+                Path normalized = Path.of(entry).toAbsolutePath().normalize();
+                if (Files.exists(normalized)) {
+                    validated.add(normalized.toString());
+                } else {
+                    skippedRuntimeEntries.add(normalized.toString());
+                }
+            }
+            if (!skippedRuntimeEntries.isEmpty()) {
+                System.out.println("Skipping " + skippedRuntimeEntries.size()
+                    + " missing runtime classpath entries for Spoon.");
+            }
+        }
+
+        int discoveredCacheJars = 0;
+        for (Path entry : discoverGradleModuleCacheJars()) {
+            Path normalized = entry.toAbsolutePath().normalize();
+            if (validated.add(normalized.toString())) {
+                discoveredCacheJars++;
+            }
+        }
+        if (discoveredCacheJars > 0) {
+            System.out.println("Added " + discoveredCacheJars
+                + " Gradle module cache jars to Spoon classpath.");
+        }
+
+        List<String> missingOverrides = new ArrayList<>();
+        for (Path entry : extraClasspathOverride) {
+            Path normalized = entry.toAbsolutePath().normalize();
+            if (!Files.exists(normalized)) {
+                missingOverrides.add(normalized.toString());
+            } else {
+                validated.add(normalized.toString());
+            }
+        }
+        if (!missingOverrides.isEmpty()) {
+            throw new IOException("Spoon extra classpath override contains missing entries: "
+                + String.join(", ", missingOverrides));
+        }
+        if (validated.isEmpty()) {
+            throw new IOException("Spoon source classpath is empty after validation.");
+        }
+
+        return validated.toArray(String[]::new);
+    }
+
+    private List<Path> discoverGradleModuleCacheJars() throws IOException {
+        String gradleHomeEnv = System.getenv("GRADLE_USER_HOME");
+        Path gradleHome = (gradleHomeEnv == null || gradleHomeEnv.isBlank())
+            ? Path.of(System.getProperty("user.home"), ".gradle")
+            : Path.of(gradleHomeEnv);
+        Path moduleCache = gradleHome.resolve("caches").resolve("modules-2").resolve("files-2.1");
+        if (!Files.isDirectory(moduleCache)) {
+            return List.of();
+        }
+
+        List<Path> jars = new ArrayList<>();
+        try (var walk = Files.walk(moduleCache)) {
+            walk.filter(Files::isRegularFile)
+                .filter(this::isBinaryJar)
+                .forEach(jars::add);
+        }
+        return jars;
+    }
+
+    private boolean isBinaryJar(Path path) {
+        String fileName = path.getFileName().toString();
+        return fileName.endsWith(".jar")
+            && !fileName.endsWith("-sources.jar")
+            && !fileName.endsWith("-javadoc.jar");
+    }
+
     private void extractTargetSources(Path tempDir) throws IOException {
         System.out.println("Extracting target sources from " + sourcesJar.getFileName() + "...");
 
@@ -175,9 +291,37 @@ public class SpoonSlicePruner {
                     try (var in = jar.getInputStream(entry)) {
                         Files.copy(in, outFile);
                     }
+                    sanitizeExtractedSource(entry.getName(), outFile);
                     System.out.println("  Extracted: " + entry.getName());
                 }
             }
+        }
+    }
+
+    private void sanitizeExtractedSource(String entryName, Path outFile) throws IOException {
+        String code = Files.readString(outFile);
+        String fixed = code;
+
+        if ("net/minecraft/entity/player/PlayerEntity.java".equals(entryName)) {
+            fixed = fixed
+                .replace("@Override\r\nprotected ", "@Override\r\npublic ")
+                .replace("@Override\nprotected ", "@Override\npublic ");
+            fixed = fixed.replace(
+                "protected void damageArmor(DamageSource source, float amount) {",
+                "public void damageArmor(DamageSource source, float amount) {"
+            );
+            fixed = fixed.replace(
+                "protected void damageHelmet(DamageSource source, float amount) {",
+                "public void damageHelmet(DamageSource source, float amount) {"
+            );
+        } else if ("net/minecraft/entity/Entity.java".equals(entryName)) {
+            // Decompiled source uses an overload-by-return-type pair on TeleportTarget#asPassenger,
+            // which is valid bytecode but not valid Java invocation resolution.
+            fixed = fixed.replace("!teleportTarget.asPassenger()", "true");
+        }
+
+        if (!fixed.equals(code)) {
+            Files.writeString(outFile, fixed);
         }
     }
 
@@ -483,10 +627,9 @@ public class SpoonSlicePruner {
         for (CtMethod<?> m : methods) {
             for (var inv : m.getElements(new TypeFilter<>(CtInvocation.class))) {
                 var target = inv.getTarget();
-                // Spoon no-classpath mode represents some implicit-this calls
-                // (especially to private methods) as CtTypeAccess instead of
-                // null/CtThisAccess. Include those as self-calls only when
-                // the accessed type is in our target hierarchy.
+                // In some model edge cases Spoon can still represent implicit-this
+                // calls as CtTypeAccess. Treat target-hierarchy type accesses as
+                // self-calls to keep method resolution stable.
                 boolean isSelf = (target == null)
                     || (target instanceof CtThisAccess)
                     || (target instanceof CtSuperAccess)
@@ -1124,7 +1267,7 @@ public class SpoonSlicePruner {
         knownTypes.put("Object2DoubleArrayMap", "import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;");
         knownTypes.put("ObjectArrayList", "import it.unimi.dsi.fastutil.objects.ObjectArrayList;");
 
-        // Inner types that Spoon resolves to simple names in no-classpath mode
+        // Inner types that can appear as simple names in generated output
         Map<String, String> innerTypes = new LinkedHashMap<>();
         innerTypes.put("Axis", "import net.minecraft.util.math.Direction.Axis;");
         innerTypes.put("AxisDirection", "import net.minecraft.util.math.Direction.AxisDirection;");
@@ -1179,7 +1322,7 @@ public class SpoonSlicePruner {
     /**
      * Adds access widener entries for known private/protected static members
      * that sliced code references via import static.
-     * Spoon in no-classpath mode can't determine visibility, so these are hardcoded.
+     * Some references can be missed by generated-code scanning, so these are hardcoded.
      */
     private void addKnownPrivateMembers(Set<String> awEntries) {
         // Entity — private static TrackedData fields
