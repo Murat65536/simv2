@@ -72,3 +72,28 @@ accessible method net/minecraft/entity/Entity getAxisCheckOrder (Lnet/minecraft/
 accessible method net/minecraft/entity/Entity isControlledByMainPlayer ()Z
 accessible method net/minecraft/entity/Entity movementInputToVelocity (Lnet/minecraft/util/math/Vec3d;FF)Lnet/minecraft/util/math/Vec3d;
 accessible method net/minecraft/entity/LivingEntity canGlide ()Z
+
+# Access widener entries for sliced classes
+accessible field net/minecraft/entity/Entity AIR Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/Entity CUSTOM_NAME Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/Entity NAME_VISIBLE Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/Entity X_THEN_Z Lcom/google/common/collect/ImmutableList;
+accessible field net/minecraft/entity/Entity Z_THEN_X Lcom/google/common/collect/ImmutableList;
+accessible method net/minecraft/client/network/ClientPlayerEntity applyDirectionalMovementSpeedFactors (Lnet/minecraft/util/math/Vec2f;)Lnet/minecraft/util/math/Vec2f;
+accessible method net/minecraft/client/network/ClientPlayerEntity getDirectionalMovementSpeedMultiplier (Lnet/minecraft/util/math/Vec2f;)F
+
+# Access widener entries for sliced classes
+
+# Access widener entries for sliced classes
+
+# Access widener entries for sliced classes
+
+# Access widener entries for sliced classes
+
+# Access widener entries for sliced classes
+
+# Access widener entries for sliced classes
+
+# Access widener entries for sliced classes
+
+# Access widener entries for sliced classes

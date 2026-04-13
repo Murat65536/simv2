@@ -160,15 +160,9 @@ public class SpoonSlicePruner {
                 }
             }
 
-            // Hardcoded AW entries for private/protected static fields and methods
-            // that sliced code references via import static
-            addKnownPrivateMembers(awEntries);
-
             // Append sliced-class AW entries to the existing access widener
             if (!awEntries.isEmpty()) {
-                // outputDir = .../src/main/generated/java/murat/simv2/simulation/sliced
-                // AW file = .../src/main/generated/sim-v2.accesswidener
-                Path awPath = outputDir.getParent().getParent().getParent().getParent().getParent().resolve("sim-v2.accesswidener");
+                Path awPath = resolveAccessWidenerPath(outputDir);
                 if (Files.exists(awPath)) {
                     String existing = Files.readString(awPath);
                     StringBuilder sb = new StringBuilder(existing);
@@ -202,6 +196,17 @@ public class SpoonSlicePruner {
             }
         }
         return List.copyOf(entries);
+    }
+
+    private Path resolveAccessWidenerPath(Path outputDir) {
+        // outputDir = .../src/main/generated/java/murat/simv2/simulation/sliced
+        Path generatedDir = outputDir.getParent().getParent().getParent().getParent().getParent();
+        Path mainDir = generatedDir.getParent();
+        Path resourcesAw = mainDir.resolve("resources").resolve("sim-v2.accesswidener");
+        if (Files.exists(resourcesAw)) {
+            return resourcesAw;
+        }
+        return generatedDir.resolve("sim-v2.accesswidener");
     }
 
     private String[] buildSourceClasspath() throws IOException {
@@ -752,12 +757,7 @@ public class SpoonSlicePruner {
         }
         for (CtParameter<?> param : method.getParameters()) {
             CtTypeReference<?> ref = param.getType();
-            String simpleName = ref.getSimpleName();
-            String replacement = TYPE_REMAP.get(simpleName);
-            if (replacement != null) {
-                ref.setSimpleName(replacement);
-                try { ref.setPackage(null); } catch (Exception ignored) {}
-            }
+            remapTypeReferenceToSliced(ref);
         }
     }
 
@@ -887,17 +887,14 @@ public class SpoonSlicePruner {
                 ((CtBinaryOperator) binOp).setLeftHandOperand(createEntityBridgeRead(factory));
             } else if (TYPE_REMAP.containsKey(typeName)) {
                 // this instanceof Entity -> this instanceof SlicedEntity
-                ((CtTypeAccess<?>) rhs).getAccessedType().setSimpleName(TYPE_REMAP.get(typeName));
+                remapTypeReferenceToSliced(((CtTypeAccess<?>) rhs).getAccessedType());
             }
         }
 
         // 6. Cast rewrites: (Entity) this -> (SlicedEntity) this
         for (CtThisAccess<?> ta : new ArrayList<CtThisAccess<?>>(method.getElements(new TypeFilter<CtThisAccess<?>>(CtThisAccess.class)))) {
             for (CtTypeReference<?> cast : ta.getTypeCasts()) {
-                String castName = cast.getSimpleName();
-                if (TYPE_REMAP.containsKey(castName)) {
-                    cast.setSimpleName(TYPE_REMAP.get(castName));
-                }
+                remapTypeReferenceToSliced(cast);
             }
         }
     }
@@ -919,11 +916,7 @@ public class SpoonSlicePruner {
             CtParameter<?> clonedParam = p.clone();
             if (shouldRewriteParameterTypes(original)) {
                 CtTypeReference<?> ref = clonedParam.getType();
-                String replacement = TYPE_REMAP.get(ref.getSimpleName());
-                if (replacement != null) {
-                    ref.setSimpleName(replacement);
-                    try { ref.setPackage(null); } catch (Exception ignored) {}
-                }
+                remapTypeReferenceToSliced(ref);
             }
             stub.addParameter(clonedParam);
         }
@@ -934,6 +927,21 @@ public class SpoonSlicePruner {
     /** Applies TYPE_REMAP to a simple type name if it matches. */
     private String rewriteTypeName(String simpleName) {
         return TYPE_REMAP.getOrDefault(simpleName, simpleName);
+    }
+
+    private void remapTypeReferenceToSliced(CtTypeReference<?> ref) {
+        if (ref == null) {
+            return;
+        }
+        String replacement = TYPE_REMAP.get(ref.getSimpleName());
+        if (replacement == null) {
+            return;
+        }
+        CtTypeReference<?> slicedRef = ref.getFactory().Type()
+            .createSimplyQualifiedReference("murat.simv2.simulation.sliced." + replacement);
+        ref.setSimpleName(slicedRef.getSimpleName());
+        ref.setPackage(slicedRef.getPackage());
+        ref.setDeclaringType(null);
     }
 
     private boolean shouldRewriteParameterTypes(CtMethod<?> method) {
@@ -1388,9 +1396,17 @@ public class SpoonSlicePruner {
                 slicedClass.addField(field);
             }
             for (CtMethod<?> stub : abstractStubMethods) {
+                if (isSyntheticConstructorMethod(stub)) {
+                    ((CtClass) slicedClass).addConstructor(convertSyntheticConstructorMethod(stub, factory));
+                    continue;
+                }
                 slicedClass.addMethod(stub);
             }
             for (CtMethod<?> method : emittedMethods) {
+                if (isSyntheticConstructorMethod(method)) {
+                    ((CtClass) slicedClass).addConstructor(convertSyntheticConstructorMethod(method, factory));
+                    continue;
+                }
                 slicedClass.addMethod(method);
             }
 
@@ -1398,7 +1414,8 @@ public class SpoonSlicePruner {
             compilationUnit.setFile(outFile.toFile());
             compilationUnit.setDeclaredPackage(outputPackage);
             compilationUnit.addDeclaredType(slicedClass);
-            compilationUnit.setImports(createSlicedCompilationUnitImports(factory));
+            compilationUnit.setImports(createSlicedCompilationUnitImports(factory, fieldDecls,
+                abstractStubMethods, emittedMethods));
             slicedClass.setPosition(factory.createPartialSourcePosition(compilationUnit));
 
             PrettyPrinter printer = createImportCleanerPrettyPrinter(factory);
@@ -1431,15 +1448,65 @@ public class SpoonSlicePruner {
         return placeholders;
     }
 
-    private List<CtImport> createSlicedCompilationUnitImports(Factory factory) {
-        List<CtImport> imports = new ArrayList<>();
+    private boolean isSyntheticConstructorMethod(CtMethod<?> method) {
+        return method != null && "constructorInit".equals(method.getSimpleName());
+    }
+
+    private CtConstructor<?> convertSyntheticConstructorMethod(CtMethod<?> method, Factory factory) {
+        CtConstructor<?> constructor = factory.Core().createConstructor();
+        constructor.setModifiers(new LinkedHashSet<>(method.getModifiers()));
+        for (CtParameter<?> parameter : method.getParameters()) {
+            constructor.addParameter(parameter.clone());
+        }
+        if (method.getBody() != null) {
+            constructor.setBody(method.getBody().clone());
+        }
+        constructor.setPosition(method.getPosition());
+        constructor.setComments(new ArrayList<>(method.getComments()));
+        constructor.setDocComment(method.getDocComment());
+        return constructor;
+    }
+
+    private List<CtImport> createSlicedCompilationUnitImports(Factory factory,
+                                                              List<CtField<?>> fieldDecls,
+                                                              List<CtMethod<?>> abstractStubMethods,
+                                                              List<CtMethod<?>> emittedMethods) {
+        LinkedHashMap<String, CtImport> imports = new LinkedHashMap<>();
         for (String targetClass : AnalysisConfig.TARGET_CLASSES_DOT) {
             CtTypeReference<?> targetRef = factory.Type().createReference(targetClass);
             CtTypeMemberWildcardImportReference wildcardImport =
                 factory.Type().createTypeMemberWildcardImportReference(targetRef);
-            imports.add(factory.createImport(wildcardImport));
+            CtImport ctImport = factory.createImport(wildcardImport);
+            imports.put(ctImport.toString(), ctImport);
         }
-        return imports;
+
+        List<CtElement> allElements = new ArrayList<>();
+        allElements.addAll(fieldDecls);
+        allElements.addAll(abstractStubMethods);
+        allElements.addAll(emittedMethods);
+        for (CtElement element : allElements) {
+            for (CtTypeReference<?> ref : element.getElements(new TypeFilter<>(CtTypeReference.class))) {
+                CtTypeReference<?> normalized = normalizeNestedImportedType(ref);
+                if (normalized == null) {
+                    continue;
+                }
+                CtImport ctImport = factory.createImport(normalized);
+                imports.put(ctImport.toString(), ctImport);
+            }
+        }
+        return new ArrayList<>(imports.values());
+    }
+
+    private CtTypeReference<?> normalizeNestedImportedType(CtTypeReference<?> ref) {
+        CtTypeReference<?> normalized = normalizeTypeReference(ref);
+        if (normalized == null || normalized.getDeclaringType() == null) {
+            return null;
+        }
+        String qname = normalized.getQualifiedName();
+        if (qname == null || qname.startsWith("murat.simv2.simulation.sliced.")) {
+            return null;
+        }
+        return normalized;
     }
 
     private PrettyPrinter createImportCleanerPrettyPrinter(Factory factory) {
@@ -1461,42 +1528,10 @@ public class SpoonSlicePruner {
     }
 
     /**
-     * Adds access widener entries for known private/protected static members
-     * that sliced code references via import static.
-     * Some references can be missed by generated-code scanning, so these are hardcoded.
-     */
-    private void addKnownPrivateMembers(Set<String> awEntries) {
-        // Entity — private static TrackedData fields
-        awEntries.add("accessible field net/minecraft/entity/Entity FLAGS Lnet/minecraft/entity/data/TrackedData;");
-        awEntries.add("accessible field net/minecraft/entity/Entity POSE Lnet/minecraft/entity/data/TrackedData;");
-        awEntries.add("accessible field net/minecraft/entity/Entity NO_GRAVITY Lnet/minecraft/entity/data/TrackedData;");
-        awEntries.add("accessible field net/minecraft/entity/Entity FROZEN_TICKS Lnet/minecraft/entity/data/TrackedData;");
-        awEntries.add("accessible field net/minecraft/entity/Entity SILENT Lnet/minecraft/entity/data/TrackedData;");
-        awEntries.add("accessible field net/minecraft/entity/Entity NULL_BOX Lnet/minecraft/util/math/Box;");
-        // Entity — private/protected static int constants
-        awEntries.add("accessible field net/minecraft/entity/Entity SPRINTING_FLAG_INDEX I");
-        awEntries.add("accessible field net/minecraft/entity/Entity SWIMMING_FLAG_INDEX I");
-        awEntries.add("accessible field net/minecraft/entity/Entity SNEAKING_FLAG_INDEX I");
-        awEntries.add("accessible field net/minecraft/entity/Entity GLIDING_FLAG_INDEX I");
-        // Entity — private/protected methods
-        awEntries.add("accessible method net/minecraft/entity/Entity collectStepHeights (Lnet/minecraft/util/math/Box;Ljava/util/List;FF)[F");
-        // Note: do NOT add the [Lfloat; variant — only [F is valid
-        awEntries.add("accessible method net/minecraft/entity/Entity getAxisCheckOrder (Lnet/minecraft/util/math/Vec3d;)Ljava/lang/Iterable;");
-        awEntries.add("accessible method net/minecraft/entity/Entity isControlledByMainPlayer ()Z");
-        // LivingEntity — protected methods
-        awEntries.add("accessible method net/minecraft/entity/LivingEntity canGlide ()Z");
-        // Entity — inner classes
-        awEntries.add("accessible class net/minecraft/entity/Entity$QueuedCollisionCheck");
-        // LivingEntity — private static TrackedData fields
-        awEntries.add("accessible field net/minecraft/entity/LivingEntity LIVING_FLAGS Lnet/minecraft/entity/data/TrackedData;");
-        awEntries.add("accessible field net/minecraft/entity/LivingEntity HEALTH Lnet/minecraft/entity/data/TrackedData;");
-        awEntries.add("accessible field net/minecraft/entity/LivingEntity SLEEPING_POSITION Lnet/minecraft/entity/data/TrackedData;");
-        // PlayerEntity — private static TrackedData fields
-        awEntries.add("accessible field net/minecraft/entity/player/PlayerEntity ABSORPTION_AMOUNT Lnet/minecraft/entity/data/TrackedData;");
-    }
-
-    /**
-     * Scans AST elements for references to non-public static fields and methods,
+     * Scans AST elements for references to non-public members and types that the
+     * generated sliced class still relies on, and generates access widener entries.
+     * Members satisfied by the generated sliced class itself are skipped.
+     *
      * and generates access widener entries for them.
      */
     private void collectAccessWidenerEntries(CtType<?> type,
@@ -1504,50 +1539,140 @@ public class SpoonSlicePruner {
                                               List<CtField<?>> fields,
                                               Map<String, CtType<?>> typeIndex,
                                               Set<String> awEntries) {
-        // Collect referenced static field/method names from AST
-        Set<String> referencedFieldNames = new HashSet<>();
-        Set<String> referencedMethodNames = new HashSet<>();
+        Set<String> sourceHierarchy = sourceHierarchyQualifiedNames(type, typeIndex);
         List<CtElement> allElements = new ArrayList<>();
         allElements.addAll(methods);
         allElements.addAll(fields);
+
         for (CtElement elem : allElements) {
             for (CtFieldAccess<?> fa : elem.getElements(new TypeFilter<>(CtFieldAccess.class))) {
-                referencedFieldNames.add(fa.getVariable().getSimpleName());
+                CtFieldReference<?> ref = fa.getVariable();
+                if (ref == null || ref.getDeclaringType() == null) {
+                    continue;
+                }
+                CtField<?> field = ref.getDeclaration();
+                if (field == null) {
+                    continue;
+                }
+                if (isSatisfiedByGeneratedSlicedHierarchy(field, ref.getDeclaringType(), sourceHierarchy)) {
+                    continue;
+                }
+                addClassAccessWidenerEntries(field.getDeclaringType().getReference(), awEntries);
+                if (requiresAccessWidener(field)) {
+                    awEntries.add("accessible field " + internalName(field.getDeclaringType())
+                        + " " + field.getSimpleName() + " " + getFieldTypeDescriptor(field));
+                }
             }
+
             for (CtInvocation<?> inv : elem.getElements(new TypeFilter<>(CtInvocation.class))) {
-                referencedMethodNames.add(inv.getExecutable().getSimpleName());
+                CtExecutableReference<?> ref = inv.getExecutable();
+                if (ref == null || ref.getDeclaringType() == null) {
+                    continue;
+                }
+                CtExecutable<?> executable = ref.getExecutableDeclaration();
+                if (!(executable instanceof CtMethod<?> method)) {
+                    continue;
+                }
+                if (isSatisfiedByGeneratedSlicedHierarchy(method, ref.getDeclaringType(), sourceHierarchy)) {
+                    continue;
+                }
+                addClassAccessWidenerEntries(method.getDeclaringType().getReference(), awEntries);
+                if (requiresAccessWidener(method)) {
+                    awEntries.add("accessible method " + internalName(method.getDeclaringType())
+                        + " " + method.getSimpleName() + " " + getMethodDescriptor(method));
+                }
+            }
+
+            for (CtTypeReference<?> ref : elem.getElements(new TypeFilter<>(CtTypeReference.class))) {
+                addClassAccessWidenerEntries(ref, awEntries);
             }
         }
+    }
 
-        // Walk up the hierarchy looking for matching non-public static members
+    private Set<String> sourceHierarchyQualifiedNames(CtType<?> type, Map<String, CtType<?>> typeIndex) {
+        Set<String> hierarchy = new LinkedHashSet<>();
         CtType<?> current = type;
         while (current != null) {
-            String classPath = current.getQualifiedName().replace('.', '/');
-            for (CtField<?> field : current.getFields()) {
-                if (!field.isStatic()) continue;
-                String name = field.getSimpleName();
-                if (!referencedFieldNames.contains(name)) continue;
-                if (field.isPrivate() || field.isProtected()) {
-                    String typeDesc = getFieldTypeDescriptor(field);
-                    awEntries.add("accessible field " + classPath + " " + name + " " + typeDesc);
-                }
-            }
-            for (CtMethod<?> method : current.getMethods()) {
-                if (!method.isStatic()) continue;
-                String name = method.getSimpleName();
-                if (!referencedMethodNames.contains(name)) continue;
-                if (method.isPrivate() || method.isProtected()) {
-                    String methodDesc = getMethodDescriptor(method);
-                    awEntries.add("accessible method " + classPath + " " + name + " " + methodDesc);
-                }
-            }
-
+            hierarchy.add(current.getQualifiedName());
             if (current instanceof CtClass<?> ctClass && ctClass.getSuperclass() != null) {
                 current = typeIndex.get(ctClass.getSuperclass().getQualifiedName());
             } else {
                 break;
             }
         }
+        return hierarchy;
+    }
+
+    private boolean isSatisfiedByGeneratedSlicedHierarchy(CtTypeMember member,
+                                                          CtTypeReference<?> declaringType,
+                                                          Set<String> sourceHierarchy) {
+        String declaringQName = declaringType.getQualifiedName();
+        if (declaringQName == null) {
+            return false;
+        }
+        if (!sourceHierarchy.contains(declaringQName)) {
+            return false;
+        }
+        return !member.isStatic();
+    }
+
+    private boolean requiresAccessWidener(CtModifiable modifiable) {
+        return !modifiable.hasModifier(ModifierKind.PUBLIC);
+    }
+
+    private void addClassAccessWidenerEntries(CtTypeReference<?> typeRef, Set<String> awEntries) {
+        CtTypeReference<?> current = normalizeTypeReference(typeRef);
+        while (current != null) {
+            CtType<?> type = current.getTypeDeclaration();
+            if (type == null) {
+                current = current.getDeclaringType();
+                continue;
+            }
+            String qname = type.getQualifiedName();
+            if (qname == null || qname.startsWith("murat.simv2.simulation.sliced.")) {
+                current = current.getDeclaringType();
+                continue;
+            }
+            if (requiresAccessWidener(type)) {
+                awEntries.add("accessible class " + internalName(type));
+            }
+            current = current.getDeclaringType();
+        }
+    }
+
+    private CtTypeReference<?> normalizeTypeReference(CtTypeReference<?> typeRef) {
+        if (typeRef == null) {
+            return null;
+        }
+        CtTypeReference<?> current = typeRef;
+        while (current instanceof CtArrayTypeReference<?> arrayRef) {
+            current = arrayRef.getArrayType();
+        }
+        if (current.isPrimitive() || current instanceof CtTypeParameterReference || current.isGenerics()) {
+            return null;
+        }
+        String qname = current.getQualifiedName();
+        if (qname == null || qname.isEmpty() || !qname.contains(".")) {
+            return null;
+        }
+        return current;
+    }
+
+    private String internalName(CtType<?> type) {
+        return internalName(type.getReference());
+    }
+
+    private String internalName(CtTypeReference<?> typeRef) {
+        CtTypeReference<?> normalized = normalizeTypeReference(typeRef);
+        if (normalized == null) {
+            return "";
+        }
+        String qname = normalized.getQualifiedName();
+        CtTypeReference<?> declaringType = normalized.getDeclaringType();
+        if (declaringType == null) {
+            return qname.replace('.', '/');
+        }
+        return internalName(declaringType) + "$" + normalized.getSimpleName();
     }
 
     /** Approximates a JVM field type descriptor from Spoon type info. */

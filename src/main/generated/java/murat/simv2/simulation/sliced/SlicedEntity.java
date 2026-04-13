@@ -1,5 +1,6 @@
 package murat.simv2.simulation.sliced;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import it.unimi.dsi.fastutil.floats.FloatArraySet;
 import it.unimi.dsi.fastutil.floats.FloatArrays;
 import it.unimi.dsi.fastutil.floats.FloatSet;
@@ -169,7 +170,7 @@ public abstract class SlicedEntity {
 
     /**
      */
-    public void constructorInit(EntityType<?> type, World world) {
+    public SlicedEntity(EntityType<?> type, World world) {
         this.dimensions = type.getDimensions();
         this.pos = Vec3d.ZERO;
         DataTracker.Builder builder = new DataTracker.Builder(((Entity) (this.entityBridge)));
@@ -930,7 +931,7 @@ public abstract class SlicedEntity {
         this.dimensions = entityDimensions2;
         this.refreshPosition();
         boolean bl = (entityDimensions2.width() <= 4.0F) && (entityDimensions2.height() <= 4.0F);
-        if ((((((!this.world.isClient) && (!this.firstUpdate)) && (!this.noClip)) && bl) && ((entityDimensions2.width() > entityDimensions.width()) || (entityDimensions2.height() > entityDimensions.height()))) && (!(this instanceof net.minecraft.entity.player.SlicedPlayerEntity))) {
+        if ((((((!this.world.isClient) && (!this.firstUpdate)) && (!this.noClip)) && bl) && ((entityDimensions2.width() > entityDimensions.width()) || (entityDimensions2.height() > entityDimensions.height()))) && (!(this instanceof SlicedPlayerEntity))) {
             this.recalculateDimensions(entityDimensions);
         }
     }
@@ -1067,7 +1068,7 @@ public abstract class SlicedEntity {
                 if (o > 0) {
                     vec3d = vec3d.multiply(1.0 / o);
                 }
-                if (!(this instanceof net.minecraft.entity.player.SlicedPlayerEntity)) {
+                if (!(this instanceof SlicedPlayerEntity)) {
                     vec3d = vec3d.normalize();
                 }
                 Vec3d vec3d3 = this.getVelocity();

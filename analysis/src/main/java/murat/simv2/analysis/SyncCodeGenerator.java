@@ -52,19 +52,12 @@ public class SyncCodeGenerator {
         ctor.setBody(factory.createBlock());
         syncClass.addConstructor(ctor);
 
-        // public static void sync(SimulatedPlayer sim, ClientPlayerEntity real)
+        // public static void sync(ClientPlayerEntity real, SlicedClientPlayerEntity sim)
         CtMethod syncMethod = factory.createMethod();
         syncMethod.setSimpleName("sync");
         syncMethod.addModifier(ModifierKind.PUBLIC);
         syncMethod.addModifier(ModifierKind.STATIC);
         syncMethod.setType(factory.Type().voidPrimitiveType());
-
-        CtParameter simParam = factory.Core().createParameter();
-        simParam.setSimpleName("sim");
-        CtTypeReference simType = factory.Core().createTypeReference();
-        simType.setSimpleName("SimulatedPlayer");
-        simParam.setType(simType);
-        syncMethod.addParameter(simParam);
 
         CtParameter realParam = factory.Core().createParameter();
         realParam.setSimpleName("real");
@@ -72,6 +65,13 @@ public class SyncCodeGenerator {
         realType.setSimpleName("ClientPlayerEntity");
         realParam.setType(realType);
         syncMethod.addParameter(realParam);
+
+        CtParameter simParam = factory.Core().createParameter();
+        simParam.setSimpleName("sim");
+        CtTypeReference simType = factory.Core().createTypeReference();
+        simType.setSimpleName("SlicedClientPlayerEntity");
+        simParam.setType(simType);
+        syncMethod.addParameter(simParam);
 
         CtBlock body = factory.createBlock();
         syncMethod.setBody(body);
@@ -86,47 +86,28 @@ public class SyncCodeGenerator {
             addComment(body, "── " + shortName + " ──");
 
             for (FieldResult field : entry.getValue()) {
-                String assignment = generateFieldAssignment(field);
-                if (assignment != null) {
-                    addSnippet(body, assignment);
+                String syncCall = generateFieldSyncCall(field);
+                if (syncCall != null) {
+                    addSnippet(body, syncCall);
                 }
             }
         }
-
-        // Hardcoded composite sync items that WALA can't resolve
-        addComment(body, "── Composite state (not resolvable by static analysis) ──");
-        addSnippet(body, "sim.getAttributes().setFrom(real.getAttributes());");
-        addSnippet(body, "sim.clearStatusEffects();");
-        addSnippet(body, "for (StatusEffectInstance effect : real.getActiveStatusEffects().values()) {\n            sim.addStatusEffect(new StatusEffectInstance(effect));\n        }");
-        addSnippet(body, "PlayerAbilities realAbilities = real.getAbilities();");
-        addSnippet(body, "PlayerAbilities simAbilities = sim.getAbilities();");
-        addSnippet(body, "simAbilities.flying = realAbilities.flying;");
-        addSnippet(body, "simAbilities.allowFlying = realAbilities.allowFlying;");
-        addSnippet(body, "simAbilities.creativeMode = realAbilities.creativeMode;");
-        addSnippet(body, "simAbilities.invulnerable = realAbilities.invulnerable;");
-        addSnippet(body, "simAbilities.allowModifyWorld = realAbilities.allowModifyWorld;");
-        addSnippet(body, "simAbilities.setFlySpeed(realAbilities.getFlySpeed());");
-        addSnippet(body, "simAbilities.setWalkSpeed(realAbilities.getWalkSpeed());");
-        addSnippet(body, "sim.getHungerManager().setFoodLevel(real.getHungerManager().getFoodLevel());");
-        addSnippet(body, "sim.getHungerManager().setSaturationLevel(real.getHungerManager().getSaturationLevel());");
-        addSnippet(body, "for (var slot : net.minecraft.entity.EquipmentSlot.values()) {\n            sim.equipStack(slot, real.getEquippedStack(slot).copy());\n        }");
-        addSnippet(body, "sim.setPose(real.getPose());");
-        addComment(body, "DataTracker flags (bit flags in a tracked byte, not individual fields)");
-        addSnippet(body, "sim.setSprinting(real.isSprinting());");
-        addSnippet(body, "sim.setSneaking(real.isSneaking());");
-        addSnippet(body, "sim.setSwimming(real.isSwimming());");
-        addSnippet(body, "if (real.isGliding()) {\n            sim.startGliding();\n        } else if (sim.isGliding()) {\n            sim.stopGliding();\n        }");
 
         syncClass.addMethod(syncMethod);
 
         // Output: package + imports header, then Spoon-rendered class body
         StringBuilder sb = new StringBuilder();
         sb.append("package murat.simv2.simulation;\n\n");
+        sb.append("import java.lang.reflect.Array;\n");
+        sb.append("import java.lang.reflect.Constructor;\n");
+        sb.append("import java.lang.reflect.Field;\n");
+        sb.append("import java.lang.reflect.Method;\n");
+        sb.append("import java.lang.reflect.Modifier;\n");
+        sb.append("import java.util.ArrayList;\n");
         sb.append("import net.minecraft.client.network.ClientPlayerEntity;\n");
-        sb.append("import net.minecraft.entity.effect.StatusEffectInstance;\n");
-        sb.append("import net.minecraft.entity.player.PlayerAbilities;\n\n");
+        sb.append("import murat.simv2.simulation.sliced.SlicedClientPlayerEntity;\n\n");
         sb.append("// Generated by WALA movement field analysis — do not edit\n");
-        sb.append(syncClass.toString()).append("\n");
+        sb.append(appendGeneratedSyncHelpers(syncClass.toString()));
 
         Files.writeString(javaDir.resolve("GeneratedSync.java"), sb.toString());
         System.out.println("Generated GeneratedSync.java");
@@ -147,31 +128,12 @@ public class SyncCodeGenerator {
         block.addStatement(stmt);
     }
 
-    private String generateFieldAssignment(FieldResult field) {
+    private String generateFieldSyncCall(FieldResult field) {
         String name = field.fieldName();
 
-        // Skip excluded and composite fields
+        // Skip excluded fields
         if (AnalysisConfig.EXCLUDED_FIELDS.contains(name)) return null;
-        if (isCompositeField(name)) return null;
-
-        // Check if the field is final — skip it (can't reassign final fields)
-        if (isFieldFinal(field)) {
-            System.out.println("  Skipping final field: " + field.declaringClass() + "." + name);
-            return null;
-        }
-
-        // Check for public getter/setter
-        GetterSetter gs = findGetterSetter(field);
-
-        if (gs.getter != null && gs.setter != null) {
-            return "sim." + gs.setter + "(real." + gs.getter + "());";
-        } else if (gs.getter != null) {
-            // Has getter for reading but no setter — direct field write
-            return "sim." + name + " = real." + gs.getter + "();";
-        } else {
-            // Direct field access both sides
-            return "sim." + name + " = real." + name + ";";
-        }
+        return "syncMember(real, sim, \"" + escapeJavaString(name) + "\")";
     }
 
     private boolean isFieldFinal(FieldResult field) {
@@ -246,6 +208,342 @@ public class SyncCodeGenerator {
     }
 
     private record GetterSetter(String getter, String setter) {}
+
+    private String appendGeneratedSyncHelpers(String syncClassSource) {
+        int closingBrace = syncClassSource.lastIndexOf('}');
+        if (closingBrace < 0) {
+            return syncClassSource;
+        }
+        return syncClassSource.substring(0, closingBrace)
+            + generatedSyncHelpersSource()
+            + "\n}\n";
+    }
+
+    private String generatedSyncHelpersSource() {
+        return """
+
+    private static void syncMember(Object realOwner, Object simOwner, String memberName) {
+        try {
+            MemberAccess realAccess = findReadableMember(realOwner.getClass(), memberName);
+            MemberAccess simAccess = findAnyMember(simOwner.getClass(), memberName);
+            if (realAccess == null || simAccess == null) {
+                return;
+            }
+
+            Object realValue = realAccess.read(realOwner);
+            if (realValue == null) {
+                if (simAccess.canWrite()) {
+                    simAccess.write(simOwner, null);
+                }
+                return;
+            }
+
+            Object simValue = simAccess.read(simOwner);
+            Object synced = syncValue(realValue, simValue, new ArrayList<>());
+            if (simAccess.canWrite() && synced != simValue) {
+                simAccess.write(simOwner, synced);
+            }
+        } catch (ReflectiveOperationException ex) {
+            throw new IllegalStateException("Failed to sync member '" + memberName + "'", ex);
+        }
+    }
+
+    private static Object syncValue(Object realValue, Object simValue, ArrayList<SeenPair> seen) throws ReflectiveOperationException {
+        if (realValue == null) {
+            return null;
+        }
+        if (isSimpleValueType(realValue.getClass())) {
+            return cloneSimpleValue(realValue);
+        }
+        for (SeenPair pair : seen) {
+            if (pair.matches(realValue, simValue)) {
+                return simValue != null ? simValue : realValue;
+            }
+        }
+        seen.add(new SeenPair(realValue, simValue));
+
+        if (realValue.getClass().isArray()) {
+            return syncArray(realValue, simValue, seen);
+        }
+        if (realValue instanceof java.util.Map<?, ?> realMap) {
+            return syncMap(realMap, simValue, seen);
+        }
+        if (realValue instanceof java.util.Collection<?> realCollection) {
+            return syncCollection(realCollection, simValue, seen);
+        }
+
+        Object target = simValue;
+        if (target == null) {
+            Object cloned = tryCloneObject(realValue);
+            if (cloned != null) {
+                return cloned;
+            }
+            target = instantiateLike(realValue.getClass());
+            if (target == null) {
+                return realValue;
+            }
+        }
+
+        deepSyncObject(realValue, target, seen);
+        return target;
+    }
+
+    private static void deepSyncObject(Object realValue, Object simValue, ArrayList<SeenPair> seen) throws ReflectiveOperationException {
+        Class<?> current = realValue.getClass();
+        while (current != null && current != Object.class) {
+            for (Field field : current.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers())) {
+                    continue;
+                }
+                syncMember(realValue, simValue, field.getName());
+            }
+            current = current.getSuperclass();
+        }
+    }
+
+    private static Object syncArray(Object realArray, Object simArray, ArrayList<SeenPair> seen) throws ReflectiveOperationException {
+        int length = Array.getLength(realArray);
+        Class<?> componentType = realArray.getClass().getComponentType();
+        Object target = simArray;
+        if (target == null || !target.getClass().isArray() || Array.getLength(target) != length) {
+            target = Array.newInstance(componentType, length);
+        }
+        for (int i = 0; i < length; i++) {
+            Object realElement = Array.get(realArray, i);
+            Object simElement = Array.get(target, i);
+            Array.set(target, i, syncValue(realElement, simElement, seen));
+        }
+        return target;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private static Object syncMap(java.util.Map<?, ?> realMap, Object simValue, ArrayList<SeenPair> seen) throws ReflectiveOperationException {
+        java.util.Map target = (simValue instanceof java.util.Map<?, ?> existing)
+            ? (java.util.Map) existing
+            : instantiateMap(realMap.getClass());
+        if (target == null) {
+            target = new java.util.LinkedHashMap();
+        }
+        target.clear();
+        for (java.util.Map.Entry<?, ?> entry : realMap.entrySet()) {
+            Object key = syncValue(entry.getKey(), null, seen);
+            Object value = syncValue(entry.getValue(), null, seen);
+            target.put(key, value);
+        }
+        return target;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private static Object syncCollection(java.util.Collection<?> realCollection, Object simValue, ArrayList<SeenPair> seen) throws ReflectiveOperationException {
+        java.util.Collection target = (simValue instanceof java.util.Collection<?> existing)
+            ? (java.util.Collection) existing
+            : instantiateCollection(realCollection.getClass());
+        if (target == null) {
+            target = new java.util.ArrayList();
+        }
+        target.clear();
+        for (Object value : realCollection) {
+            target.add(syncValue(value, null, seen));
+        }
+        return target;
+    }
+
+    private static Object cloneSimpleValue(Object value) throws ReflectiveOperationException {
+        Object cloned = tryCloneObject(value);
+        return cloned != null ? cloned : value;
+    }
+
+    private static Object tryCloneObject(Object value) throws ReflectiveOperationException {
+        if (value == null) {
+            return null;
+        }
+        try {
+            Method copy = value.getClass().getDeclaredMethod("copy");
+            copy.setAccessible(true);
+            return copy.invoke(value);
+        } catch (NoSuchMethodException ignored) {
+        }
+        try {
+            Constructor<?> copyCtor = value.getClass().getDeclaredConstructor(value.getClass());
+            copyCtor.setAccessible(true);
+            return copyCtor.newInstance(value);
+        } catch (NoSuchMethodException ignored) {
+        }
+        return null;
+    }
+
+    private static Object instantiateLike(Class<?> type) throws ReflectiveOperationException {
+        try {
+            Constructor<?> ctor = type.getDeclaredConstructor();
+            ctor.setAccessible(true);
+            return ctor.newInstance();
+        } catch (NoSuchMethodException ignored) {
+            return null;
+        }
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private static java.util.Map instantiateMap(Class<?> type) throws ReflectiveOperationException {
+        Object instance = instantiateLike(type);
+        return instance instanceof java.util.Map<?, ?> map ? (java.util.Map) map : null;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private static java.util.Collection instantiateCollection(Class<?> type) throws ReflectiveOperationException {
+        Object instance = instantiateLike(type);
+        return instance instanceof java.util.Collection<?> collection ? (java.util.Collection) collection : null;
+    }
+
+    private static boolean isSimpleValueType(Class<?> type) {
+        return type.isPrimitive()
+            || type.isEnum()
+            || Number.class.isAssignableFrom(type)
+            || Boolean.class == type
+            || Character.class == type
+            || String.class == type
+            || java.util.UUID.class == type
+            || type.getName().startsWith("net.minecraft.util.math.Vec")
+            || type.getName().startsWith("net.minecraft.util.math.BlockPos")
+            || type.getName().startsWith("net.minecraft.util.math.Box")
+            || type.getName().startsWith("net.minecraft.text.Text")
+            || type.getName().startsWith("java.util.Optional");
+    }
+
+    private static MemberAccess findReadableMember(Class<?> ownerType, String memberName) {
+        MemberAccess getterAccess = findGetter(ownerType, memberName);
+        if (getterAccess != null) {
+            return getterAccess;
+        }
+        return findField(ownerType, memberName);
+    }
+
+    private static MemberAccess findAnyMember(Class<?> ownerType, String memberName) {
+        MemberAccess getterAccess = findGetter(ownerType, memberName);
+        MemberAccess fieldAccess = findField(ownerType, memberName);
+        if (fieldAccess != null) {
+            return fieldAccess.withFallbackGetter(getterAccess);
+        }
+        return getterAccess;
+    }
+
+    private static MemberAccess findGetter(Class<?> ownerType, String memberName) {
+        String capitalized = Character.toUpperCase(memberName.charAt(0)) + memberName.substring(1);
+        for (String prefix : new String[] { "get", "is", "has" }) {
+            try {
+                Method getter = ownerType.getMethod(prefix + capitalized);
+                getter.setAccessible(true);
+                return MemberAccess.forGetter(getter);
+            } catch (NoSuchMethodException ignored) {
+            }
+        }
+        return null;
+    }
+
+    private static MemberAccess findField(Class<?> ownerType, String memberName) {
+        Class<?> current = ownerType;
+        while (current != null && current != Object.class) {
+            try {
+                Field field = current.getDeclaredField(memberName);
+                field.setAccessible(true);
+                return MemberAccess.forField(field);
+            } catch (NoSuchFieldException ignored) {
+                current = current.getSuperclass();
+            }
+        }
+        return null;
+    }
+
+    private record SeenPair(Object realValue, Object simValue) {
+        private boolean matches(Object otherReal, Object otherSim) {
+            return realValue == otherReal && simValue == otherSim;
+        }
+    }
+
+    private static final class MemberAccess {
+        private final Field field;
+        private final Method getter;
+        private final Method setter;
+        private final MemberAccess fallbackGetter;
+
+        private MemberAccess(Field field, Method getter, Method setter, MemberAccess fallbackGetter) {
+            this.field = field;
+            this.getter = getter;
+            this.setter = setter;
+            this.fallbackGetter = fallbackGetter;
+        }
+
+        private static MemberAccess forField(Field field) {
+            Method setter = findSetter(field.getDeclaringClass(), field.getName(), field.getType());
+            return new MemberAccess(field, null, setter, null);
+        }
+
+        private static MemberAccess forGetter(Method getter) {
+            Method setter = findSetter(getter.getDeclaringClass(), inferMemberName(getter), getter.getReturnType());
+            return new MemberAccess(null, getter, setter, null);
+        }
+
+        private MemberAccess withFallbackGetter(MemberAccess fallback) {
+            return new MemberAccess(field, getter, setter, fallback);
+        }
+
+        private Object read(Object owner) throws ReflectiveOperationException {
+            if (field != null) {
+                return field.get(owner);
+            }
+            if (getter != null) {
+                return getter.invoke(owner);
+            }
+            return fallbackGetter != null ? fallbackGetter.read(owner) : null;
+        }
+
+        private boolean canWrite() {
+            return setter != null || (field != null && !Modifier.isFinal(field.getModifiers()));
+        }
+
+        private void write(Object owner, Object value) throws ReflectiveOperationException {
+            if (setter != null) {
+                setter.invoke(owner, value);
+            } else if (field != null && !Modifier.isFinal(field.getModifiers())) {
+                field.set(owner, value);
+            }
+        }
+
+        private static String inferMemberName(Method getter) {
+            String name = getter.getName();
+            if (name.startsWith("get") || name.startsWith("has")) {
+                return Character.toLowerCase(name.charAt(3)) + name.substring(4);
+            }
+            if (name.startsWith("is")) {
+                return Character.toLowerCase(name.charAt(2)) + name.substring(3);
+            }
+            return name;
+        }
+
+        private static Method findSetter(Class<?> ownerType, String memberName, Class<?> parameterType) {
+            String setterName = "set" + Character.toUpperCase(memberName.charAt(0)) + memberName.substring(1);
+            Class<?> current = ownerType;
+            while (current != null && current != Object.class) {
+                for (Method method : current.getDeclaredMethods()) {
+                    if (!method.getName().equals(setterName) || method.getParameterCount() != 1) {
+                        continue;
+                    }
+                    Class<?> candidateType = method.getParameterTypes()[0];
+                    if (candidateType.isAssignableFrom(parameterType) || parameterType.isAssignableFrom(candidateType)) {
+                        method.setAccessible(true);
+                        return method;
+                    }
+                }
+                current = current.getSuperclass();
+            }
+            return null;
+        }
+    }
+""";
+    }
+
+    private String escapeJavaString(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
 
     private void generateAccessWidener(List<FieldResult> fields) throws IOException {
         StringBuilder sb = new StringBuilder();
