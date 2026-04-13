@@ -904,16 +904,25 @@ public class SpoonSlicePruner {
 
         // 7. Static/self type accesses used as invocation/field targets:
         // ClientPlayerEntity.foo() -> SlicedClientPlayerEntity.foo()
+        // ClientPlayerEntity.SOME_FIELD -> SlicedClientPlayerEntity.SOME_FIELD
+        // (but keep class literals like PlayerEntity.class unchanged)
         for (CtTypeAccess<?> typeAccess : new ArrayList<>(method.getElements(new TypeFilter<CtTypeAccess<?>>(CtTypeAccess.class)))) {
             CtElement parent = typeAccess.getParent();
             if (parent instanceof CtInvocation<?> invocation && invocation.getTarget() == typeAccess) {
                 remapTypeReferenceToSliced(typeAccess.getAccessedType());
                 continue;
             }
-            if (parent instanceof CtFieldAccess<?> fieldAccess && fieldAccess.getTarget() == typeAccess) {
+            if (parent instanceof CtFieldAccess<?> fieldAccess
+                && fieldAccess.getTarget() == typeAccess
+                && !isClassLiteralFieldAccess(fieldAccess)) {
                 remapTypeReferenceToSliced(typeAccess.getAccessedType());
             }
         }
+    }
+
+    private boolean isClassLiteralFieldAccess(CtFieldAccess<?> fieldAccess) {
+        CtFieldReference<?> variable = fieldAccess != null ? fieldAccess.getVariable() : null;
+        return variable != null && "class".equals(variable.getSimpleName());
     }
 
     // ── Abstract stub generation ──

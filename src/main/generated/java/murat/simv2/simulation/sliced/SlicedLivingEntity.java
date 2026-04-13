@@ -516,9 +516,9 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     @Nullable
     public LivingEntity getPrimeAdversary() {
         if (this.attackingPlayer != null) {
-            return ((LivingEntity) (this.attackingPlayer.resolve(this.getWorld(), SlicedPlayerEntity.class)));
+            return ((LivingEntity) (this.attackingPlayer.resolve(this.getWorld(), PlayerEntity.class)));
         } else {
-            return this.attackerReference != null ? ((LivingEntity) (this.attackerReference.resolve(this.getWorld(), SlicedLivingEntity.class))) : null;
+            return this.attackerReference != null ? ((LivingEntity) (this.attackerReference.resolve(this.getWorld(), LivingEntity.class))) : null;
         }
     }
 
