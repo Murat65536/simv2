@@ -20,6 +20,7 @@ import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.DamageUtil;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityEquipment;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.Flutterer;
@@ -69,6 +70,7 @@ import net.minecraft.util.math.random.Random;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.profiler.Profilers;
 import net.minecraft.world.GameRules;
+import net.minecraft.world.World;
 import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -135,6 +137,10 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     private boolean experienceDroppingDisabled;
 
     protected EntityEquipment equipment;
+
+    protected SlicedLivingEntity(EntityType<? extends LivingEntity> entityType, World world) {
+        super(entityType, world);
+    }
 
     public boolean horizontalCollision;
 

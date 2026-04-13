@@ -1,7 +1,9 @@
 package murat.simv2.simulation.sliced;
+import com.mojang.authlib.GameProfile;
 import java.util.Optional;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPose;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.ProjectileDeflection;
@@ -27,6 +29,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.GameRules;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 // Sliced from net.minecraft.entity.player.PlayerEntity
 // Movement-relevant statements only (WALA backward slice + Spoon AST pruning)
@@ -39,6 +42,10 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
     public int experienceLevel = 0;
 
     protected float damageTiltYaw;
+
+    public SlicedPlayerEntity(World world, BlockPos pos, float yaw, GameProfile gameProfile) {
+        super(EntityType.PLAYER, world);
+    }
 
     protected int lastAttackedTicks;
 

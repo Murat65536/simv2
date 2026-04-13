@@ -1,7 +1,9 @@
 package murat.simv2.simulation.sliced;
+import com.mojang.authlib.GameProfile;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.world.GameMode;
 import org.jetbrains.annotations.Nullable;
 // Sliced from net.minecraft.client.network.AbstractClientPlayerEntity
@@ -10,6 +12,10 @@ import org.jetbrains.annotations.Nullable;
 public abstract class SlicedAbstractClientPlayerEntity extends SlicedPlayerEntity {
     @Nullable
     private PlayerListEntry playerListEntry;
+
+    public SlicedAbstractClientPlayerEntity(ClientWorld world, GameProfile profile) {
+        super(world, world.getSpawnPos(), world.getSpawnAngle(), profile);
+    }
 
     @Nullable
     public GameMode getGameMode() {

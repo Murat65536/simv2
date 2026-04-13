@@ -399,6 +399,7 @@ public class SpoonSlicePruner {
                 : cloned.getBody().getElements(new TypeFilter<>(CtReturn.class)).size();
             int before = countStatements(cloned);
             pruneByWalaLines(cloned, walaLines);
+            preserveConstructorDelegation(cloned, original, extendsRef != null, factory);
             int after = countStatements(cloned);
             int returnsAfter = cloned.getBody() == null ? 0
                 : cloned.getBody().getElements(new TypeFilter<>(CtReturn.class)).size();
@@ -427,6 +428,23 @@ public class SpoonSlicePruner {
                     definedSigs.add(sig);
                     definedSigs.add(rewrittenSig);
                     definedNames.add(extra.getSimpleName());
+                }
+            }
+        }
+
+        // Constructors are structural and must always exist on the sliced type,
+        // even when WALA does not include <init> in the sliced method set.
+        if (type instanceof CtClass<?> ctClass) {
+            for (CtConstructor<?> ctor : ctClass.getConstructors()) {
+                CtMethod<?> wrappedCtor = wrapConstructorAsMethod(ctor, false);
+                if (wrappedCtor == null) {
+                    continue;
+                }
+                String sig = methodKey(wrappedCtor);
+                if (!definedSigs.contains(sig)) {
+                    clonedMethods.add(wrappedCtor);
+                    definedSigs.add(sig);
+                    definedNames.add(wrappedCtor.getSimpleName());
                 }
             }
         }
@@ -1235,8 +1253,14 @@ public class SpoonSlicePruner {
         }
         if (match == null) return null;
 
-        // Wrap as a void method so the existing clone/prune/emit pipeline works
-        Factory f = type.getFactory();
+        return wrapConstructorAsMethod(match, true);
+    }
+
+    private CtMethod<?> wrapConstructorAsMethod(CtConstructor<?> match, boolean includeFullBody) {
+        if (match == null) {
+            return null;
+        }
+        Factory f = match.getFactory();
         CtMethod<?> method = f.createMethod();
         method.setSimpleName("constructorInit");
         method.setType(f.Type().voidPrimitiveType());
@@ -1244,8 +1268,14 @@ public class SpoonSlicePruner {
         for (CtParameter<?> p : match.getParameters()) {
             method.addParameter(p.clone());
         }
-        if (match.getBody() != null) {
+        if (includeFullBody && match.getBody() != null) {
             method.setBody(match.getBody().clone());
+        } else {
+            method.setBody(f.createBlock());
+            CtStatement delegation = findConstructorDelegationStatement(match);
+            if (delegation != null) {
+                method.getBody().addStatement(delegation.clone());
+            }
         }
         method.setPosition(match.getPosition());
         return method;
@@ -1396,14 +1426,14 @@ public class SpoonSlicePruner {
             }
             for (CtMethod<?> stub : abstractStubMethods) {
                 if (isSyntheticConstructorMethod(stub)) {
-                    ((CtClass) slicedClass).addConstructor(convertSyntheticConstructorMethod(stub, factory));
+                    ((CtClass) slicedClass).addConstructor(convertSyntheticConstructorMethod(stub, extendsRef != null, factory));
                     continue;
                 }
                 slicedClass.addMethod(stub);
             }
             for (CtMethod<?> method : emittedMethods) {
                 if (isSyntheticConstructorMethod(method)) {
-                    ((CtClass) slicedClass).addConstructor(convertSyntheticConstructorMethod(method, factory));
+                    ((CtClass) slicedClass).addConstructor(convertSyntheticConstructorMethod(method, extendsRef != null, factory));
                     continue;
                 }
                 slicedClass.addMethod(method);
@@ -1452,7 +1482,76 @@ public class SpoonSlicePruner {
         return method != null && "constructorInit".equals(method.getSimpleName());
     }
 
-    private CtConstructor<?> convertSyntheticConstructorMethod(CtMethod<?> method, Factory factory) {
+    private void preserveConstructorDelegation(CtMethod<?> constructorMethod,
+                                               CtMethod<?> originalMethod,
+                                               boolean hasSuperclass,
+                                               Factory factory) {
+        if (!isSyntheticConstructorMethod(constructorMethod)) {
+            return;
+        }
+        if (constructorMethod.getBody() == null) {
+            constructorMethod.setBody(factory.createBlock());
+        }
+        CtStatement existingDelegation = findConstructorDelegationStatement(constructorMethod);
+        if (existingDelegation != null) {
+            return;
+        }
+
+        CtStatement originalDelegation = findConstructorDelegationStatement(originalMethod);
+        if (originalDelegation != null) {
+            constructorMethod.getBody().insertBegin(originalDelegation.clone());
+            return;
+        }
+
+        if (hasSuperclass) {
+            CtCodeSnippetStatement superCall = factory.Code().createCodeSnippetStatement("super()");
+            constructorMethod.getBody().insertBegin(superCall);
+        }
+    }
+
+    private CtStatement findConstructorDelegationStatement(CtMethod<?> method) {
+        if (method == null || method.getBody() == null || method.getBody().getStatements().isEmpty()) {
+            return null;
+        }
+        CtStatement first = method.getBody().getStatements().get(0);
+        if (first instanceof CtInvocation<?> invocation && invocation.getExecutable().isConstructor()) {
+            return first;
+        }
+        if (first instanceof CtCodeSnippetStatement snippet) {
+            String value = snippet.getValue();
+            if (value != null) {
+                String normalized = value.stripLeading();
+                if (normalized.startsWith("super(") || normalized.startsWith("this(")) {
+                    return first;
+                }
+            }
+        }
+        return null;
+    }
+
+    private CtStatement findConstructorDelegationStatement(CtConstructor<?> constructor) {
+        if (constructor == null || constructor.getBody() == null || constructor.getBody().getStatements().isEmpty()) {
+            return null;
+        }
+        CtStatement first = constructor.getBody().getStatements().get(0);
+        if (first instanceof CtInvocation<?> invocation && invocation.getExecutable().isConstructor()) {
+            return first;
+        }
+        if (first instanceof CtCodeSnippetStatement snippet) {
+            String value = snippet.getValue();
+            if (value != null) {
+                String normalized = value.stripLeading();
+                if (normalized.startsWith("super(") || normalized.startsWith("this(")) {
+                    return first;
+                }
+            }
+        }
+        return null;
+    }
+
+    private CtConstructor<?> convertSyntheticConstructorMethod(CtMethod<?> method,
+                                                               boolean hasSuperclass,
+                                                               Factory factory) {
         CtConstructor<?> constructor = factory.Core().createConstructor();
         constructor.setModifiers(new LinkedHashSet<>(method.getModifiers()));
         for (CtParameter<?> parameter : method.getParameters()) {
@@ -1460,11 +1559,34 @@ public class SpoonSlicePruner {
         }
         if (method.getBody() != null) {
             constructor.setBody(method.getBody().clone());
+        } else {
+            constructor.setBody(factory.createBlock());
+        }
+        if (hasSuperclass && !constructorStartsWithDelegation(constructor)) {
+            constructor.getBody().insertBegin(factory.Code().createCodeSnippetStatement("super()"));
         }
         constructor.setPosition(method.getPosition());
         constructor.setComments(new ArrayList<>(method.getComments()));
         constructor.setDocComment(method.getDocComment());
         return constructor;
+    }
+
+    private boolean constructorStartsWithDelegation(CtConstructor<?> constructor) {
+        if (constructor == null || constructor.getBody() == null || constructor.getBody().getStatements().isEmpty()) {
+            return false;
+        }
+        CtStatement first = constructor.getBody().getStatements().get(0);
+        if (first instanceof CtInvocation<?> invocation && invocation.getExecutable().isConstructor()) {
+            return true;
+        }
+        if (first instanceof CtCodeSnippetStatement snippet) {
+            String value = snippet.getValue();
+            if (value != null) {
+                String normalized = value.stripLeading();
+                return normalized.startsWith("super(") || normalized.startsWith("this(");
+            }
+        }
+        return false;
     }
 
     private void removeJavadocsFromGeneratedClass(CtClass<?> slicedClass) {
