@@ -972,7 +972,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     public boolean isGliding() {
-        return this.getFlag(SlicedEntity.GLIDING_FLAG_INDEX);
+        return this.getFlag(SlicedLivingEntity.GLIDING_FLAG_INDEX);
     }
 
     public Optional<BlockPos> getSleepingPosition() {

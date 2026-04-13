@@ -573,6 +573,7 @@ public class SpoonSlicePruner {
         List<CtMethod<?>> allMethods = new ArrayList<>(emittedMethods);
         allMethods.addAll(abstractStubMethods);
         List<CtField<?>> fieldDecls = extractFieldDeclarations(type, allMethods, typeIndex);
+        retargetStaticFieldAccessesToLocalSlicedType(allMethods, fieldDecls, simpleName);
 
         // Apply entity bridge rewrite to field initializers (e.g., new DamageTracker(this))
         for (CtField<?> field : fieldDecls) {
@@ -923,6 +924,49 @@ public class SpoonSlicePruner {
     private boolean isClassLiteralFieldAccess(CtFieldAccess<?> fieldAccess) {
         CtFieldReference<?> variable = fieldAccess != null ? fieldAccess.getVariable() : null;
         return variable != null && "class".equals(variable.getSimpleName());
+    }
+
+    private void retargetStaticFieldAccessesToLocalSlicedType(List<CtMethod<?>> methods,
+                                                              List<CtField<?>> fieldDecls,
+                                                              String mcTypeName) {
+        if (methods == null || methods.isEmpty() || fieldDecls == null || fieldDecls.isEmpty()) {
+            return;
+        }
+        Set<String> localStaticFieldNames = new HashSet<>();
+        for (CtField<?> field : fieldDecls) {
+            if (field != null && field.hasModifier(ModifierKind.STATIC)) {
+                localStaticFieldNames.add(field.getSimpleName());
+            }
+        }
+        if (localStaticFieldNames.isEmpty()) {
+            return;
+        }
+
+        String localSlicedType = rewriteTypeName(mcTypeName);
+        for (CtMethod<?> method : methods) {
+            for (CtFieldAccess<?> fieldAccess : method.getElements(new TypeFilter<>(CtFieldAccess.class))) {
+                if (isClassLiteralFieldAccess(fieldAccess)) {
+                    continue;
+                }
+                if (!(fieldAccess.getTarget() instanceof CtTypeAccess<?> targetTypeAccess)) {
+                    continue;
+                }
+                CtTypeReference<?> targetType = targetTypeAccess.getAccessedType();
+                if (targetType == null || !targetType.getSimpleName().startsWith("Sliced")) {
+                    continue;
+                }
+                CtFieldReference<?> variable = fieldAccess.getVariable();
+                if (variable == null || !localStaticFieldNames.contains(variable.getSimpleName())) {
+                    continue;
+                }
+                if (!localSlicedType.equals(targetType.getSimpleName())) {
+                    targetType.setSimpleName(localSlicedType);
+                    targetType.setPackage(targetType.getFactory().Package()
+                        .getOrCreate("murat.simv2.simulation.sliced").getReference());
+                    targetType.setDeclaringType(null);
+                }
+            }
+        }
     }
 
     // ── Abstract stub generation ──
