@@ -1407,6 +1407,7 @@ public class SpoonSlicePruner {
             compilationUnit.setImports(createSlicedCompilationUnitImports(factory, fieldDecls,
                 abstractStubMethods, emittedMethods));
             slicedClass.setPosition(factory.createPartialSourcePosition(compilationUnit));
+            removeJavadocsFromGeneratedClass(slicedClass);
 
             PrettyPrinter printer = createImportCleanerPrettyPrinter(factory);
             String source = printer.printCompilationUnit(compilationUnit);
@@ -1455,6 +1456,15 @@ public class SpoonSlicePruner {
         constructor.setComments(new ArrayList<>(method.getComments()));
         constructor.setDocComment(method.getDocComment());
         return constructor;
+    }
+
+    private void removeJavadocsFromGeneratedClass(CtClass<?> slicedClass) {
+        List<CtComment> comments = new ArrayList<CtComment>(slicedClass.getElements(new TypeFilter<CtComment>(CtComment.class)));
+        for (CtComment comment : comments) {
+            if (comment.getCommentType() == CtComment.CommentType.JAVADOC) {
+                comment.delete();
+            }
+        }
     }
 
     private List<CtImport> createSlicedCompilationUnitImports(Factory factory,

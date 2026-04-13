@@ -11,16 +11,12 @@ public abstract class SlicedAbstractClientPlayerEntity extends SlicedPlayerEntit
     @Nullable
     private PlayerListEntry playerListEntry;
 
-    /**
-     */
     @Nullable
     public GameMode getGameMode() {
         PlayerListEntry playerListEntry = this.getPlayerListEntry();
         return playerListEntry != null ? playerListEntry.getGameMode() : null;
     }
 
-    /**
-     */
     @Nullable
     protected PlayerListEntry getPlayerListEntry() {
         if (this.playerListEntry == null) {

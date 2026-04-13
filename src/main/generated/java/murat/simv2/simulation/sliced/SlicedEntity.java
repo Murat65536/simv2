@@ -168,8 +168,6 @@ public abstract class SlicedEntity {
 
     private final List<Entity.QueuedCollisionCheck> currentlyCheckedCollisions = new ObjectArrayList<>();
 
-    /**
-     */
     public SlicedEntity(EntityType<?> type, World world) {
         this.dimensions = type.getDimensions();
         this.pos = Vec3d.ZERO;
@@ -187,98 +185,66 @@ public abstract class SlicedEntity {
         this.setPosition(0.0, 0.0, 0.0);
     }
 
-    /**
-     */
     public boolean isSpectator() {
         return false;
     }
 
-    /**
-     */
     public EntityType<?> getType() {
         return this.type;
     }
 
-    /**
-     */
     protected abstract void initDataTracker(DataTracker.Builder builder);
 
-    /**
-     */
     public DataTracker getDataTracker() {
         return this.dataTracker;
     }
 
-    /**
-     */
     public EntityPose getPose() {
         return this.dataTracker.get(Entity.POSE);
     }
 
-    /**
-     */
     public boolean isInPose(EntityPose pose) {
         return this.getPose() == pose;
     }
 
-    /**
-     */
     public void setPosition(Vec3d pos) {
         this.setPosition(pos.getX(), pos.getY(), pos.getZ());
     }
 
-    /**
-     */
     public void setPosition(double x, double y, double z) {
         this.setPos(x, y, z);
         this.setBoundingBox(this.calculateBoundingBox());
     }
 
-    /**
-     */
     protected Box calculateBoundingBox() {
         return this.calculateDefaultBoundingBox(this.pos);
     }
 
-    /**
-     */
     protected Box calculateDefaultBoundingBox(Vec3d pos) {
         return this.dimensions.getBoxAt(pos);
     }
 
-    /**
-     */
     protected void refreshPosition() {
         this.setPosition(this.pos.x, this.pos.y, this.pos.z);
     }
 
-    /**
-     */
     public boolean doesNotCollide(double offsetX, double offsetY, double offsetZ) {
         return this.doesNotCollide(this.getBoundingBox().offset(offsetX, offsetY, offsetZ));
     }
 
-    /**
-     */
     private boolean doesNotCollide(Box box) {
         return this.getWorld().isSpaceEmpty(((Entity) (this.entityBridge)), box) && (!this.getWorld().containsFluid(box));
     }
 
-    /**
-     */
     public void setMovement(boolean onGround, boolean horizontalCollision, Vec3d movement) {
         this.onGround = onGround;
         this.horizontalCollision = horizontalCollision;
     }
 
-    /**
-     */
     public boolean isOnGround() {
         return this.onGround;
     }
 
-    /**
-     */
     public void move(MovementType type, Vec3d movement) {
         if (this.noClip) {
             this.setPosition(this.getX() + movement.x, this.getY() + movement.y, this.getZ() + movement.z);
@@ -342,8 +308,6 @@ public abstract class SlicedEntity {
         }
     }
 
-    /**
-     */
     protected void applyMoveEffect(Entity.MoveEffect moveEffect, Vec3d movement, BlockPos landingPos, BlockState landingState) {
         float g = ((float) (movement.length() * 0.6F));
         float h = ((float) (movement.horizontalLength() * 0.6F));
@@ -360,22 +324,16 @@ public abstract class SlicedEntity {
         }
     }
 
-    /**
-     */
     protected void tickBlockCollision() {
         if (this.currentlyCheckedCollisions.isEmpty()) {
             this.currentlyCheckedCollisions.add(new Entity.QueuedCollisionCheck(this.getLastRenderPos(), this.getPos()));
         }
     }
 
-    /**
-     */
     private boolean canClimb(BlockState state) {
         return state.isIn(BlockTags.CLIMBABLE) || state.isOf(Blocks.POWDER_SNOW);
     }
 
-    /**
-     */
     private boolean stepOnBlock(BlockPos pos, BlockState state, boolean playSound, boolean emitEvent, Vec3d movement) {
         if (state.isAir()) {
         } else {
@@ -384,27 +342,19 @@ public abstract class SlicedEntity {
         return false;
     }
 
-    /**
-     */
     @Deprecated
     public BlockPos getLandingPos() {
         return this.getPosWithYOffset(0.2F);
     }
 
-    /**
-     */
     public BlockPos getVelocityAffectingPos() {
         return this.getPosWithYOffset(0.500001F);
     }
 
-    /**
-     */
     public BlockPos getSteppingPos() {
         return this.getPosWithYOffset(1.0E-5F);
     }
 
-    /**
-     */
     protected BlockPos getPosWithYOffset(float offset) {
         if (this.supportingBlockPos.isPresent()) {
             BlockPos blockPos = ((BlockPos) (this.supportingBlockPos.get()));
@@ -422,16 +372,12 @@ public abstract class SlicedEntity {
         }
     }
 
-    /**
-     */
     protected float getJumpVelocityMultiplier() {
         float f = this.getWorld().getBlockState(this.getBlockPos()).getBlock().getJumpVelocityMultiplier();
         float g = this.getWorld().getBlockState(this.getVelocityAffectingPos()).getBlock().getJumpVelocityMultiplier();
         return f == 1.0 ? g : f;
     }
 
-    /**
-     */
     protected float getVelocityMultiplier() {
         BlockState blockState = this.getWorld().getBlockState(this.getBlockPos());
         float f = blockState.getBlock().getVelocityMultiplier();
@@ -442,14 +388,10 @@ public abstract class SlicedEntity {
         }
     }
 
-    /**
-     */
     protected Vec3d adjustMovementForSneaking(Vec3d movement, MovementType type) {
         return movement;
     }
 
-    /**
-     */
     protected Vec3d adjustMovementForPiston(Vec3d movement) {
         if (movement.lengthSquared() <= 1.0E-7) {
             return movement;
@@ -470,8 +412,6 @@ public abstract class SlicedEntity {
         }
     }
 
-    /**
-     */
     private double calculatePistonMovementFactor(Direction.Axis axis, double offsetFactor) {
         int i = axis.ordinal();
         double d = MathHelper.clamp(offsetFactor + this.pistonMovementDelta[i], -0.51, 0.51);
@@ -479,8 +419,6 @@ public abstract class SlicedEntity {
         return offsetFactor;
     }
 
-    /**
-     */
     protected Vec3d adjustMovementForCollisions(Vec3d movement) {
         Box box = this.getBoundingBox();
         List<VoxelShape> list = this.getWorld().getEntityCollisions(((Entity) (this.entityBridge)), box.stretch(movement));
@@ -506,8 +444,6 @@ public abstract class SlicedEntity {
         return vec3d;
     }
 
-    /**
-     */
     private static float[] collectStepHeights(Box collisionBox, List<VoxelShape> collisions, float f, float stepHeight) {
         FloatSet floatSet = new FloatArraySet(4);
         for (VoxelShape voxelShape : collisions) {
@@ -526,16 +462,12 @@ public abstract class SlicedEntity {
         return fs;
     }
 
-    /**
-     */
     public static Vec3d adjustMovementForCollisions(@Nullable
     Entity entity, Vec3d movement, Box entityBoundingBox, World world, List<VoxelShape> collisions) {
         List<VoxelShape> list = Entity.findCollisionsForMovement(entity, world, collisions, entityBoundingBox.stretch(movement));
         return Entity.adjustMovementForCollisions(movement, entityBoundingBox, list);
     }
 
-    /**
-     */
     private static List<VoxelShape> findCollisionsForMovement(@Nullable
     Entity entity, World world, List<VoxelShape> regularCollisions, Box movingEntityBoundingBox) {
         Builder<VoxelShape> builder = ImmutableList.builderWithExpectedSize(regularCollisions.size() + 1);
@@ -544,8 +476,6 @@ public abstract class SlicedEntity {
         return builder.build();
     }
 
-    /**
-     */
     protected static Vec3d adjustMovementForCollisions(Vec3d movement, Box entityBoundingBox, List<VoxelShape> collisions) {
         if (collisions.isEmpty()) {
             return movement;
@@ -562,77 +492,53 @@ public abstract class SlicedEntity {
         }
     }
 
-    /**
-     */
     private static Iterable<Direction.Axis> getAxisCheckOrder(Vec3d movement) {
         return Math.abs(movement.x) < Math.abs(movement.z) ? Entity.Z_THEN_X : Entity.X_THEN_Z;
     }
 
-    /**
-     */
     protected SoundEvent getSplashSound() {
         return SoundEvents.ENTITY_GENERIC_SPLASH;
     }
 
-    /**
-     */
     protected SoundEvent getHighSpeedSplashSound() {
         return SoundEvents.ENTITY_GENERIC_SPLASH;
     }
 
-    /**
-     */
     public void emitGameEvent(RegistryEntry<GameEvent> event, @Nullable
     Entity entity) {
         this.getWorld().emitGameEvent(entity, event, this.pos);
     }
 
-    /**
-     */
     public void emitGameEvent(RegistryEntry<GameEvent> event) {
         ((Entity) (this.entityBridge)).emitGameEvent(event, ((Entity) (this.entityBridge)));
     }
 
-    /**
-     */
     public void playSound(SoundEvent sound, float volume, float pitch) {
         if (!this.isSilent()) {
             this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), sound, this.getSoundCategory(), volume, pitch);
         }
     }
 
-    /**
-     */
     public boolean isSilent() {
         return this.dataTracker.get(Entity.SILENT);
     }
 
-    /**
-     */
     public boolean hasNoGravity() {
         return this.dataTracker.get(Entity.NO_GRAVITY);
     }
 
-    /**
-     */
     protected double getGravity() {
         return 0.0;
     }
 
-    /**
-     */
     public double getFinalGravity() {
         return this.hasNoGravity() ? 0.0 : this.getGravity();
     }
 
-    /**
-     */
     protected Entity.MoveEffect getMoveEffect() {
         return Entity.MoveEffect.ALL;
     }
 
-    /**
-     */
     protected void fall(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition) {
         if ((!this.isTouchingWater()) && (heightDifference < 0.0)) {
             this.fallDistance -= ((float) (heightDifference));
@@ -642,33 +548,23 @@ public abstract class SlicedEntity {
         }
     }
 
-    /**
-     */
     public boolean isFireImmune() {
         return this.getType().isFireImmune();
     }
 
-    /**
-     */
     public boolean isTouchingWater() {
         return this.touchingWater;
     }
 
-    /**
-     */
     boolean isBeingRainedOn() {
         BlockPos blockPos = this.getBlockPos();
         return this.getWorld().hasRain(blockPos) || this.getWorld().hasRain(BlockPos.ofFloored(blockPos.getX(), this.getBoundingBox().maxY, blockPos.getZ()));
     }
 
-    /**
-     */
     public boolean isTouchingWaterOrRain() {
         return this.isTouchingWater() || this.isBeingRainedOn();
     }
 
-    /**
-     */
     void checkWaterState() {
         if ((this.getVehicle() instanceof AbstractBoatEntity abstractBoatEntity) && (!abstractBoatEntity.isSubmergedInWater())) {
             this.touchingWater = false;
@@ -683,8 +579,6 @@ public abstract class SlicedEntity {
         }
     }
 
-    /**
-     */
     protected void onSwimmingStart() {
         Entity entity = ((Entity) (Objects.requireNonNullElse(this.getControllingPassenger(), ((Entity) (this.entityBridge)))));
         float f = (entity == this.entityBridge) ? 0.2F : 0.9F;
@@ -709,27 +603,19 @@ public abstract class SlicedEntity {
         this.emitGameEvent(GameEvent.SPLASH);
     }
 
-    /**
-     */
     public boolean isSubmergedIn(TagKey<Fluid> fluidTag) {
         return this.submergedFluidTag.contains(fluidTag);
     }
 
-    /**
-     */
     public boolean isInLava() {
         return (!this.firstUpdate) && (this.fluidHeight.getDouble(FluidTags.LAVA) > 0.0);
     }
 
-    /**
-     */
     public void updateVelocity(float speed, Vec3d movementInput) {
         Vec3d vec3d = Entity.movementInputToVelocity(movementInput, speed, this.getYaw());
         this.setVelocity(this.getVelocity().add(vec3d));
     }
 
-    /**
-     */
     protected static Vec3d movementInputToVelocity(Vec3d movementInput, float speed, float yaw) {
         double d = movementInput.lengthSquared();
         if (d < 1.0E-7) {
@@ -742,14 +628,10 @@ public abstract class SlicedEntity {
         }
     }
 
-    /**
-     */
     public Vec3d getLastRenderPos() {
         return new Vec3d(this.lastRenderX, this.lastRenderY, this.lastRenderZ);
     }
 
-    /**
-     */
     @Deprecated
     public void serverDamage(DamageSource source, float amount) {
         if (this.world instanceof ServerWorld serverWorld) {
@@ -757,12 +639,8 @@ public abstract class SlicedEntity {
         }
     }
 
-    /**
-     */
     public abstract boolean damage(ServerWorld world, DamageSource source, float amount);
 
-    /**
-     */
     public Vec3d getRotationVector(float pitch, float yaw) {
         float f = pitch * ((float) (Math.PI / 180.0));
         float g = (-yaw) * ((float) (Math.PI / 180.0));
@@ -773,157 +651,107 @@ public abstract class SlicedEntity {
         return new Vec3d(i * j, -k, h * j);
     }
 
-    /**
-     */
     public boolean isInterpolating() {
         return (this.getInterpolator() != null) && this.getInterpolator().isInterpolating();
     }
 
-    /**
-     */
     @Nullable
     public PositionInterpolator getInterpolator() {
         return null;
     }
 
-    /**
-     */
     public Vec3d getRotationVector() {
         return this.getRotationVector(this.getPitch(), this.getYaw());
     }
 
-    /**
-     */
     public Vec2f getRotationClient() {
         return new Vec2f(this.getPitch(), this.getYaw());
     }
 
-    /**
-     */
     public Vec3d getRotationVecClient() {
         return Vec3d.fromPolar(this.getRotationClient());
     }
 
-    /**
-     */
     public boolean hasVehicle() {
         return this.getVehicle() != null;
     }
 
-    /**
-     */
     public boolean isSneaking() {
         return this.getFlag(Entity.SNEAKING_FLAG_INDEX);
     }
 
-    /**
-     */
     public boolean isSneaky() {
         return this.isSneaking();
     }
 
-    /**
-     */
     public boolean isSprinting() {
         return this.getFlag(Entity.SPRINTING_FLAG_INDEX);
     }
 
-    /**
-     */
     public boolean isSwimming() {
         return this.getFlag(Entity.SWIMMING_FLAG_INDEX);
     }
 
-    /**
-     */
     public boolean isInSwimmingPose() {
         return this.isInPose(EntityPose.SWIMMING);
     }
 
-    /**
-     */
     public boolean isCrawling() {
         return this.isInSwimmingPose() && (!this.isTouchingWater());
     }
 
-    /**
-     */
     public boolean isOnRail() {
         return false;
     }
 
-    /**
-     */
     protected boolean getFlag(int index) {
         return (this.dataTracker.get(Entity.FLAGS) & (1 << index)) != 0;
     }
 
-    /**
-     */
     public int getMaxAir() {
         return 300;
     }
 
-    /**
-     */
     public int getFrozenTicks() {
         return this.dataTracker.get(Entity.FROZEN_TICKS);
     }
 
-    /**
-     */
     public boolean isFrozen() {
         return this.getFrozenTicks() >= this.getMinFreezeDamageTicks();
     }
 
-    /**
-     */
     public int getMinFreezeDamageTicks() {
         return 140;
     }
 
-    /**
-     */
     public void limitFallDistance() {
         if ((this.getVelocity().getY() > (-0.5)) && (this.fallDistance > 1.0)) {
             this.fallDistance = 1.0;
         }
     }
 
-    /**
-     */
     public void onLanding() {
         this.fallDistance = 0.0;
     }
 
-    /**
-     */
     protected boolean isAlwaysInvulnerableTo(DamageSource damageSource) {
         return ((this.isRemoved() || ((this.invulnerable && (!damageSource.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY))) && (!damageSource.isSourceCreativePlayer()))) || (damageSource.isIn(DamageTypeTags.IS_FIRE) && this.isFireImmune())) || (damageSource.isIn(DamageTypeTags.IS_FALL) && this.getType().isIn(EntityTypeTags.FALL_DAMAGE_IMMUNE));
     }
 
-    /**
-     */
     public UUID getUuid() {
         return this.uuid;
     }
 
-    /**
-     */
     public boolean isPushedByFluids() {
         return true;
     }
 
-    /**
-     */
     public void onTrackedDataSet(TrackedData<?> data) {
         if (Entity.POSE.equals(data)) {
             this.calculateDimensions();
         }
     }
 
-    /**
-     */
     public void calculateDimensions() {
         EntityDimensions entityDimensions = this.dimensions;
         EntityPose entityPose = this.getPose();
@@ -936,8 +764,6 @@ public abstract class SlicedEntity {
         }
     }
 
-    /**
-     */
     public void recalculateDimensions(EntityDimensions previous) {
         EntityDimensions entityDimensions = this.getDimensions(this.getPose());
         Vec3d vec3d = this.getPos().add(0.0, previous.height() / 2.0, 0.0);
@@ -956,79 +782,55 @@ public abstract class SlicedEntity {
         }
     }
 
-    /**
-     */
     public Box getBoundingBox() {
         return this.boundingBox;
     }
 
-    /**
-     */
     public void setBoundingBox(Box boundingBox) {
         this.boundingBox = boundingBox;
     }
 
-    /**
-     */
     public float getStandingEyeHeight() {
         return this.standingEyeHeight;
     }
 
-    /**
-     */
     @Nullable
     public LivingEntity getControllingPassenger() {
         return null;
     }
 
-    /**
-     */
     public boolean isLogicalSideForUpdatingMovement() {
         return this.world.isClient() ? this.isControlledByMainPlayer() : !this.isControlledByPlayer();
     }
 
-    /**
-     */
     protected boolean isControlledByMainPlayer() {
         LivingEntity livingEntity = this.getControllingPassenger();
         return (livingEntity != null) && livingEntity.isControlledByMainPlayer();
     }
 
-    /**
-     */
     public boolean isControlledByPlayer() {
         LivingEntity livingEntity = this.getControllingPassenger();
         return (livingEntity != null) && livingEntity.isControlledByPlayer();
     }
 
-    /**
-     */
     public boolean canMoveVoluntarily() {
         return this.isLogicalSideForUpdatingMovement();
     }
 
-    /**
-     */
     @Nullable
     public Entity getVehicle() {
         return this.vehicle;
     }
 
-    /**
-     */
     @Nullable
     public Entity getControllingVehicle() {
         return (this.vehicle != null) && (this.vehicle.getControllingPassenger() == this.entityBridge) ? this.vehicle : null;
     }
 
-    /**
-     */
     public SoundCategory getSoundCategory() {
         return SoundCategory.NEUTRAL;
     }
 
-    /**
-     */
     public boolean updateMovementInFluid(TagKey<Fluid> tag, double speed) {
         if (this.isRegionUnloaded()) {
             return false;
@@ -1082,8 +884,6 @@ public abstract class SlicedEntity {
         }
     }
 
-    /**
-     */
     public boolean isRegionUnloaded() {
         Box box = this.getBoundingBox().expand(1.0);
         int i = MathHelper.floor(box.minX);
@@ -1093,50 +893,34 @@ public abstract class SlicedEntity {
         return !this.getWorld().isRegionLoaded(i, k, j, l);
     }
 
-    /**
-     */
     public double getFluidHeight(TagKey<Fluid> fluid) {
         return this.fluidHeight.getDouble(fluid);
     }
 
-    /**
-     */
     public double getSwimHeight() {
         return this.getStandingEyeHeight() < 0.4 ? 0.0 : 0.4;
     }
 
-    /**
-     */
     public float getWidth() {
         return this.dimensions.width();
     }
 
-    /**
-     */
     public float getHeight() {
         return this.dimensions.height();
     }
 
-    /**
-     */
     public EntityDimensions getDimensions(EntityPose pose) {
         return this.type.getDimensions();
     }
 
-    /**
-     */
     public Vec3d getPos() {
         return this.pos;
     }
 
-    /**
-     */
     public BlockPos getBlockPos() {
         return this.blockPos;
     }
 
-    /**
-     */
     public BlockState getBlockStateAtPos() {
         if (this.stateAtPos == null) {
             this.stateAtPos = this.getWorld().getBlockState(this.getBlockPos());
@@ -1144,50 +928,34 @@ public abstract class SlicedEntity {
         return this.stateAtPos;
     }
 
-    /**
-     */
     public Vec3d getVelocity() {
         return this.velocity;
     }
 
-    /**
-     */
     public void setVelocity(Vec3d velocity) {
         this.velocity = velocity;
     }
 
-    /**
-     */
     public void addVelocityInternal(Vec3d velocity) {
         this.setVelocity(this.getVelocity().add(velocity));
     }
 
-    /**
-     */
     public void setVelocity(double x, double y, double z) {
         this.setVelocity(new Vec3d(x, y, z));
     }
 
-    /**
-     */
     public double getX() {
         return this.pos.x;
     }
 
-    /**
-     */
     public double getY() {
         return this.pos.y;
     }
 
-    /**
-     */
     public double getZ() {
         return this.pos.z;
     }
 
-    /**
-     */
     public void setPos(double x, double y, double z) {
         if (((this.pos.x != x) || (this.pos.y != y)) || (this.pos.z != z)) {
             this.pos = new Vec3d(x, y, z);
@@ -1201,50 +969,33 @@ public abstract class SlicedEntity {
         }
     }
 
-    /**
-     */
     public boolean canFreeze() {
         return !this.getType().isIn(EntityTypeTags.FREEZE_IMMUNE_ENTITY_TYPES);
     }
 
-    /**
-     */
     public float getYaw() {
         return this.yaw;
     }
 
-    /**
-     */
     public float getPitch() {
         return this.pitch;
     }
 
-    /**
-     */
     public float getStepHeight() {
         return 0.0F;
     }
 
-    /**
-     */
     public boolean isRemoved() {
         return this.removalReason != null;
     }
 
-    /**
-     */
     public World getWorld() {
         return this.world;
     }
 
-    /**
-     */
     public DamageSources getDamageSources() {
         return this.getWorld().getDamageSources();
     }
 
-    /**
-     * Real MC entity used as bridge for World and external API calls.
-     */
     protected Entity entityBridge;
 }

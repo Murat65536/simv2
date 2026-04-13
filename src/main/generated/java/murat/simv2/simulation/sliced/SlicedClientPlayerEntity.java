@@ -44,22 +44,16 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
 
     public float forwardSpeed;
 
-    /**
-     */
     public boolean isMainPlayer() {
         return true;
     }
 
-    /**
-     */
     public boolean isHoldingOntoLadder() {
         return (!this.getAbilities().flying) && super.isHoldingOntoLadder();
     }
 
     public boolean noClip;
 
-    /**
-     */
     private void pushOutOfBlocks(double x, double z) {
         BlockPos blockPos = BlockPos.ofFloored(x, this.getY(), z);
         if (this.wouldCollideAt(blockPos)) {
@@ -83,47 +77,33 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
         }
     }
 
-    /**
-     */
     private boolean wouldCollideAt(BlockPos pos) {
         Box box = this.getBoundingBox();
         Box box2 = new Box(pos.getX(), box.minY, pos.getZ(), pos.getX() + 1.0, box.maxY, pos.getZ() + 1.0).contract(1.0E-7);
         return this.getWorld().canCollide(((ClientPlayerEntity) (this.entityBridge)), box2);
     }
 
-    /**
-     */
     public boolean isUsingItem() {
         return this.usingItem;
     }
 
-    /**
-     */
     @Nullable
     public JumpingMount getJumpingMount() {
         return (this.getControllingVehicle() instanceof JumpingMount jumpingMount) && jumpingMount.canJump() ? jumpingMount : null;
     }
 
-    /**
-     */
     public boolean isSneaking() {
         return this.input.playerInput.sneak();
     }
 
-    /**
-     */
     public boolean isInSneakingPose() {
         return this.inSneakingPose;
     }
 
-    /**
-     */
     public boolean shouldSlowDown() {
         return this.isInSneakingPose() || this.isCrawling();
     }
 
-    /**
-     */
     public void tickMovementInput() {
         if (this.isCamera()) {
             Vec2f vec2f = this.applyMovementSpeedFactors(this.input.getMovementInput());
@@ -135,8 +115,6 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
         }
     }
 
-    /**
-     */
     private Vec2f applyMovementSpeedFactors(Vec2f input) {
         if (input.lengthSquared() == 0.0F) {
             return input;
@@ -153,8 +131,6 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
         }
     }
 
-    /**
-     */
     private static Vec2f applyDirectionalMovementSpeedFactors(Vec2f vec) {
         float f = vec.length();
         if (f <= 0.0F) {
@@ -167,8 +143,6 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
         }
     }
 
-    /**
-     */
     private static float getDirectionalMovementSpeedMultiplier(Vec2f vec) {
         float f = Math.abs(vec.x);
         float g = Math.abs(vec.y);
@@ -176,14 +150,10 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
         return MathHelper.sqrt(1.0F + MathHelper.square(h));
     }
 
-    /**
-     */
     protected boolean isCamera() {
         return this.client.getCameraEntity() == this.entityBridge;
     }
 
-    /**
-     */
     public void tickMovement() {
         boolean bl = this.input.playerInput.jump();
         boolean bl2 = this.input.playerInput.sneak();
@@ -234,8 +204,6 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
         super.tickMovement();
     }
 
-    /**
-     */
     public void move(MovementType type, Vec3d movement) {
         double d = this.getX();
         double e = this.getZ();
@@ -245,14 +213,10 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
         this.autoJump(f, g);
     }
 
-    /**
-     */
     public boolean isAutoJumpEnabled() {
         return this.autoJumpEnabled;
     }
 
-    /**
-     */
     protected void autoJump(float dx, float dz) {
         if (this.shouldAutoJump()) {
             Vec3d vec3d = this.getPos();
@@ -303,14 +267,10 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
         }
     }
 
-    /**
-     */
     private boolean shouldAutoJump() {
         return (((((this.isAutoJumpEnabled() && (this.ticksToNextAutoJump <= 0)) && this.isOnGround()) && (!this.clipAtLedge())) && (!this.hasVehicle())) && this.hasMovementInput()) && (this.getJumpVelocityMultiplier() >= 1.0);
     }
 
-    /**
-     */
     private boolean hasMovementInput() {
         return this.input.getMovementInput().lengthSquared() > 0.0F;
     }

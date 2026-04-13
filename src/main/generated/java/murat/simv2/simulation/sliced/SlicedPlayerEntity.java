@@ -50,22 +50,16 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
 
     public double fallDistance;
 
-    /**
-     */
     protected boolean clipAtLedge() {
         return this.isSneaking();
     }
 
     private boolean invulnerable;
 
-    /**
-     */
     protected boolean canChangeIntoPose(EntityPose pose) {
         return this.getWorld().isSpaceEmpty(((PlayerEntity) (this.entityBridge)), this.getDimensions(pose).getBoxAt(this.getPos()).contract(1.0E-7));
     }
 
-    /**
-     */
     public void tickMovement() {
         if (this.abilities.flying && (!this.hasVehicle())) {
             this.onLanding();
@@ -74,8 +68,6 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
         float f = 0.0F;
     }
 
-    /**
-     */
     public void onDeath(DamageSource damageSource) {
         super.onDeath(damageSource);
         this.refreshPosition();
@@ -89,8 +81,6 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
         }
     }
 
-    /**
-     */
     public boolean isInvulnerableTo(ServerWorld world, DamageSource source) {
         if (super.isInvulnerableTo(world, source)) {
             return true;
@@ -105,8 +95,6 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
         }
     }
 
-    /**
-     */
     public boolean damage(ServerWorld world, DamageSource source, float amount) {
         if (this.isInvulnerableTo(world, source)) {
         } else if (this.abilities.invulnerable && (!source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY))) {
@@ -125,8 +113,6 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
         return false;
     }
 
-    /**
-     */
     protected void applyDamage(ServerWorld world, DamageSource source, float amount) {
         if (!this.isInvulnerableTo(world, source)) {
             amount = this.applyArmorToDamage(source, amount);
@@ -140,20 +126,14 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
         }
     }
 
-    /**
-     */
     protected boolean isImmobile() {
         return super.isImmobile() || this.isSleeping();
     }
 
-    /**
-     */
     public boolean shouldSwimInFluids() {
         return !this.abilities.flying;
     }
 
-    /**
-     */
     protected Vec3d adjustMovementForSneaking(Vec3d movement, MovementType type) {
         float f = this.getStepHeight();
         if (((((!this.abilities.flying) && (!(movement.y > 0.0))) && ((type == MovementType.SELF) || (type == MovementType.PLAYER))) && this.clipAtLedge()) && this.method_30263(f)) {
@@ -182,21 +162,15 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
         }
     }
 
-    /**
-     */
     private boolean method_30263(float f) {
         return this.isOnGround() || ((this.fallDistance < f) && (!this.isSpaceAroundPlayerEmpty(0.0, 0.0, f - this.fallDistance)));
     }
 
-    /**
-     */
     private boolean isSpaceAroundPlayerEmpty(double offsetX, double offsetZ, double d) {
         Box box = this.getBoundingBox();
         return this.getWorld().isSpaceEmpty(((PlayerEntity) (this.entityBridge)), new Box((box.minX + 1.0E-7) + offsetX, (box.minY - d) - 1.0E-7, (box.minZ + 1.0E-7) + offsetZ, (box.maxX - 1.0E-7) + offsetX, box.minY, (box.maxZ - 1.0E-7) + offsetZ));
     }
 
-    /**
-     */
     public void attack(Entity target) {
         if (target.isAttackable()) {
             if (!target.handleAttack(((PlayerEntity) (this.entityBridge)))) {
@@ -233,62 +207,42 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
         }
     }
 
-    /**
-     */
     protected float getDamageAgainst(Entity target, float baseDamage, DamageSource damageSource) {
         return baseDamage;
     }
 
-    /**
-     */
     protected void attackLivingEntity(LivingEntity target) {
         this.attack(target);
     }
 
-    /**
-     */
     public boolean isControlledByPlayer() {
         return true;
     }
 
-    /**
-     */
     protected boolean isControlledByMainPlayer() {
         return this.isMainPlayer();
     }
 
-    /**
-     */
     public boolean isMainPlayer() {
         return false;
     }
 
-    /**
-     */
     public boolean canMoveVoluntarily() {
         return (!this.getWorld().isClient) || this.isMainPlayer();
     }
 
-    /**
-     */
     public PlayerAbilities getAbilities() {
         return this.abilities;
     }
 
-    /**
-     */
     public void wakeUp(boolean skipSleepTimer, boolean updateSleepingPlayers) {
         super.wakeUp();
     }
 
-    /**
-     */
     public void wakeUp() {
         this.wakeUp(true, true);
     }
 
-    /**
-     */
     public void travel(Vec3d movementInput) {
         if (this.hasVehicle()) {
             super.travel(movementInput);
@@ -311,96 +265,64 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
         }
     }
 
-    /**
-     */
     public float getMovementSpeed() {
         return ((float) (this.getAttributeValue(EntityAttributes.MOVEMENT_SPEED)));
     }
 
-    /**
-     */
     protected void onSwimmingStart() {
     }
 
-    /**
-     */
     protected int getExperienceToDrop(ServerWorld world) {
         return (!world.getGameRules().getBoolean(GameRules.KEEP_INVENTORY)) && (!this.isSpectator()) ? Math.min(this.experienceLevel * 7, 100) : 0;
     }
 
-    /**
-     */
     protected boolean shouldAlwaysDropExperience() {
         return true;
     }
 
-    /**
-     */
     protected Entity.MoveEffect getMoveEffect() {
         return this.abilities.flying || (this.isOnGround() && this.isSneaky()) ? Entity.MoveEffect.NONE : Entity.MoveEffect.ALL;
     }
 
-    /**
-     */
     @Nullable
     public abstract GameMode getGameMode();
 
-    /**
-     */
     public boolean isSpectator() {
         return this.getGameMode() == GameMode.SPECTATOR;
     }
 
-    /**
-     */
     public boolean isSwimming() {
         return ((!this.abilities.flying) && (!this.isSpectator())) && super.isSwimming();
     }
 
-    /**
-     */
     public boolean isPushedByFluids() {
         return !this.abilities.flying;
     }
 
-    /**
-     */
     protected void setAbsorptionAmountUnclamped(float absorptionAmount) {
         this.getDataTracker().set(PlayerEntity.ABSORPTION_AMOUNT, absorptionAmount);
     }
 
-    /**
-     */
     public float getAbsorptionAmount() {
         return this.getDataTracker().get(PlayerEntity.ABSORPTION_AMOUNT);
     }
 
-    /**
-     */
     public float getAttackCooldownProgressPerTick() {
         return ((float) ((1.0 / this.getAttributeValue(EntityAttributes.ATTACK_SPEED)) * 20.0));
     }
 
-    /**
-     */
     public float getAttackCooldownProgress(float baseTime) {
         return MathHelper.clamp((this.lastAttackedTicks + baseTime) / this.getAttackCooldownProgressPerTick(), 0.0F, 1.0F);
     }
 
-    /**
-     */
     protected float getVelocityMultiplier() {
         return (!this.abilities.flying) && (!this.isGliding()) ? super.getVelocityMultiplier() : 1.0F;
     }
 
-    /**
-     */
     public float getDamageTiltYaw() {
         return this.damageTiltYaw;
     }
 
-    /**
-     */
     protected float getOffGroundSpeed() {
         if (this.abilities.flying && (!this.hasVehicle())) {
             return this.isSprinting() ? this.abilities.getFlySpeed() * 2.0F : this.abilities.getFlySpeed();
@@ -409,8 +331,6 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
         }
     }
 
-    /**
-     */
     public boolean isClimbing() {
         return this.abilities.flying ? false : super.isClimbing();
     }
