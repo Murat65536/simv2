@@ -300,11 +300,11 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
     }
 
     protected void setAbsorptionAmountUnclamped(float absorptionAmount) {
-        this.getDataTracker().set(PlayerEntity.ABSORPTION_AMOUNT, absorptionAmount);
+        this.getDataTracker().set(SlicedPlayerEntity.ABSORPTION_AMOUNT, absorptionAmount);
     }
 
     public float getAbsorptionAmount() {
-        return this.getDataTracker().get(PlayerEntity.ABSORPTION_AMOUNT);
+        return this.getDataTracker().get(SlicedPlayerEntity.ABSORPTION_AMOUNT);
     }
 
     public float getAttackCooldownProgressPerTick() {

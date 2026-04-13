@@ -172,14 +172,14 @@ public abstract class SlicedEntity {
         this.dimensions = type.getDimensions();
         this.pos = Vec3d.ZERO;
         DataTracker.Builder builder = new DataTracker.Builder(((Entity) (this.entityBridge)));
-        builder.add(Entity.FLAGS, ((byte) (0)));
-        builder.add(Entity.AIR, this.getMaxAir());
-        builder.add(Entity.NAME_VISIBLE, false);
-        builder.add(Entity.CUSTOM_NAME, Optional.empty());
-        builder.add(Entity.SILENT, false);
-        builder.add(Entity.NO_GRAVITY, false);
-        builder.add(Entity.POSE, EntityPose.STANDING);
-        builder.add(Entity.FROZEN_TICKS, 0);
+        builder.add(SlicedEntity.FLAGS, ((byte) (0)));
+        builder.add(SlicedEntity.AIR, this.getMaxAir());
+        builder.add(SlicedEntity.NAME_VISIBLE, false);
+        builder.add(SlicedEntity.CUSTOM_NAME, Optional.empty());
+        builder.add(SlicedEntity.SILENT, false);
+        builder.add(SlicedEntity.NO_GRAVITY, false);
+        builder.add(SlicedEntity.POSE, EntityPose.STANDING);
+        builder.add(SlicedEntity.FROZEN_TICKS, 0);
         this.initDataTracker(builder);
         this.dataTracker = builder.build();
         this.setPosition(0.0, 0.0, 0.0);
@@ -200,7 +200,7 @@ public abstract class SlicedEntity {
     }
 
     public EntityPose getPose() {
-        return this.dataTracker.get(Entity.POSE);
+        return this.dataTracker.get(SlicedEntity.POSE);
     }
 
     public boolean isInPose(EntityPose pose) {
@@ -269,7 +269,7 @@ public abstract class SlicedEntity {
                 }
                 Vec3d vec3d2 = this.getPos();
                 List<Entity.QueuedCollisionCheck> list = new ObjectArrayList<>();
-                for (Direction.Axis axis : Entity.getAxisCheckOrder(vec3d)) {
+                for (Direction.Axis axis : SlicedEntity.getAxisCheckOrder(vec3d)) {
                     double e = vec3d.getComponentAlongAxis(axis);
                     if (e != 0.0) {
                         Vec3d vec3d3 = vec3d2.offset(axis.getPositiveDirection(), e);
@@ -422,7 +422,7 @@ public abstract class SlicedEntity {
     protected Vec3d adjustMovementForCollisions(Vec3d movement) {
         Box box = this.getBoundingBox();
         List<VoxelShape> list = this.getWorld().getEntityCollisions(((Entity) (this.entityBridge)), box.stretch(movement));
-        Vec3d vec3d = (movement.lengthSquared() == 0.0) ? movement : Entity.adjustMovementForCollisions(((Entity) (this.entityBridge)), movement, box, this.getWorld(), list);
+        Vec3d vec3d = (movement.lengthSquared() == 0.0) ? movement : SlicedEntity.adjustMovementForCollisions(((Entity) (this.entityBridge)), movement, box, this.getWorld(), list);
         boolean bl = movement.x != vec3d.x;
         boolean bl2 = movement.y != vec3d.y;
         boolean bl3 = movement.z != vec3d.z;
@@ -430,11 +430,11 @@ public abstract class SlicedEntity {
         if (((this.getStepHeight() > 0.0F) && (bl4 || this.isOnGround())) && (bl || bl3)) {
             Box box2 = (bl4) ? box.offset(0.0, vec3d.y, 0.0) : box;
             Box box3 = box2.stretch(movement.x, this.getStepHeight(), movement.z);
-            List<VoxelShape> list2 = Entity.findCollisionsForMovement(((Entity) (this.entityBridge)), this.world, list, box3);
+            List<VoxelShape> list2 = SlicedEntity.findCollisionsForMovement(((Entity) (this.entityBridge)), this.world, list, box3);
             float f = ((float) (vec3d.y));
-            float[] fs = Entity.collectStepHeights(box2, list2, this.getStepHeight(), f);
+            float[] fs = SlicedEntity.collectStepHeights(box2, list2, this.getStepHeight(), f);
             for (float g : fs) {
-                Vec3d vec3d2 = Entity.adjustMovementForCollisions(new Vec3d(movement.x, g, movement.z), box2, list2);
+                Vec3d vec3d2 = SlicedEntity.adjustMovementForCollisions(new Vec3d(movement.x, g, movement.z), box2, list2);
                 if (vec3d2.horizontalLengthSquared() > vec3d.horizontalLengthSquared()) {
                     double d = box.minY - box2.minY;
                     return vec3d2.subtract(0.0, d, 0.0);
@@ -464,8 +464,8 @@ public abstract class SlicedEntity {
 
     public static Vec3d adjustMovementForCollisions(@Nullable
     Entity entity, Vec3d movement, Box entityBoundingBox, World world, List<VoxelShape> collisions) {
-        List<VoxelShape> list = Entity.findCollisionsForMovement(entity, world, collisions, entityBoundingBox.stretch(movement));
-        return Entity.adjustMovementForCollisions(movement, entityBoundingBox, list);
+        List<VoxelShape> list = SlicedEntity.findCollisionsForMovement(entity, world, collisions, entityBoundingBox.stretch(movement));
+        return SlicedEntity.adjustMovementForCollisions(movement, entityBoundingBox, list);
     }
 
     private static List<VoxelShape> findCollisionsForMovement(@Nullable
@@ -481,7 +481,7 @@ public abstract class SlicedEntity {
             return movement;
         } else {
             Vec3d vec3d = Vec3d.ZERO;
-            for (Direction.Axis axis : Entity.getAxisCheckOrder(movement)) {
+            for (Direction.Axis axis : SlicedEntity.getAxisCheckOrder(movement)) {
                 double d = movement.getComponentAlongAxis(axis);
                 if (d != 0.0) {
                     double e = VoxelShapes.calculateMaxOffset(axis, entityBoundingBox.offset(vec3d), collisions, d);
@@ -493,7 +493,7 @@ public abstract class SlicedEntity {
     }
 
     private static Iterable<Direction.Axis> getAxisCheckOrder(Vec3d movement) {
-        return Math.abs(movement.x) < Math.abs(movement.z) ? Entity.Z_THEN_X : Entity.X_THEN_Z;
+        return Math.abs(movement.x) < Math.abs(movement.z) ? SlicedEntity.Z_THEN_X : SlicedEntity.X_THEN_Z;
     }
 
     protected SoundEvent getSplashSound() {
@@ -520,11 +520,11 @@ public abstract class SlicedEntity {
     }
 
     public boolean isSilent() {
-        return this.dataTracker.get(Entity.SILENT);
+        return this.dataTracker.get(SlicedEntity.SILENT);
     }
 
     public boolean hasNoGravity() {
-        return this.dataTracker.get(Entity.NO_GRAVITY);
+        return this.dataTracker.get(SlicedEntity.NO_GRAVITY);
     }
 
     protected double getGravity() {
@@ -612,7 +612,7 @@ public abstract class SlicedEntity {
     }
 
     public void updateVelocity(float speed, Vec3d movementInput) {
-        Vec3d vec3d = Entity.movementInputToVelocity(movementInput, speed, this.getYaw());
+        Vec3d vec3d = SlicedEntity.movementInputToVelocity(movementInput, speed, this.getYaw());
         this.setVelocity(this.getVelocity().add(vec3d));
     }
 
@@ -677,7 +677,7 @@ public abstract class SlicedEntity {
     }
 
     public boolean isSneaking() {
-        return this.getFlag(Entity.SNEAKING_FLAG_INDEX);
+        return this.getFlag(SlicedEntity.SNEAKING_FLAG_INDEX);
     }
 
     public boolean isSneaky() {
@@ -685,11 +685,11 @@ public abstract class SlicedEntity {
     }
 
     public boolean isSprinting() {
-        return this.getFlag(Entity.SPRINTING_FLAG_INDEX);
+        return this.getFlag(SlicedEntity.SPRINTING_FLAG_INDEX);
     }
 
     public boolean isSwimming() {
-        return this.getFlag(Entity.SWIMMING_FLAG_INDEX);
+        return this.getFlag(SlicedEntity.SWIMMING_FLAG_INDEX);
     }
 
     public boolean isInSwimmingPose() {
@@ -705,7 +705,7 @@ public abstract class SlicedEntity {
     }
 
     protected boolean getFlag(int index) {
-        return (this.dataTracker.get(Entity.FLAGS) & (1 << index)) != 0;
+        return (this.dataTracker.get(SlicedEntity.FLAGS) & (1 << index)) != 0;
     }
 
     public int getMaxAir() {
@@ -713,7 +713,7 @@ public abstract class SlicedEntity {
     }
 
     public int getFrozenTicks() {
-        return this.dataTracker.get(Entity.FROZEN_TICKS);
+        return this.dataTracker.get(SlicedEntity.FROZEN_TICKS);
     }
 
     public boolean isFrozen() {
@@ -747,7 +747,7 @@ public abstract class SlicedEntity {
     }
 
     public void onTrackedDataSet(TrackedData<?> data) {
-        if (Entity.POSE.equals(data)) {
+        if (SlicedEntity.POSE.equals(data)) {
             this.calculateDimensions();
         }
     }

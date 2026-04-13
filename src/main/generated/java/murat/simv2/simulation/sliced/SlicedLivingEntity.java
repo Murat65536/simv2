@@ -218,11 +218,11 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     public float getHealth() {
-        return this.dataTracker.get(LivingEntity.HEALTH);
+        return this.dataTracker.get(SlicedLivingEntity.HEALTH);
     }
 
     public void setHealth(float health) {
-        this.dataTracker.set(LivingEntity.HEALTH, MathHelper.clamp(health, 0.0F, this.getMaxHealth()));
+        this.dataTracker.set(SlicedLivingEntity.HEALTH, MathHelper.clamp(health, 0.0F, this.getMaxHealth()));
     }
 
     public boolean isDead() {
@@ -510,9 +510,9 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     @Nullable
     public LivingEntity getPrimeAdversary() {
         if (this.attackingPlayer != null) {
-            return ((LivingEntity) (this.attackingPlayer.resolve(this.getWorld(), PlayerEntity.class)));
+            return ((LivingEntity) (this.attackingPlayer.resolve(this.getWorld(), SlicedPlayerEntity.class)));
         } else {
-            return this.attackerReference != null ? ((LivingEntity) (this.attackerReference.resolve(this.getWorld(), LivingEntity.class))) : null;
+            return this.attackerReference != null ? ((LivingEntity) (this.attackerReference.resolve(this.getWorld(), SlicedLivingEntity.class))) : null;
         }
     }
 
@@ -914,7 +914,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     public boolean isUsingRiptide() {
-        return (this.dataTracker.get(LivingEntity.LIVING_FLAGS) & 4) != 0;
+        return (this.dataTracker.get(SlicedLivingEntity.LIVING_FLAGS) & 4) != 0;
     }
 
     public PositionInterpolator getInterpolator() {
@@ -938,7 +938,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     public boolean isUsingItem() {
-        return (this.dataTracker.get(LivingEntity.LIVING_FLAGS) & 1) > 0;
+        return (this.dataTracker.get(SlicedLivingEntity.LIVING_FLAGS) & 1) > 0;
     }
 
     public ItemStack getActiveItem() {
@@ -966,11 +966,11 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     public boolean isGliding() {
-        return this.getFlag(Entity.GLIDING_FLAG_INDEX);
+        return this.getFlag(SlicedEntity.GLIDING_FLAG_INDEX);
     }
 
     public Optional<BlockPos> getSleepingPosition() {
-        return this.dataTracker.get(LivingEntity.SLEEPING_POSITION);
+        return this.dataTracker.get(SlicedLivingEntity.SLEEPING_POSITION);
     }
 
     public boolean isSleeping() {

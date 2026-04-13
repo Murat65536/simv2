@@ -573,12 +573,8 @@ public class SpoonSlicePruner {
         System.out.println("  Wrote " + outFile.getFileName());
 
         // Update hierarchy tracking
-        for (String sig : definedSigs) {
-            hierarchyDefinedMethods.add(sig);
-        }
-        for (String stubSig : stubNames) {
-            hierarchyDefinedMethods.add(stubSig);
-        }
+        hierarchyDefinedMethods.addAll(definedSigs);
+        hierarchyDefinedMethods.addAll(stubNames);
     }
 
     // ── Method resolution helpers ──
@@ -850,7 +846,7 @@ public class SpoonSlicePruner {
         replaceThisInArgPositions(method, factory, mcTypeName);
 
         // 3. == this / != this -> == this.entityBridge / != this.entityBridge
-        for (CtBinaryOperator<?> binOp : new ArrayList<CtBinaryOperator<?>>(method.getElements(new TypeFilter<CtBinaryOperator<?>>(CtBinaryOperator.class)))) {
+        for (CtBinaryOperator<?> binOp : new ArrayList<>(method.getElements(new TypeFilter<CtBinaryOperator<?>>(CtBinaryOperator.class)))) {
             if (binOp.getKind() != BinaryOperatorKind.EQ && binOp.getKind() != BinaryOperatorKind.NE) continue;
             if (binOp.getRightHandOperand() instanceof CtThisAccess<?> rhs && rhs.getTypeCasts().isEmpty()) {
                 ((CtBinaryOperator) binOp).setRightHandOperand(createEntityBridgeRead(factory));
@@ -861,7 +857,7 @@ public class SpoonSlicePruner {
         }
 
         // 4-5. instanceof rewrites
-        for (CtBinaryOperator<?> binOp : new ArrayList<CtBinaryOperator<?>>(method.getElements(new TypeFilter<CtBinaryOperator<?>>(CtBinaryOperator.class)))) {
+        for (CtBinaryOperator<?> binOp : new ArrayList<>(method.getElements(new TypeFilter<CtBinaryOperator<?>>(CtBinaryOperator.class)))) {
             if (binOp.getKind() != BinaryOperatorKind.INSTANCEOF) continue;
             if (!(binOp.getLeftHandOperand() instanceof CtThisAccess<?> lhs) || !lhs.getTypeCasts().isEmpty()) continue;
 
@@ -885,6 +881,19 @@ public class SpoonSlicePruner {
         for (CtThisAccess<?> ta : new ArrayList<CtThisAccess<?>>(method.getElements(new TypeFilter<CtThisAccess<?>>(CtThisAccess.class)))) {
             for (CtTypeReference<?> cast : ta.getTypeCasts()) {
                 remapTypeReferenceToSliced(cast);
+            }
+        }
+
+        // 7. Static/self type accesses used as invocation/field targets:
+        // ClientPlayerEntity.foo() -> SlicedClientPlayerEntity.foo()
+        for (CtTypeAccess<?> typeAccess : new ArrayList<>(method.getElements(new TypeFilter<CtTypeAccess<?>>(CtTypeAccess.class)))) {
+            CtElement parent = typeAccess.getParent();
+            if (parent instanceof CtInvocation<?> invocation && invocation.getTarget() == typeAccess) {
+                remapTypeReferenceToSliced(typeAccess.getAccessedType());
+                continue;
+            }
+            if (parent instanceof CtFieldAccess<?> fieldAccess && fieldAccess.getTarget() == typeAccess) {
+                remapTypeReferenceToSliced(typeAccess.getAccessedType());
             }
         }
     }

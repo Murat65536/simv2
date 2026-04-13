@@ -127,7 +127,7 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
                 float f = ((float) (this.getAttributeValue(EntityAttributes.SNEAKING_SPEED)));
                 vec2f = vec2f.multiply(f);
             }
-            return ClientPlayerEntity.applyDirectionalMovementSpeedFactors(vec2f);
+            return SlicedClientPlayerEntity.applyDirectionalMovementSpeedFactors(vec2f);
         }
     }
 
@@ -137,7 +137,7 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
             return vec;
         } else {
             Vec2f vec2f = vec.multiply(1.0F / f);
-            float g = ClientPlayerEntity.getDirectionalMovementSpeedMultiplier(vec2f);
+            float g = SlicedClientPlayerEntity.getDirectionalMovementSpeedMultiplier(vec2f);
             float h = Math.min(f * g, 1.0F);
             return vec2f.multiply(h);
         }
