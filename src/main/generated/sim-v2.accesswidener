@@ -48,3 +48,34 @@ accessible field net/minecraft/entity/LivingEntity upwardSpeed F
 accessible field net/minecraft/entity/player/PlayerEntity abilityResyncCountdown I
 accessible field net/minecraft/entity/player/PlayerEntity lastStrideDistance F
 accessible field net/minecraft/entity/player/PlayerEntity strideDistance F
+
+# Access widener entries for sliced classes
+accessible class net/minecraft/entity/Entity$QueuedCollisionCheck
+accessible field net/minecraft/entity/Entity AIR Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/Entity CUSTOM_NAME Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/Entity FLAGS Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/Entity FROZEN_TICKS Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/Entity GLIDING_FLAG_INDEX I
+accessible field net/minecraft/entity/Entity NAME_VISIBLE Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/Entity NO_GRAVITY Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/Entity NULL_BOX Lnet/minecraft/util/math/Box;
+accessible field net/minecraft/entity/Entity POSE Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/Entity SILENT Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/Entity SNEAKING_FLAG_INDEX I
+accessible field net/minecraft/entity/Entity SPRINTING_FLAG_INDEX I
+accessible field net/minecraft/entity/Entity SWIMMING_FLAG_INDEX I
+accessible field net/minecraft/entity/Entity X_THEN_Z Lcom/google/common/collect/ImmutableList;
+accessible field net/minecraft/entity/Entity Z_THEN_X Lcom/google/common/collect/ImmutableList;
+accessible field net/minecraft/entity/LivingEntity HEALTH Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/LivingEntity LIVING_FLAGS Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/LivingEntity SLEEPING_POSITION Lnet/minecraft/entity/data/TrackedData;
+accessible field net/minecraft/entity/player/PlayerEntity ABSORPTION_AMOUNT Lnet/minecraft/entity/data/TrackedData;
+accessible method net/minecraft/client/network/ClientPlayerEntity applyDirectionalMovementSpeedFactors (Lnet/minecraft/util/math/Vec2f;)Lnet/minecraft/util/math/Vec2f;
+accessible method net/minecraft/client/network/ClientPlayerEntity getDirectionalMovementSpeedMultiplier (Lnet/minecraft/util/math/Vec2f;)F
+accessible method net/minecraft/entity/Entity adjustMovementForCollisions (Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Box;Ljava/util/List;)Lnet/minecraft/util/math/Vec3d;
+accessible method net/minecraft/entity/Entity collectStepHeights (Lnet/minecraft/util/math/Box;Ljava/util/List;FF)[F
+accessible method net/minecraft/entity/Entity findCollisionsForMovement (Lnet/minecraft/entity/Entity;Lnet/minecraft/world/World;Ljava/util/List;Lnet/minecraft/util/math/Box;)Ljava/util/List;
+accessible method net/minecraft/entity/Entity getAxisCheckOrder (Lnet/minecraft/util/math/Vec3d;)Ljava/lang/Iterable;
+accessible method net/minecraft/entity/Entity isControlledByMainPlayer ()Z
+accessible method net/minecraft/entity/Entity movementInputToVelocity (Lnet/minecraft/util/math/Vec3d;FF)Lnet/minecraft/util/math/Vec3d;
+accessible method net/minecraft/entity/LivingEntity canGlide ()Z

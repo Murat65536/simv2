@@ -3,9 +3,17 @@ package murat.simv2.analysis;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
 import spoon.reflect.code.*;
+import spoon.reflect.cu.CompilationUnit;
 import spoon.reflect.declaration.*;
 import spoon.reflect.factory.Factory;
-import spoon.reflect.reference.CtTypeReference;
+import spoon.reflect.reference.*;
+import spoon.processing.Processor;
+import spoon.reflect.visitor.DefaultImportComparator;
+import spoon.reflect.visitor.DefaultJavaPrettyPrinter;
+import spoon.reflect.visitor.ForceImportProcessor;
+import spoon.reflect.visitor.ImportCleaner;
+import spoon.reflect.visitor.ImportConflictDetector;
+import spoon.reflect.visitor.PrettyPrinter;
 import spoon.reflect.visitor.filter.TypeFilter;
 
 import java.io.File;
@@ -82,6 +90,7 @@ public class SpoonSlicePruner {
             launcher.getEnvironment().setComplianceLevel(21);
             launcher.getEnvironment().setAutoImports(true);
             launcher.getModelBuilder().setSourceClasspath(sourceClasspath);
+            launcher.prettyprint();
             launcher.buildModel();
             CtModel model = launcher.getModel();
             Factory factory = launcher.getFactory();
@@ -98,6 +107,9 @@ public class SpoonSlicePruner {
             Set<String> awEntries = new TreeSet<>();
             // Methods found during a child's transitive closure that belong to a parent class
             Map<String, List<CtMethod<?>>> deferredMethods = new LinkedHashMap<>();
+            // Track which sigs each class contributed to hierarchyDefinedMethods
+            // so we can remove them before re-processing
+            Map<String, Set<String>> classContributedSigs = new LinkedHashMap<>();
 
             for (String className : AnalysisConfig.TARGET_CLASSES_DOT) {
                 Map<String, Set<Integer>> methodLines = sliceLines.get(className);
@@ -115,9 +127,13 @@ public class SpoonSlicePruner {
                 // Include any methods deferred from child classes
                 List<CtMethod<?>> extraMethods = deferredMethods.remove(type.getSimpleName());
 
+                Set<String> before = new LinkedHashSet<>(hierarchyDefinedMethods);
                 buildSlicedClass(type, methodLines, outputDir, factory,
                     emittedSimpleNames, typeIndex, hierarchyDefinedMethods, awEntries,
                     deferredMethods, extraMethods);
+                Set<String> contributed = new LinkedHashSet<>(hierarchyDefinedMethods);
+                contributed.removeAll(before);
+                classContributedSigs.put(type.getSimpleName(), contributed);
                 emittedSimpleNames.add(type.getSimpleName());
             }
 
@@ -128,6 +144,12 @@ public class SpoonSlicePruner {
                     if (type == null) continue;
                     List<CtMethod<?>> extra = deferredMethods.remove(type.getSimpleName());
                     if (extra == null || extra.isEmpty()) continue;
+
+                    // Remove this class's previous contributions so the transitive
+                    // closure can re-discover them (the file will be overwritten)
+                    Set<String> previousSigs = classContributedSigs.getOrDefault(
+                        type.getSimpleName(), Set.of());
+                    hierarchyDefinedMethods.removeAll(previousSigs);
 
                     Map<String, Set<Integer>> methodLines = sliceLines.getOrDefault(className, Map.of());
                     System.out.println("Re-processing " + type.getSimpleName()
@@ -337,17 +359,7 @@ public class SpoonSlicePruner {
         String slicedName = "Sliced" + simpleName;
         System.out.println("Pruning " + type.getQualifiedName() + "...");
 
-        // Collect imports from original source
-        Set<String> imports = new TreeSet<>();
-        if (type.getPosition() != null && type.getPosition().getCompilationUnit() != null) {
-            for (var imp : type.getPosition().getCompilationUnit().getImports()) {
-                String s = imp.toString().trim();
-                if (!s.endsWith(";")) s += ";";
-                imports.add(s);
-            }
-        }
-
-        String extendsClause = resolveExtendsClause(type, emittedSimpleNames, typeIndex);
+        CtTypeReference<?> extendsRef = resolveExtendsType(type, emittedSimpleNames, typeIndex, factory);
 
         // ── Phase 1: Clone WALA-sliced methods with pruning ──
         List<CtMethod<?>> clonedMethods = new ArrayList<>();
@@ -448,6 +460,8 @@ public class SpoonSlicePruner {
                         if (belongsToParent) {
                             // Defer to parent — don't include body here
                             deferredMethods.computeIfAbsent(declaringName, k -> new ArrayList<>()).add(found);
+                            definedSigs.add(originalSig);
+                            definedSigs.add(rewrittenSig);
                             allKnownSigs.add(originalSig);
                             allKnownSigs.add(rewrittenSig);
                             deferred++;
@@ -474,8 +488,8 @@ public class SpoonSlicePruner {
         // ── Phase 2b: Voidify non-void methods whose return statements were pruned ──
         voidifyUnusedReturns(clonedMethods, hierarchyDefinedMethods, prunedReturnMethods);
 
-        // ── Phase 3: Remove @Override, deduplicate, convert to text + text rewrites ──
-        List<String> methodTexts = new ArrayList<>();
+        // ── Phase 3: Remove @Override, deduplicate, apply AST rewrites ──
+        List<CtMethod<?>> emittedMethods = new ArrayList<>();
         Set<String> emittedSigs = new LinkedHashSet<>();
         for (CtMethod<?> m : clonedMethods) {
             String sig = methodKey(m);
@@ -494,17 +508,16 @@ public class SpoonSlicePruner {
             }
             m.setDocComment(null);
 
-            // Convert to text and apply instanceof/cast rewrites
-            String text = applyTextTypeRewrites(m.toString(), definedNames, simpleName);
-            text = text.replaceAll("(?s)/\\*\\*\\s*\\*/\\s*", "");
-            methodTexts.add(text);
+            // Apply AST-based type rewrites (replaces text-based applyTextTypeRewrites)
+            applyAstTypeRewrites(m, definedNames, simpleName, factory);
+            emittedMethods.add(m);
         }
 
         // ── Phase 5: Generate abstract stubs for remaining unresolved calls ──
         // Re-scan after transitive closure for still-unresolved methods
         Set<String> finalKnownSigs = new LinkedHashSet<>(allKnownSigs);
         Set<MethodCall> stillUnresolved = findUnresolvedThisCalls(clonedMethods, finalKnownSigs);
-        List<String> abstractStubs = new ArrayList<>();
+        List<CtMethod<?>> abstractStubMethods = new ArrayList<>();
         Set<String> stubNames = new LinkedHashSet<>();
         for (MethodCall call : stillUnresolved) {
             String callKey = methodKey(call.name, call.argTypes);
@@ -512,13 +525,13 @@ public class SpoonSlicePruner {
             // Find the method in the original MC hierarchy to get its signature
             CtMethod<?> originalMethod = findMethodInHierarchy(call, type, typeIndex);
             if (originalMethod != null) {
-                String stub = generateAbstractStub(originalMethod);
+                CtMethod<?> stub = generateAbstractStub(originalMethod, factory);
                 if (stub != null) {
                     String rewrittenSig = rewrittenMethodKey(originalMethod);
                     if (emittedSigs.contains(rewrittenSig)) {
                         continue;
                     }
-                    abstractStubs.add(stub);
+                    abstractStubMethods.add(stub);
                     stubNames.add(callKey);
                     stubNames.add(methodKey(originalMethod));
                     stubNames.add(rewrittenSig);
@@ -529,80 +542,29 @@ public class SpoonSlicePruner {
                     + "(" + call.argCount + " args) — no stub generated");
             }
         }
-        if (!abstractStubs.isEmpty()) {
-            System.out.println("  Generated " + abstractStubs.size() + " abstract stubs");
+        if (!abstractStubMethods.isEmpty()) {
+            System.out.println("  Generated " + abstractStubMethods.size() + " abstract stubs");
         }
 
         // ── Phase 6: Build output ──
-        String allMethodText = String.join("\n", methodTexts);
-        String allStubText = String.join("\n", abstractStubs);
-        String allCodeText = allMethodText + "\n" + allStubText;
-        List<String> fieldDecls = extractFieldDeclarations(type, allCodeText, typeIndex);
+        List<CtMethod<?>> allMethods = new ArrayList<>(emittedMethods);
+        allMethods.addAll(abstractStubMethods);
+        List<CtField<?>> fieldDecls = extractFieldDeclarations(type, allMethods, typeIndex);
 
         // Apply entity bridge rewrite to field initializers (e.g., new DamageTracker(this))
-        for (int i = 0; i < fieldDecls.size(); i++) {
-            fieldDecls.set(i, fieldDecls.get(i).replaceAll(
-                "(?<=[(,])\\s*this(?=\\s*[,)])",
-                " (" + simpleName + ") this.entityBridge"));
+        for (CtField<?> field : fieldDecls) {
+            if (field.getDefaultExpression() != null) {
+                replaceThisInArgPositions(field.getDefaultExpression(), factory, simpleName);
+            }
         }
 
         // Collect access widener entries for non-public static fields/methods
-        collectAccessWidenerEntries(type, allCodeText, typeIndex, awEntries);
-
-        // Filter imports
-        String fullCode = allCodeText + "\n" + String.join("\n", fieldDecls);
-        Set<String> filteredImports = filterImports(imports, fullCode);
-        addMissingTypeImports(filteredImports, fullCode);
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("package murat.simv2.simulation.sliced;\n\n");
-        for (String imp : filteredImports) {
-            sb.append(imp).append("\n");
-        }
-        if (!filteredImports.isEmpty()) sb.append("\n");
-
-        sb.append("// Sliced from ").append(type.getQualifiedName()).append("\n");
-        sb.append("// Movement-relevant statements only (WALA backward slice + Spoon AST pruning)\n");
-        sb.append("// Generated — do not edit\n\n");
-
-        sb.append("public abstract class ").append(slicedName).append(extendsClause).append(" {\n");
-
-        // Entity bridge field — only in root class (inherited by all sliced subclasses)
-        // Set to the real player entity before simulation; used at World/external API boundaries
-        if (extendsClause.isEmpty()) {
-            sb.append("\n    /** Real MC entity used as bridge for World and external API calls. */\n");
-            sb.append("    protected Entity entityBridge;\n");
-        }
-
-        // Field declarations
-        if (!fieldDecls.isEmpty()) {
-            sb.append("\n");
-            for (String fieldDecl : fieldDecls) {
-                sb.append("    ").append(fieldDecl).append("\n");
-            }
-        }
-
-        // Abstract stubs
-        if (!abstractStubs.isEmpty()) {
-            sb.append("\n    // ── Abstract stubs for methods not in slice ──\n");
-            for (String stub : abstractStubs) {
-                sb.append("    ").append(stub).append("\n");
-            }
-        }
-
-        // Methods
-        for (String methodText : methodTexts) {
-            sb.append("\n");
-            for (String line : methodText.split("\n")) {
-                sb.append("    ").append(line).append("\n");
-            }
-        }
-
-        sb.append("}\n");
+        collectAccessWidenerEntries(type, allMethods, fieldDecls, typeIndex, awEntries);
 
         Path outFile = outputDir.resolve(slicedName + ".java");
         Files.createDirectories(outFile.getParent());
-        Files.writeString(outFile, sb.toString());
+        writeSlicedCompilationUnit(outFile, type, slicedName, extendsRef, fieldDecls,
+            abstractStubMethods, emittedMethods, emittedSimpleNames, factory);
         System.out.println("  Wrote " + outFile.getFileName());
 
         // Update hierarchy tracking
@@ -816,92 +778,162 @@ public class SpoonSlicePruner {
         }
     }
 
+    // ── AST-based type rewrites (replaces former text-based applyTextTypeRewrites) ──
+
     /**
-     * Applies text-level type rewrites for instanceof and casts of 'this'.
-     * These are safe to rewrite because 'this' is always a Sliced type.
+     * Creates a CtFieldRead for {@code this.entityBridge}.
      */
-    private String applyTextTypeRewrites(String methodText, Set<String> definedNames, String mcTypeName) {
-        // Replace super.xxx() with this.xxx() for methods that are defined in the current class
-        // (transitively-included from parent). super.xxx() won't resolve since the parent
-        // sliced class may not have the method.
-        for (String name : definedNames) {
-            methodText = methodText.replace("super." + name + "(", "this." + name + "(");
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private CtExpression<?> createEntityBridgeRead(Factory factory) {
+        CtFieldRead read = factory.Core().createFieldRead();
+        read.setTarget(factory.Code().createThisAccess(factory.Type().objectType()));
+        CtFieldReference ref = factory.Core().createFieldReference();
+        ref.setSimpleName("entityBridge");
+        read.setVariable(ref);
+        return read;
+    }
+
+    /**
+     * Creates {@code (mcTypeName) this.entityBridge} — a cast bridge read.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private CtExpression<?> createCastEntityBridgeRead(Factory factory, String mcTypeName) {
+        CtFieldRead read = factory.Core().createFieldRead();
+        read.setTarget(factory.Code().createThisAccess(factory.Type().objectType()));
+        CtFieldReference ref = factory.Core().createFieldReference();
+        ref.setSimpleName("entityBridge");
+        read.setVariable(ref);
+        CtTypeReference castType = factory.Core().createTypeReference();
+        castType.setSimpleName(mcTypeName);
+        read.addTypeCast(castType);
+        return read;
+    }
+
+    /**
+     * True if the CtThisAccess is a bare {@code this} used as an argument
+     * (not as a method/field qualifier).
+     */
+    private boolean isThisInArgumentPosition(CtThisAccess<?> thisAccess) {
+        if (!thisAccess.getTypeCasts().isEmpty()) return false;
+        CtElement parent = thisAccess.getParent();
+        if (parent instanceof CtInvocation<?> inv) {
+            return inv.getArguments().contains(thisAccess);
+        }
+        if (parent instanceof CtConstructorCall<?> call) {
+            return call.getArguments().contains(thisAccess);
+        }
+        return false;
+    }
+
+    /**
+     * Replaces bare {@code this} in argument positions with
+     * {@code (mcTypeName) this.entityBridge} within the subtree.
+     */
+    private void replaceThisInArgPositions(CtElement root, Factory factory, String mcTypeName) {
+        for (CtThisAccess<?> ta : new ArrayList<CtThisAccess<?>>(root.getElements(new TypeFilter<CtThisAccess<?>>(CtThisAccess.class)))) {
+            if (isThisInArgumentPosition(ta)) {
+                ta.replace(createCastEntityBridgeRead(factory, mcTypeName));
+            }
+        }
+    }
+
+    /**
+     * Applies all type rewrites on a method's AST in-place.
+     * Replaces the former text-based applyTextTypeRewrites method.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void applyAstTypeRewrites(CtMethod<?> method, Set<String> definedNames,
+                                       String mcTypeName, Factory factory) {
+        if (method.getBody() == null) return;
+
+        // 1. super.xxx() -> this.xxx() for methods defined in the current class
+        for (CtInvocation<?> inv : new ArrayList<CtInvocation<?>>(method.getElements(new TypeFilter<CtInvocation<?>>(CtInvocation.class)))) {
+            if (inv.getTarget() instanceof CtSuperAccess) {
+                String calledName = inv.getExecutable().getSimpleName();
+                if (definedNames.contains(calledName)) {
+                    inv.setTarget(factory.Code().createThisAccess(factory.Type().objectType()));
+                }
+            }
         }
 
-        // ── Entity bridge pattern ──
-        // Bare `this` in method/constructor argument positions gets replaced with
-        // `(MCType) this.entityBridge`. The bridge is a real MC Entity (set before
-        // simulation) that passes instanceof checks and satisfies external MC APIs.
-        methodText = methodText.replaceAll(
-            "(?<=[(,])\\s*this(?=\\s*[,)])",
-            " (" + mcTypeName + ") this.entityBridge");
+        // 2. Bare 'this' in argument positions -> (MCType) this.entityBridge
+        replaceThisInArgPositions(method, factory, mcTypeName);
 
-        // Identity comparisons: `entity == this` → `entity == this.entityBridge`
-        methodText = methodText.replaceAll("==\\s*this(?![.A-Za-z0-9_])", "== this.entityBridge");
-        methodText = methodText.replaceAll("!=\\s*this(?![.A-Za-z0-9_])", "!= this.entityBridge");
-        methodText = methodText.replace("this instanceof ServerPlayerEntity", "this.entityBridge instanceof ServerPlayerEntity");
-
-        // instanceof rewrites: `this instanceof Entity` → `this instanceof SlicedEntity`
-        for (var entry : TYPE_REMAP.entrySet()) {
-            String mc = entry.getKey();
-            String sliced = entry.getValue();
-            methodText = methodText.replaceAll(
-                "this instanceof " + mc + "\\b(?![A-Za-z])",
-                "this instanceof " + sliced);
-            // Cast of bare `this`: "(Entity) this" → "(SlicedEntity) this"
-            methodText = methodText.replaceAll(
-                "\\(" + mc + "\\)\\s*this(?![.A-Za-z0-9_])",
-                "(" + sliced + ") this");
-            // Parenthesized cast: "(Entity) (this)" pattern
-            methodText = methodText.replaceAll(
-                "\\(" + mc + "\\)\\s*\\(this\\)(?![.A-Za-z0-9_])",
-                "(" + sliced + ") (this)");
+        // 3. == this / != this -> == this.entityBridge / != this.entityBridge
+        for (CtBinaryOperator<?> binOp : new ArrayList<CtBinaryOperator<?>>(method.getElements(new TypeFilter<CtBinaryOperator<?>>(CtBinaryOperator.class)))) {
+            if (binOp.getKind() != BinaryOperatorKind.EQ && binOp.getKind() != BinaryOperatorKind.NE) continue;
+            if (binOp.getRightHandOperand() instanceof CtThisAccess<?> rhs && rhs.getTypeCasts().isEmpty()) {
+                ((CtBinaryOperator) binOp).setRightHandOperand(createEntityBridgeRead(factory));
+            }
+            if (binOp.getLeftHandOperand() instanceof CtThisAccess<?> lhs && lhs.getTypeCasts().isEmpty()) {
+                ((CtBinaryOperator) binOp).setLeftHandOperand(createEntityBridgeRead(factory));
+            }
         }
-        return methodText;
+
+        // 4-5. instanceof rewrites
+        for (CtBinaryOperator<?> binOp : new ArrayList<CtBinaryOperator<?>>(method.getElements(new TypeFilter<CtBinaryOperator<?>>(CtBinaryOperator.class)))) {
+            if (binOp.getKind() != BinaryOperatorKind.INSTANCEOF) continue;
+            if (!(binOp.getLeftHandOperand() instanceof CtThisAccess<?> lhs) || !lhs.getTypeCasts().isEmpty()) continue;
+
+            CtExpression<?> rhs = binOp.getRightHandOperand();
+            String typeName = null;
+            if (rhs instanceof CtTypeAccess<?> ta) {
+                typeName = ta.getAccessedType().getSimpleName();
+            }
+            if (typeName == null) continue;
+
+            if ("ServerPlayerEntity".equals(typeName)) {
+                // this.entityBridge instanceof ServerPlayerEntity
+                ((CtBinaryOperator) binOp).setLeftHandOperand(createEntityBridgeRead(factory));
+            } else if (TYPE_REMAP.containsKey(typeName)) {
+                // this instanceof Entity -> this instanceof SlicedEntity
+                ((CtTypeAccess<?>) rhs).getAccessedType().setSimpleName(TYPE_REMAP.get(typeName));
+            }
+        }
+
+        // 6. Cast rewrites: (Entity) this -> (SlicedEntity) this
+        for (CtThisAccess<?> ta : new ArrayList<CtThisAccess<?>>(method.getElements(new TypeFilter<CtThisAccess<?>>(CtThisAccess.class)))) {
+            for (CtTypeReference<?> cast : ta.getTypeCasts()) {
+                String castName = cast.getSimpleName();
+                if (TYPE_REMAP.containsKey(castName)) {
+                    cast.setSimpleName(TYPE_REMAP.get(castName));
+                }
+            }
+        }
     }
 
     // ── Abstract stub generation ──
 
     /**
-     * Generates an abstract method declaration string from an original MC method.
-     * Applies type rewriting to the stub signature.
+     * Generates an abstract method stub as a CtMethod from an original MC method.
+     * Applies type rewriting to the stub parameters.
      */
-    private String generateAbstractStub(CtMethod<?> original) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("public abstract ");
+    private CtMethod<?> generateAbstractStub(CtMethod<?> original, Factory factory) {
+        CtMethod<?> stub = factory.createMethod();
+        stub.addModifier(ModifierKind.PUBLIC);
+        stub.addModifier(ModifierKind.ABSTRACT);
+        stub.setType(original.getType().clone());
+        stub.setSimpleName(original.getSimpleName());
 
-        // Keep full type text so generic signatures survive erasure-sensitive overloads.
-        String returnType = original.getType().toString();
-        sb.append(returnType).append(" ");
-
-        sb.append(original.getSimpleName()).append("(");
-
-        // Parameters (with type rewriting)
-        List<CtParameter<?>> params = original.getParameters();
-        for (int i = 0; i < params.size(); i++) {
-            if (i > 0) sb.append(", ");
-            CtParameter<?> p = params.get(i);
-            String paramType = shouldRewriteParameterTypes(original)
-                ? rewriteTypeText(p.getType().toString())
-                : p.getType().toString();
-            sb.append(paramType).append(" ").append(p.getSimpleName());
+        for (CtParameter<?> p : original.getParameters()) {
+            CtParameter<?> clonedParam = p.clone();
+            if (shouldRewriteParameterTypes(original)) {
+                CtTypeReference<?> ref = clonedParam.getType();
+                String replacement = TYPE_REMAP.get(ref.getSimpleName());
+                if (replacement != null) {
+                    ref.setSimpleName(replacement);
+                    try { ref.setPackage(null); } catch (Exception ignored) {}
+                }
+            }
+            stub.addParameter(clonedParam);
         }
 
-        sb.append(");");
-        return sb.toString();
+        return stub;
     }
 
     /** Applies TYPE_REMAP to a simple type name if it matches. */
     private String rewriteTypeName(String simpleName) {
         return TYPE_REMAP.getOrDefault(simpleName, simpleName);
-    }
-
-    private String rewriteTypeText(String typeText) {
-        String rewritten = typeText;
-        for (var entry : TYPE_REMAP.entrySet()) {
-            rewritten = rewritten.replaceAll("\\b" + entry.getKey() + "\\b", entry.getValue());
-        }
-        return rewritten;
     }
 
     private boolean shouldRewriteParameterTypes(CtMethod<?> method) {
@@ -1125,15 +1157,17 @@ public class SpoonSlicePruner {
 
     // ── Hierarchy and method resolution ──
 
-    private String resolveExtendsClause(CtType<?> type, Set<String> emittedSimpleNames,
-                                         Map<String, CtType<?>> typeIndex) {
-        if (!(type instanceof CtClass<?> ctClass)) return "";
+    private CtTypeReference<?> resolveExtendsType(CtType<?> type, Set<String> emittedSimpleNames,
+                                                  Map<String, CtType<?>> typeIndex,
+                                                  Factory factory) {
+        if (!(type instanceof CtClass<?> ctClass)) return null;
 
         CtTypeReference<?> superRef = ctClass.getSuperclass();
         while (superRef != null) {
             String superSimpleName = superRef.getSimpleName();
             if (emittedSimpleNames.contains(superSimpleName)) {
-                return " extends Sliced" + superSimpleName;
+                return factory.Type().createSimplyQualifiedReference(
+                    "murat.simv2.simulation.sliced.Sliced" + superSimpleName);
             }
             CtType<?> superType = typeIndex.get(superRef.getQualifiedName());
             if (superType instanceof CtClass<?> superClass) {
@@ -1142,10 +1176,13 @@ public class SpoonSlicePruner {
                 break;
             }
         }
-        return "";
+        return null;
     }
 
     private CtMethod<?> findMethod(CtType<?> type, String methodName, String descriptor) {
+        if (methodName.equals("<init>")) {
+            return findConstructorAsMethod(type, descriptor);
+        }
         int paramCount = countDescriptorParams(descriptor);
         for (CtMethod<?> m : type.getMethods()) {
             if (m.getSimpleName().equals(methodName)) {
@@ -1162,6 +1199,58 @@ public class SpoonSlicePruner {
         }
 
         return null;
+    }
+
+    /**
+     * Find a constructor matching the given descriptor and wrap it as a {@code CtMethod}
+     * named {@code constructorInit} so the rest of the slicing pipeline can process it.
+     */
+    private CtMethod<?> findConstructorAsMethod(CtType<?> type, String descriptor) {
+        if (!(type instanceof CtClass<?> ctClass)) return null;
+        int paramCount = countDescriptorParams(descriptor);
+        CtConstructor<?> match = null;
+
+        // Try exact descriptor match first
+        for (CtConstructor<?> ctor : ctClass.getConstructors()) {
+            if (ctor.getParameters().size() == paramCount && getConstructorDescriptor(ctor).equals(descriptor)) {
+                match = ctor;
+                break;
+            }
+        }
+        // Fall back to param-count match
+        if (match == null) {
+            for (CtConstructor<?> ctor : ctClass.getConstructors()) {
+                if (ctor.getParameters().size() == paramCount) {
+                    match = ctor;
+                    break;
+                }
+            }
+        }
+        if (match == null) return null;
+
+        // Wrap as a void method so the existing clone/prune/emit pipeline works
+        Factory f = type.getFactory();
+        CtMethod<?> method = f.createMethod();
+        method.setSimpleName("constructorInit");
+        method.setType(f.Type().voidPrimitiveType());
+        method.setModifiers(match.getModifiers());
+        for (CtParameter<?> p : match.getParameters()) {
+            method.addParameter(p.clone());
+        }
+        if (match.getBody() != null) {
+            method.setBody(match.getBody().clone());
+        }
+        method.setPosition(match.getPosition());
+        return method;
+    }
+
+    private String getConstructorDescriptor(CtConstructor<?> ctor) {
+        StringBuilder sb = new StringBuilder("(");
+        for (CtParameter<?> p : ctor.getParameters()) {
+            sb.append(toDescriptor(p.getType()));
+        }
+        sb.append(")V");
+        return sb.toString();
     }
 
     private int countDescriptorParams(String descriptor) {
@@ -1186,132 +1275,184 @@ public class SpoonSlicePruner {
 
     // ── Field and import handling ──
 
-    private List<String> extractFieldDeclarations(CtType<?> type, String methodCode,
-                                                    Map<String, CtType<?>> typeIndex) {
-        List<String> decls = new ArrayList<>();
+    private List<CtField<?>> extractFieldDeclarations(CtType<?> type, List<CtMethod<?>> methods,
+                                                       Map<String, CtType<?>> typeIndex) {
+        // Collect all field names referenced in methods via AST walk
+        Set<String> referencedFieldNames = new HashSet<>();
+        for (CtMethod<?> m : methods) {
+            for (CtFieldAccess<?> fa : m.getElements(new TypeFilter<>(CtFieldAccess.class))) {
+                referencedFieldNames.add(fa.getVariable().getSimpleName());
+            }
+        }
+
+        List<CtField<?>> decls = new ArrayList<>();
         Set<String> added = new HashSet<>();
 
-        // Walk up the hierarchy to find fields referenced in method code
+        // Walk up the hierarchy to find fields referenced in methods
+        addReferencedFields(type, typeIndex, referencedFieldNames, decls, added);
+
+        // Transitive closure: field initializers may reference other fields (e.g., uuid → random)
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            Set<String> newRefs = new HashSet<>();
+            for (CtField<?> field : decls) {
+                if (field.getDefaultExpression() == null) continue;
+                for (CtFieldAccess<?> fa : field.getDefaultExpression().getElements(
+                        new TypeFilter<>(CtFieldAccess.class))) {
+                    String refName = fa.getVariable().getSimpleName();
+                    if (!added.contains(refName)) {
+                        newRefs.add(refName);
+                    }
+                }
+            }
+            if (!newRefs.isEmpty()) {
+                int before = decls.size();
+                addReferencedFields(type, typeIndex, newRefs, decls, added);
+                changed = decls.size() > before;
+            }
+        }
+        return decls;
+    }
+
+    private void addReferencedFields(CtType<?> type, Map<String, CtType<?>> typeIndex,
+                                      Set<String> referencedFieldNames,
+                                      List<CtField<?>> decls, Set<String> added) {
         CtType<?> current = type;
         while (current != null) {
             for (CtField<?> field : current.getFields()) {
                 String name = field.getSimpleName();
-                boolean isStatic = field.hasModifier(ModifierKind.STATIC);
-                boolean referenced = isStatic
-                    ? methodCode.matches("(?s).*\\b" + name + "\\b.*")
-                    : methodCode.contains("this." + name);
-                if (!added.contains(name) && referenced) {
-                    String fieldStr = field.toString();
-                    if (!fieldStr.endsWith(";")) fieldStr += ";";
+                if (!added.contains(name) && referencedFieldNames.contains(name)) {
+                    CtField<?> cloned = field.clone();
                     // Remove 'final' from fields without initializers — there is no
                     // constructor in the sliced class to assign them.
-                    if (field.getDefaultExpression() == null) {
-                        fieldStr = fieldStr.replaceFirst("\\bfinal\\s+", "");
+                    if (cloned.getDefaultExpression() == null) {
+                        cloned.removeModifier(ModifierKind.FINAL);
                     }
-                    decls.add(fieldStr);
+                    decls.add(cloned);
                     added.add(name);
                 }
             }
-            // Walk to parent
             if (current instanceof CtClass<?> ctClass && ctClass.getSuperclass() != null) {
                 current = typeIndex.get(ctClass.getSuperclass().getQualifiedName());
             } else {
                 break;
             }
         }
-        return decls;
     }
 
-    private void addMissingTypeImports(Set<String> imports, String code) {
-        Map<String, String> knownTypes = new LinkedHashMap<>();
-        knownTypes.put("Entity", "import net.minecraft.entity.Entity;");
-        knownTypes.put("LivingEntity", "import net.minecraft.entity.LivingEntity;");
-        knownTypes.put("PlayerEntity", "import net.minecraft.entity.player.PlayerEntity;");
-        knownTypes.put("EntityType", "import net.minecraft.entity.EntityType;");
-        knownTypes.put("EntityDimensions", "import net.minecraft.entity.EntityDimensions;");
-        knownTypes.put("EntityPose", "import net.minecraft.entity.EntityPose;");
-        knownTypes.put("EntityAttachments", "import net.minecraft.entity.EntityAttachments;");
-        knownTypes.put("EntityAttachmentType", "import net.minecraft.entity.EntityAttachmentType;");
-        knownTypes.put("MovementType", "import net.minecraft.entity.MovementType;");
-        knownTypes.put("EquipmentSlot", "import net.minecraft.entity.EquipmentSlot;");
-        knownTypes.put("EntityEquipment", "import net.minecraft.entity.EntityEquipment;");
-        knownTypes.put("EntityStatuses", "import net.minecraft.entity.EntityStatuses;");
-        knownTypes.put("Flutterer", "import net.minecraft.entity.Flutterer;");
-        knownTypes.put("PositionInterpolator", "import net.minecraft.entity.PositionInterpolator;");
-        knownTypes.put("LazyEntityReference", "import net.minecraft.entity.LazyEntityReference;");
-        knownTypes.put("PlayerListEntry", "import net.minecraft.client.network.PlayerListEntry;");
-        knownTypes.put("ClientPlayerEntity", "import net.minecraft.client.network.ClientPlayerEntity;");
-        knownTypes.put("AbstractClientPlayerEntity", "import net.minecraft.client.network.AbstractClientPlayerEntity;");
-        knownTypes.put("PlayerAbilities", "import net.minecraft.entity.player.PlayerAbilities;");
-        knownTypes.put("DamageSources", "import net.minecraft.entity.damage.DamageSources;");
-        knownTypes.put("DamageUtil", "import net.minecraft.entity.DamageUtil;");
-        knownTypes.put("EntityAttribute", "import net.minecraft.entity.attribute.EntityAttribute;");
-        knownTypes.put("ItemEntity", "import net.minecraft.entity.ItemEntity;");
-        knownTypes.put("ExperienceOrbEntity", "import net.minecraft.entity.ExperienceOrbEntity;");
-        knownTypes.put("ProjectileDeflection", "import net.minecraft.entity.ProjectileDeflection;");
-        knownTypes.put("Fluid", "import net.minecraft.fluid.Fluid;");
-        knownTypes.put("RegistryEntry", "import net.minecraft.registry.entry.RegistryEntry;");
-        knownTypes.put("StatusEffect", "import net.minecraft.entity.effect.StatusEffect;");
-        knownTypes.put("TagKey", "import net.minecraft.registry.tag.TagKey;");
-        knownTypes.put("RaycastContext", "import net.minecraft.world.RaycastContext;");
-        knownTypes.put("BlockHitResult", "import net.minecraft.util.hit.BlockHitResult;");
-        knownTypes.put("UUID", "import java.util.UUID;");
-        knownTypes.put("Map", "import java.util.Map;");
-        knownTypes.put("Set", "import java.util.Set;");
-        knownTypes.put("HashSet", "import java.util.HashSet;");
-        knownTypes.put("Maps", "import com.google.common.collect.Maps;");
-        knownTypes.put("Random", "import net.minecraft.util.math.random.Random;");
-        knownTypes.put("DataTracker", "import net.minecraft.entity.data.DataTracker;");
-        knownTypes.put("TrackedData", "import net.minecraft.entity.data.TrackedData;");
-        knownTypes.put("Object2DoubleMap", "import it.unimi.dsi.fastutil.objects.Object2DoubleMap;");
-        knownTypes.put("Object2DoubleArrayMap", "import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;");
-        knownTypes.put("ObjectArrayList", "import it.unimi.dsi.fastutil.objects.ObjectArrayList;");
+    private void writeSlicedCompilationUnit(Path outFile,
+                                            CtType<?> sourceType,
+                                            String slicedName,
+                                            CtTypeReference<?> extendsRef,
+                                            List<CtField<?>> fieldDecls,
+                                            List<CtMethod<?>> abstractStubMethods,
+                                            List<CtMethod<?>> emittedMethods,
+                                            Set<String> emittedSimpleNames,
+                                            Factory factory) throws IOException {
+        CtPackage outputPackage = factory.Package().getOrCreate("murat.simv2.simulation.sliced");
+        CtType<?> existingType = outputPackage.getType(slicedName);
+        if (existingType != null) {
+            outputPackage.removeType(existingType);
+        }
+        List<CtType<?>> placeholderTypes = ensureSlicedTypePlaceholders(outputPackage, emittedSimpleNames, factory);
 
-        // Inner types that can appear as simple names in generated output
-        Map<String, String> innerTypes = new LinkedHashMap<>();
-        innerTypes.put("Axis", "import net.minecraft.util.math.Direction.Axis;");
-        innerTypes.put("AxisDirection", "import net.minecraft.util.math.Direction.AxisDirection;");
-        innerTypes.put("ShapeType", "import net.minecraft.world.RaycastContext.ShapeType;");
-        innerTypes.put("FluidHandling", "import net.minecraft.world.RaycastContext.FluidHandling;");
-        innerTypes.put("MoveEffect", "import net.minecraft.entity.Entity.MoveEffect;");
-        innerTypes.put("RemovalReason", "import net.minecraft.entity.Entity.RemovalReason;");
-        innerTypes.put("QueuedCollisionCheck", "import net.minecraft.entity.Entity.QueuedCollisionCheck;");
-        innerTypes.put("Type", "import net.minecraft.util.hit.HitResult.Type;");
-
-        for (var entry : innerTypes.entrySet()) {
-            if (code.contains(entry.getKey())) {
-                knownTypes.put(entry.getKey(), entry.getValue());
-            }
+        CtClass<?> slicedClass = factory.Core().createClass();
+        slicedClass.setSimpleName(slicedName);
+        slicedClass.addModifier(ModifierKind.PUBLIC);
+        slicedClass.addModifier(ModifierKind.ABSTRACT);
+        slicedClass.addComment(factory.Code().createComment(
+            "Sliced from " + sourceType.getQualifiedName(), CtComment.CommentType.INLINE));
+        slicedClass.addComment(factory.Code().createComment(
+            "Movement-relevant statements only (WALA backward slice + Spoon AST pruning)",
+            CtComment.CommentType.INLINE));
+        slicedClass.addComment(factory.Code().createComment(
+            "Generated - do not edit", CtComment.CommentType.INLINE));
+        if (extendsRef != null) {
+            slicedClass.setSuperclass(extendsRef);
         }
 
-        for (var entry : knownTypes.entrySet()) {
-            if (code.contains(entry.getKey())) {
-                imports.add(entry.getValue());
+        outputPackage.addType(slicedClass);
+        try {
+            if (extendsRef == null) {
+                CtField<?> entityBridgeField = factory.createField();
+                entityBridgeField.setSimpleName("entityBridge");
+                entityBridgeField.setType(factory.Type().createReference("net.minecraft.entity.Entity"));
+                entityBridgeField.addModifier(ModifierKind.PROTECTED);
+                entityBridgeField.setDocComment(
+                    "Real MC entity used as bridge for World and external API calls.");
+                slicedClass.addField(entityBridgeField);
+            }
+
+            for (CtField<?> field : fieldDecls) {
+                slicedClass.addField(field);
+            }
+            for (CtMethod<?> stub : abstractStubMethods) {
+                slicedClass.addMethod(stub);
+            }
+            for (CtMethod<?> method : emittedMethods) {
+                slicedClass.addMethod(method);
+            }
+
+            CompilationUnit compilationUnit = factory.Core().createCompilationUnit();
+            compilationUnit.setFile(outFile.toFile());
+            compilationUnit.setDeclaredPackage(outputPackage);
+            compilationUnit.addDeclaredType(slicedClass);
+            compilationUnit.setImports(createSlicedCompilationUnitImports(factory));
+            slicedClass.setPosition(factory.createPartialSourcePosition(compilationUnit));
+
+            PrettyPrinter printer = createImportCleanerPrettyPrinter(factory);
+            String source = printer.printCompilationUnit(compilationUnit);
+            Files.writeString(outFile, source);
+        } finally {
+            outputPackage.removeType(slicedClass);
+            for (CtType<?> placeholderType : placeholderTypes) {
+                outputPackage.removeType(placeholderType);
             }
         }
+    }
 
-        // Static wildcard imports for Entity hierarchy — makes static fields and methods accessible
-        // (FLAGS, POSE, NULL_BOX, collectStepHeights, etc.)
+    private List<CtType<?>> ensureSlicedTypePlaceholders(CtPackage outputPackage,
+                                                         Set<String> emittedSimpleNames,
+                                                         Factory factory) {
+        List<CtType<?>> placeholders = new ArrayList<>();
+        for (String emittedSimpleName : emittedSimpleNames) {
+            String slicedSimpleName = "Sliced" + emittedSimpleName;
+            if (outputPackage.getType(slicedSimpleName) != null) {
+                continue;
+            }
+            CtClass<?> placeholder = factory.Core().createClass();
+            placeholder.setSimpleName(slicedSimpleName);
+            placeholder.addModifier(ModifierKind.PUBLIC);
+            placeholder.addModifier(ModifierKind.ABSTRACT);
+            outputPackage.addType(placeholder);
+            placeholders.add(placeholder);
+        }
+        return placeholders;
+    }
+
+    private List<CtImport> createSlicedCompilationUnitImports(Factory factory) {
+        List<CtImport> imports = new ArrayList<>();
         for (String targetClass : AnalysisConfig.TARGET_CLASSES_DOT) {
-            imports.add("import static " + targetClass + ".*;");
+            CtTypeReference<?> targetRef = factory.Type().createReference(targetClass);
+            CtTypeMemberWildcardImportReference wildcardImport =
+                factory.Type().createTypeMemberWildcardImportReference(targetRef);
+            imports.add(factory.createImport(wildcardImport));
         }
+        return imports;
     }
 
-    private Set<String> filterImports(Set<String> allImports, String code) {
-        Set<String> kept = new TreeSet<>();
-        for (String imp : allImports) {
-            String imported = imp.replaceFirst("import\\s+(static\\s+)?", "")
-                                 .replace(";", "").trim();
-            if (imported.endsWith(".*")) {
-                kept.add(imp);
-            } else {
-                String simpleName = imported.substring(imported.lastIndexOf('.') + 1);
-                if (code.contains(simpleName)) {
-                    kept.add(imp);
-                }
-            }
-        }
-        return kept;
+    private PrettyPrinter createImportCleanerPrettyPrinter(Factory factory) {
+        DefaultJavaPrettyPrinter printer = new DefaultJavaPrettyPrinter(factory.getEnvironment());
+        List<Processor<CtElement>> preprocessors = List.of(
+            new ForceImportProcessor(),
+            new ImportCleaner().setCanAddImports(false),
+            new ImportConflictDetector(),
+            new ImportCleaner().setImportComparator(new DefaultImportComparator())
+        );
+        printer.setIgnoreImplicit(false);
+        printer.setPreprocessors(preprocessors);
+        return printer;
     }
 
     private int countStatements(CtMethod<?> method) {
@@ -1355,32 +1496,46 @@ public class SpoonSlicePruner {
     }
 
     /**
-     * Scans generated code for references to non-public static fields and methods,
+     * Scans AST elements for references to non-public static fields and methods,
      * and generates access widener entries for them.
      */
-    private void collectAccessWidenerEntries(CtType<?> type, String code,
+    private void collectAccessWidenerEntries(CtType<?> type,
+                                              List<CtMethod<?>> methods,
+                                              List<CtField<?>> fields,
                                               Map<String, CtType<?>> typeIndex,
                                               Set<String> awEntries) {
-        // Walk up the hierarchy looking for static fields referenced in code
+        // Collect referenced static field/method names from AST
+        Set<String> referencedFieldNames = new HashSet<>();
+        Set<String> referencedMethodNames = new HashSet<>();
+        List<CtElement> allElements = new ArrayList<>();
+        allElements.addAll(methods);
+        allElements.addAll(fields);
+        for (CtElement elem : allElements) {
+            for (CtFieldAccess<?> fa : elem.getElements(new TypeFilter<>(CtFieldAccess.class))) {
+                referencedFieldNames.add(fa.getVariable().getSimpleName());
+            }
+            for (CtInvocation<?> inv : elem.getElements(new TypeFilter<>(CtInvocation.class))) {
+                referencedMethodNames.add(inv.getExecutable().getSimpleName());
+            }
+        }
+
+        // Walk up the hierarchy looking for matching non-public static members
         CtType<?> current = type;
         while (current != null) {
             String classPath = current.getQualifiedName().replace('.', '/');
             for (CtField<?> field : current.getFields()) {
                 if (!field.isStatic()) continue;
                 String name = field.getSimpleName();
-                // Check if field name appears in code (as bare identifier)
-                if (!code.contains(name)) continue;
-                // Check visibility
+                if (!referencedFieldNames.contains(name)) continue;
                 if (field.isPrivate() || field.isProtected()) {
                     String typeDesc = getFieldTypeDescriptor(field);
                     awEntries.add("accessible field " + classPath + " " + name + " " + typeDesc);
                 }
             }
-            // Also check for static methods
             for (CtMethod<?> method : current.getMethods()) {
                 if (!method.isStatic()) continue;
                 String name = method.getSimpleName();
-                if (!code.contains(name + "(")) continue;
+                if (!referencedMethodNames.contains(name)) continue;
                 if (method.isPrivate() || method.isProtected()) {
                     String methodDesc = getMethodDescriptor(method);
                     awEntries.add("accessible method " + classPath + " " + name + " " + methodDesc);

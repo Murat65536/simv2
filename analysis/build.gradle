@@ -29,7 +29,7 @@ application {
 }
 
 run {
-    jvmArgs = ['-Xmx55g', '-XX:+UseParallelGC', '-Dcom.ibm.wala.fixedpoint.impl.verbose=true']
+    jvmArgs = ['-Xmx55g', '-XX:+UseParallelGC', '-Dcom.ibm.wala.fixedpoint.impl.verbose=true', '-noverify']
 
     doFirst {
         // Find a linemapped JAR + sources JAR pair from the same hash
