@@ -846,16 +846,6 @@ public class SpoonSlicePruner {
                                        String mcTypeName, Factory factory) {
         if (method.getBody() == null) return;
 
-        // 1. super.xxx() -> this.xxx() for methods defined in the current class
-        for (CtInvocation<?> inv : new ArrayList<CtInvocation<?>>(method.getElements(new TypeFilter<CtInvocation<?>>(CtInvocation.class)))) {
-            if (inv.getTarget() instanceof CtSuperAccess) {
-                String calledName = inv.getExecutable().getSimpleName();
-                if (definedNames.contains(calledName)) {
-                    inv.setTarget(factory.Code().createThisAccess(factory.Type().objectType()));
-                }
-            }
-        }
-
         // 2. Bare 'this' in argument positions -> (MCType) this.entityBridge
         replaceThisInArgPositions(method, factory, mcTypeName);
 

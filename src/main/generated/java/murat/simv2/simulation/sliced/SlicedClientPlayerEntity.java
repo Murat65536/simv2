@@ -53,7 +53,7 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
     /**
      */
     public boolean isHoldingOntoLadder() {
-        return (!this.getAbilities().flying) && this.isHoldingOntoLadder();
+        return (!this.getAbilities().flying) && super.isHoldingOntoLadder();
     }
 
     public boolean noClip;
@@ -131,7 +131,7 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
             this.forwardSpeed = vec2f.y;
             this.jumping = this.input.playerInput.jump();
         } else {
-            this.tickMovementInput();
+            super.tickMovementInput();
         }
     }
 
@@ -231,7 +231,7 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
             }
         }
         JumpingMount jumpingMount = this.getJumpingMount();
-        this.tickMovement();
+        super.tickMovement();
     }
 
     /**
@@ -239,7 +239,7 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
     public void move(MovementType type, Vec3d movement) {
         double d = this.getX();
         double e = this.getZ();
-        this.move(type, movement);
+        super.move(type, movement);
         float f = ((float) (this.getX() - d));
         float g = ((float) (this.getZ() - e));
         this.autoJump(f, g);

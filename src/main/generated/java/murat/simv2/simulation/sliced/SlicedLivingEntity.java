@@ -152,7 +152,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
         if (!this.isTouchingWater()) {
             this.checkWaterState();
         }
-        this.fall(heightDifference, onGround, state, landedPosition);
+        super.fall(heightDifference, onGround, state, landedPosition);
     }
 
     protected static final int GLIDING_FLAG_INDEX = 7;
@@ -162,7 +162,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     /**
      */
     protected float getVelocityMultiplier() {
-        return MathHelper.lerp(((float) (this.getAttributeValue(EntityAttributes.MOVEMENT_EFFICIENCY))), this.getVelocityMultiplier(), 1.0F);
+        return MathHelper.lerp(((float) (this.getAttributeValue(EntityAttributes.MOVEMENT_EFFICIENCY))), super.getVelocityMultiplier(), 1.0F);
     }
 
     /**
@@ -1179,7 +1179,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
                     return false;
                 }
             }
-            return this.canFreeze();
+            return super.canFreeze();
         }
     }
 
