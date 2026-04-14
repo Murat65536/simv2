@@ -184,15 +184,28 @@ public class SpoonSlicePruner {
                 Path awPath = resolveAccessWidenerPath(outputDir);
                 if (Files.exists(awPath)) {
                     String existing = Files.readString(awPath);
-                    StringBuilder sb = new StringBuilder(existing);
-                    sb.append("\n# Access widener entries for sliced classes\n");
-                    for (String entry : awEntries) {
-                        if (!existing.contains(entry)) {
+                    String normalizedExisting = normalizeSlicedAwHeader(existing);
+                    List<String> missingEntries = awEntries.stream()
+                        .filter(entry -> !normalizedExisting.contains(entry))
+                        .toList();
+                    if (!missingEntries.isEmpty()) {
+                        StringBuilder sb = new StringBuilder(normalizedExisting);
+                        if (!normalizedExisting.contains("# Access widener entries for sliced classes")) {
+                            if (!normalizedExisting.endsWith("\n")) {
+                                sb.append("\n");
+                            }
+                            sb.append("\n# Access widener entries for sliced classes\n");
+                        } else if (!normalizedExisting.endsWith("\n")) {
+                            sb.append("\n");
+                        }
+                        for (String entry : missingEntries) {
                             sb.append(entry).append("\n");
                         }
+                        Files.writeString(awPath, sb.toString());
+                        System.out.println("Added " + missingEntries.size() + " access widener entries for sliced classes");
+                    } else if (!normalizedExisting.equals(existing)) {
+                        Files.writeString(awPath, normalizedExisting);
                     }
-                    Files.writeString(awPath, sb.toString());
-                    System.out.println("Added " + awEntries.size() + " access widener entries for sliced classes");
                 }
             }
         } finally {
@@ -226,6 +239,30 @@ public class SpoonSlicePruner {
             return resourcesAw;
         }
         return generatedDir.resolve("sim-v2.accesswidener");
+    }
+
+    private String normalizeSlicedAwHeader(String awSource) {
+        if (awSource == null || awSource.isEmpty()) {
+            return awSource;
+        }
+        String marker = "# Access widener entries for sliced classes";
+        String[] lines = awSource.split("\\R", -1);
+        List<String> keptLines = new ArrayList<>(lines.length);
+        boolean seenMarker = false;
+        for (String line : lines) {
+            if (marker.equals(line)) {
+                if (seenMarker) {
+                    continue;
+                }
+                seenMarker = true;
+            }
+            keptLines.add(line);
+        }
+        while (!keptLines.isEmpty() && keptLines.get(keptLines.size() - 1).isEmpty()) {
+            keptLines.remove(keptLines.size() - 1);
+        }
+        String normalized = String.join("\n", keptLines);
+        return awSource.endsWith("\n") ? normalized + "\n" : normalized;
     }
 
     private String[] buildSourceClasspath() throws IOException {
