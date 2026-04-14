@@ -321,6 +321,8 @@ public class SyncCodeGenerator {
         }
         // Required by sliced movement code path in SlicedEntity.
         sb.append("accessible method net/minecraft/entity/Entity isControlledByMainPlayer ()Z\n");
+        // Required by runtime simulator tracker bootstrap copy path.
+        sb.append("accessible field net/minecraft/entity/data/DataTracker entries [Lnet/minecraft/entity/data/DataTracker$Entry;\n");
 
         String awSource = sb.toString();
         Files.writeString(outputDir.resolve("sim-v2.accesswidener"), awSource);

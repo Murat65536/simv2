@@ -71,3 +71,4 @@ accessible field net/minecraft/entity/player/PlayerEntity inventory Lnet/minecra
 accessible field net/minecraft/entity/player/PlayerEntity lastStrideDistance F
 accessible field net/minecraft/entity/player/PlayerEntity strideDistance F
 accessible method net/minecraft/entity/Entity isControlledByMainPlayer ()Z
+accessible field net/minecraft/entity/data/DataTracker entries [Lnet/minecraft/entity/data/DataTracker$Entry;

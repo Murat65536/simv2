@@ -361,9 +361,9 @@ public final class RuntimeSimClassGenerator {
         sb.append("    }\n\n");
 
         sb.append("    private void copyTrackedState(ClientPlayerEntity realPlayer) {\n");
-        sb.append("        this.dataTracker.set(SlicedEntity.FLAGS, encodeEntityFlags(realPlayer));\n");
-        sb.append("        this.dataTracker.set(SlicedEntity.POSE, realPlayer.getPose());\n");
-        sb.append("        this.dataTracker.set(SlicedEntity.FROZEN_TICKS, realPlayer.getFrozenTicks());\n");
+        sb.append("        this.getDataTracker().set(SlicedEntity.FLAGS, encodeEntityFlags(realPlayer));\n");
+        sb.append("        this.getDataTracker().set(SlicedEntity.POSE, realPlayer.getPose());\n");
+        sb.append("        this.getDataTracker().set(SlicedEntity.FROZEN_TICKS, realPlayer.getFrozenTicks());\n");
         if (trackerUsage.livingFlags()) {
             sb.append("        this.livingFlagsMirror = encodeLivingFlags(realPlayer);\n");
         }

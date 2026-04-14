@@ -37,7 +37,6 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageTracker;
 import net.minecraft.entity.damage.DamageType;
 import net.minecraft.entity.damage.DamageTypes;
-import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -148,8 +147,6 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     public int age;
 
     public int timeUntilRegen;
-
-    public DataTracker dataTracker;
 
     protected void fall(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition) {
         if (!this.isTouchingWater()) {

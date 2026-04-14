@@ -182,9 +182,9 @@ public final class RuntimeSlicedClientPlayerEntity extends SlicedClientPlayerEnt
     }
 
     private void copyTrackedState(ClientPlayerEntity realPlayer) {
-        this.dataTracker.set(SlicedEntity.FLAGS, encodeEntityFlags(realPlayer));
-        this.dataTracker.set(SlicedEntity.POSE, realPlayer.getPose());
-        this.dataTracker.set(SlicedEntity.FROZEN_TICKS, realPlayer.getFrozenTicks());
+        this.getDataTracker().set(SlicedEntity.FLAGS, encodeEntityFlags(realPlayer));
+        this.getDataTracker().set(SlicedEntity.POSE, realPlayer.getPose());
+        this.getDataTracker().set(SlicedEntity.FROZEN_TICKS, realPlayer.getFrozenTicks());
         this.livingFlagsMirror = encodeLivingFlags(realPlayer);
         this.healthMirror = realPlayer.getHealth();
         this.sleepingPositionMirror = realPlayer.getSleepingPosition();

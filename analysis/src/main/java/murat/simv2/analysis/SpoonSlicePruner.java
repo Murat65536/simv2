@@ -1379,7 +1379,8 @@ public class SpoonSlicePruner {
         List<CtField<?>> decls = new ArrayList<>();
         Set<String> added = new HashSet<>();
 
-        // Walk up the hierarchy to find fields referenced in methods
+        // Walk up the hierarchy to find fields referenced in methods.
+        // (With a targeted guard below to avoid shadowing dataTracker.)
         addReferencedFields(type, typeIndex, referencedFieldNames, decls, added);
 
         // Transitive closure: field initializers may reference other fields (e.g., uuid → random)
@@ -1456,6 +1457,11 @@ public class SpoonSlicePruner {
         while (current != null) {
             for (CtField<?> field : current.getFields()) {
                 String name = field.getSimpleName();
+                if (current != type && "dataTracker".equals(name)) {
+                    // Avoid redeclaring Entity.dataTracker in subclasses like
+                    // SlicedLivingEntity where it shadows the initialized root field.
+                    continue;
+                }
                 if (!added.contains(name) && referencedFieldNames.contains(name)) {
                     CtField<?> cloned = field.clone();
                     // Remove 'final' from fields without initializers — there is no
