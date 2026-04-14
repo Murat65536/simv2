@@ -645,6 +645,11 @@ public class SpoonSlicePruner {
                 if (!isSelf) continue;
 
                 String name = inv.getExecutable().getSimpleName();
+                if ("<init>".equals(name)) {
+                    // Constructor pseudo-calls are handled by constructor wrapping/preservation,
+                    // not by unresolved-this stub generation.
+                    continue;
+                }
                 int argCount = inv.getArguments().size();
                 List<String> argTypes = invocationArgTypes(inv);
                 String sig = methodKey(name, argTypes);
