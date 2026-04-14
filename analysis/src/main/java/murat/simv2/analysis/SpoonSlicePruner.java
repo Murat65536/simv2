@@ -573,6 +573,7 @@ public class SpoonSlicePruner {
         List<CtMethod<?>> allMethods = new ArrayList<>(emittedMethods);
         allMethods.addAll(abstractStubMethods);
         List<CtField<?>> fieldDecls = extractFieldDeclarations(type, allMethods, typeIndex);
+        rewriteTrackedDataFieldInitializers(fieldDecls, simpleName, factory);
         retargetStaticFieldAccessesToLocalSlicedType(allMethods, fieldDecls, simpleName);
 
         // Apply entity bridge rewrite to field initializers (e.g., new DamageTracker(this))
@@ -1405,9 +1406,52 @@ public class SpoonSlicePruner {
         return decls;
     }
 
+    private void rewriteTrackedDataFieldInitializers(List<CtField<?>> fieldDecls,
+                                                     String sourceSimpleName,
+                                                     Factory factory) {
+        if (fieldDecls == null || fieldDecls.isEmpty()) {
+            return;
+        }
+        Set<String> trackedFieldNames = vanillaTrackedFieldNames(sourceSimpleName);
+        if (trackedFieldNames.isEmpty()) {
+            return;
+        }
+        for (CtField<?> field : fieldDecls) {
+            if (field == null || field.getDefaultExpression() == null) {
+                continue;
+            }
+            if (!trackedFieldNames.contains(field.getSimpleName())) {
+                continue;
+            }
+            if (!(field.getDefaultExpression() instanceof CtInvocation<?> invocation)) {
+                continue;
+            }
+            CtExecutableReference<?> executable = invocation.getExecutable();
+            if (executable == null || !"registerData".equals(executable.getSimpleName())) {
+                continue;
+            }
+            CtTypeReference<?> declaringType = executable.getDeclaringType();
+            if (declaringType == null || !"DataTracker".equals(declaringType.getSimpleName())) {
+                continue;
+            }
+            field.setDefaultExpression(factory.Code().createCodeSnippetExpression(
+                sourceSimpleName + "." + field.getSimpleName()));
+        }
+    }
+
+    private Set<String> vanillaTrackedFieldNames(String sourceSimpleName) {
+        return switch (sourceSimpleName) {
+            case "Entity" -> Set.of("FLAGS", "AIR", "CUSTOM_NAME", "NAME_VISIBLE",
+                "SILENT", "NO_GRAVITY", "POSE", "FROZEN_TICKS");
+            case "LivingEntity" -> Set.of("LIVING_FLAGS", "HEALTH", "SLEEPING_POSITION");
+            case "PlayerEntity" -> Set.of("ABSORPTION_AMOUNT");
+            default -> Set.of();
+        };
+    }
+
     private void addReferencedFields(CtType<?> type, Map<String, CtType<?>> typeIndex,
-                                      Set<String> referencedFieldNames,
-                                      List<CtField<?>> decls, Set<String> added) {
+                                       Set<String> referencedFieldNames,
+                                       List<CtField<?>> decls, Set<String> added) {
         CtType<?> current = type;
         while (current != null) {
             for (CtField<?> field : current.getFields()) {

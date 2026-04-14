@@ -27,7 +27,6 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageSources;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.vehicle.AbstractBoatEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
@@ -129,7 +128,7 @@ public abstract class SlicedEntity {
 
     public DataTracker dataTracker;
 
-    public static final TrackedData<Byte> FLAGS = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BYTE);
+    public static final TrackedData<Byte> FLAGS = Entity.FLAGS;
 
     public static final int SNEAKING_FLAG_INDEX = 1;
 
@@ -137,19 +136,19 @@ public abstract class SlicedEntity {
 
     public static final int SWIMMING_FLAG_INDEX = 4;
 
-    public static final TrackedData<Integer> AIR = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.INTEGER);
+    public static final TrackedData<Integer> AIR = Entity.AIR;
 
-    public static final TrackedData<Optional<Text>> CUSTOM_NAME = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.OPTIONAL_TEXT_COMPONENT);
+    public static final TrackedData<Optional<Text>> CUSTOM_NAME = Entity.CUSTOM_NAME;
 
-    public static final TrackedData<Boolean> NAME_VISIBLE = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    public static final TrackedData<Boolean> NAME_VISIBLE = Entity.NAME_VISIBLE;
 
-    public static final TrackedData<Boolean> SILENT = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    public static final TrackedData<Boolean> SILENT = Entity.SILENT;
 
-    public static final TrackedData<Boolean> NO_GRAVITY = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    public static final TrackedData<Boolean> NO_GRAVITY = Entity.NO_GRAVITY;
 
-    public static final TrackedData<EntityPose> POSE = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.ENTITY_POSE);
+    public static final TrackedData<EntityPose> POSE = Entity.POSE;
 
-    public static final TrackedData<Integer> FROZEN_TICKS = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.INTEGER);
+    public static final TrackedData<Integer> FROZEN_TICKS = Entity.FROZEN_TICKS;
 
     public boolean invulnerable;
 

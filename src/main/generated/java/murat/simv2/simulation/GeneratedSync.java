@@ -37,6 +37,8 @@ public final class GeneratedSync {
         runtimeSim.boundingBox = copyValue(real.boundingBox, runtimeSim.boundingBox, true);
         runtimeSim.chunkPos = copyValue(real.chunkPos, runtimeSim.chunkPos, true);
         runtimeSim.collidedSoftly = real.collidedSoftly;
+        runtimeSim.commandTags = copyValue(real.commandTags, runtimeSim.commandTags, true);
+        runtimeSim.customData = copyValue(real.customData, runtimeSim.customData, true);
         runtimeSim.dimensions = copyValue(real.dimensions, runtimeSim.dimensions, true);
         runtimeSim.fallDistance = real.fallDistance;
         runtimeSim.fireTicks = real.fireTicks;
@@ -59,6 +61,7 @@ public final class GeneratedSync {
         runtimeSim.submergedFluidTag = copyValue(real.submergedFluidTag, runtimeSim.submergedFluidTag, true);
         runtimeSim.supportingBlockPos = copyValue(real.supportingBlockPos, runtimeSim.supportingBlockPos, true);
         runtimeSim.touchingWater = real.touchingWater;
+        runtimeSim.trackedPosition = copyValue(real.trackedPosition, runtimeSim.trackedPosition, true);
         runtimeSim.vehicle = copyValue(real.vehicle, runtimeSim.vehicle, true);
         runtimeSim.velocity = copyValue(real.velocity, runtimeSim.velocity, true);
         runtimeSim.velocityModified = real.velocityModified;

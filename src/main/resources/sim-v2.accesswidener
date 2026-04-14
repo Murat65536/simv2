@@ -18,6 +18,8 @@ accessible field net/minecraft/entity/Entity blockPos Lnet/minecraft/util/math/B
 accessible field net/minecraft/entity/Entity boundingBox Lnet/minecraft/util/math/Box;
 accessible field net/minecraft/entity/Entity chunkPos Lnet/minecraft/util/math/ChunkPos;
 accessible field net/minecraft/entity/Entity collidedSoftly Z
+accessible field net/minecraft/entity/Entity commandTags Ljava/util/Set;
+accessible field net/minecraft/entity/Entity customData Lnet/minecraft/component/type/NbtComponent;
 accessible field net/minecraft/entity/Entity dimensions Lnet/minecraft/entity/EntityDimensions;
 accessible field net/minecraft/entity/Entity fallDistance D
 accessible field net/minecraft/entity/Entity fireTicks I
@@ -40,6 +42,7 @@ accessible field net/minecraft/entity/Entity stateAtPos Lnet/minecraft/block/Blo
 accessible field net/minecraft/entity/Entity submergedFluidTag Ljava/util/Set;
 accessible field net/minecraft/entity/Entity supportingBlockPos Ljava/util/Optional;
 accessible field net/minecraft/entity/Entity touchingWater Z
+accessible field net/minecraft/entity/Entity trackedPosition Lnet/minecraft/entity/TrackedPosition;
 accessible field net/minecraft/entity/Entity vehicle Lnet/minecraft/entity/Entity;
 accessible field net/minecraft/entity/Entity velocity Lnet/minecraft/util/math/Vec3d;
 accessible field net/minecraft/entity/Entity velocityModified Z
@@ -71,6 +74,7 @@ accessible method net/minecraft/entity/Entity isControlledByMainPlayer ()Z
 
 # Access widener entries for sliced classes
 accessible class net/minecraft/entity/Entity$QueuedCollisionCheck
+accessible field net/minecraft/entity/data/DataTracker entries [Lnet/minecraft/entity/data/DataTracker$Entry;
 accessible field net/minecraft/entity/Entity AIR Lnet/minecraft/entity/data/TrackedData;
 accessible field net/minecraft/entity/Entity CUSTOM_NAME Lnet/minecraft/entity/data/TrackedData;
 accessible field net/minecraft/entity/Entity FLAGS Lnet/minecraft/entity/data/TrackedData;

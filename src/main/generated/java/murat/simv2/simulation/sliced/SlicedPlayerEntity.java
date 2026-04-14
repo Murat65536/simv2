@@ -9,9 +9,7 @@ import net.minecraft.entity.MovementType;
 import net.minecraft.entity.ProjectileDeflection;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerAbilities;
 import net.minecraft.entity.player.PlayerEntity;
@@ -35,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 // Movement-relevant statements only (WALA backward slice + Spoon AST pruning)
 // Generated - do not edit
 public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
-    public static final TrackedData<Float> ABSORPTION_AMOUNT = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.FLOAT);
+    public static final TrackedData<Float> ABSORPTION_AMOUNT = PlayerEntity.ABSORPTION_AMOUNT;
 
     public final PlayerAbilities abilities = new PlayerAbilities();
 

@@ -39,7 +39,6 @@ import net.minecraft.entity.damage.DamageType;
 import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -80,11 +79,11 @@ import org.jetbrains.annotations.Nullable;
 public abstract class SlicedLivingEntity extends SlicedEntity {
     public static final double GRAVITY = 0.08;
 
-    public static final TrackedData<Byte> LIVING_FLAGS = DataTracker.registerData(LivingEntity.class, TrackedDataHandlerRegistry.BYTE);
+    public static final TrackedData<Byte> LIVING_FLAGS = LivingEntity.LIVING_FLAGS;
 
-    public static final TrackedData<Float> HEALTH = DataTracker.registerData(LivingEntity.class, TrackedDataHandlerRegistry.FLOAT);
+    public static final TrackedData<Float> HEALTH = LivingEntity.HEALTH;
 
-    public static final TrackedData<Optional<BlockPos>> SLEEPING_POSITION = DataTracker.registerData(LivingEntity.class, TrackedDataHandlerRegistry.OPTIONAL_BLOCK_POS);
+    public static final TrackedData<Optional<BlockPos>> SLEEPING_POSITION = LivingEntity.SLEEPING_POSITION;
 
     public AttributeContainer attributes;
 

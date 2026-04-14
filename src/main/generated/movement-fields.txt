@@ -29,7 +29,9 @@ MOD_REF  Lnet/minecraft/entity/Entity                                 chunkPos  
 MOD_REF  Lnet/minecraft/entity/Entity                                 collidedBlockPositions         Lit/unimi/dsi/fastutil/longs/LongSet
 MOD_REF  Lnet/minecraft/entity/Entity                                 collidedSoftly                 Z
 MOD_REF  Lnet/minecraft/entity/Entity                                 collisionHandler               Lnet/minecraft/entity/EntityCollisionHandler$Impl
+MOD      Lnet/minecraft/entity/Entity                                 commandTags                    Ljava/util/Set
 MOD_REF  Lnet/minecraft/entity/Entity                                 currentlyCheckedCollisions     Ljava/util/List
+MOD      Lnet/minecraft/entity/Entity                                 customData                     Lnet/minecraft/component/type/NbtComponent
 MOD_REF  Lnet/minecraft/entity/Entity                                 dataTracker                    Lnet/minecraft/entity/data/DataTracker
 MOD_REF  Lnet/minecraft/entity/Entity                                 dimensions                     Lnet/minecraft/entity/EntityDimensions
 MOD_REF  Lnet/minecraft/entity/Entity                                 distanceTraveled               F
@@ -41,6 +43,7 @@ MOD_REF  Lnet/minecraft/entity/Entity                                 forceUpdat
 MOD_REF  Lnet/minecraft/entity/Entity                                 groundCollision                Z
 MOD_REF  Lnet/minecraft/entity/Entity                                 hasVisualFire                  Z
 MOD_REF  Lnet/minecraft/entity/Entity                                 horizontalCollision            Z
+MOD      Lnet/minecraft/entity/Entity                                 id                             I
 MOD_REF  Lnet/minecraft/entity/Entity                                 invulnerable                   Z
 MOD_REF  Lnet/minecraft/entity/Entity                                 lastChimeAge                   I
 MOD_REF  Lnet/minecraft/entity/Entity                                 lastChimeIntensity             F
@@ -51,6 +54,7 @@ MOD_REF  Lnet/minecraft/entity/Entity                                 movementMu
 MOD_REF  Lnet/minecraft/entity/Entity                                 nextStepSoundDistance          F
 MOD_REF  Lnet/minecraft/entity/Entity                                 noClip                         Z
 MOD_REF  Lnet/minecraft/entity/Entity                                 onGround                       Z
+MOD      Lnet/minecraft/entity/Entity                                 passengerList                  Lcom/google/common/collect/ImmutableList
 MOD_REF  Lnet/minecraft/entity/Entity                                 pistonMovementDelta            [D
 MOD_REF  Lnet/minecraft/entity/Entity                                 pistonMovementTick             J
 MOD_REF  Lnet/minecraft/entity/Entity                                 pitch                          F
@@ -65,8 +69,10 @@ MOD_REF  Lnet/minecraft/entity/Entity                                 stateAtPos
 MOD_REF  Lnet/minecraft/entity/Entity                                 submergedFluidTag              Ljava/util/Set
 MOD_REF  Lnet/minecraft/entity/Entity                                 supportingBlockPos             Ljava/util/Optional
 MOD_REF  Lnet/minecraft/entity/Entity                                 touchingWater                  Z
+MOD      Lnet/minecraft/entity/Entity                                 trackedPosition                Lnet/minecraft/entity/TrackedPosition
 MOD_REF  Lnet/minecraft/entity/Entity                                 type                           Lnet/minecraft/entity/EntityType
 MOD_REF  Lnet/minecraft/entity/Entity                                 uuid                           Ljava/util/UUID
+MOD      Lnet/minecraft/entity/Entity                                 uuidString                     Ljava/lang/String
 MOD_REF  Lnet/minecraft/entity/Entity                                 vehicle                        Lnet/minecraft/entity/Entity
 MOD_REF  Lnet/minecraft/entity/Entity                                 velocity                       Lnet/minecraft/util/math/Vec3d
 MOD_REF  Lnet/minecraft/entity/Entity                                 velocityModified               Z

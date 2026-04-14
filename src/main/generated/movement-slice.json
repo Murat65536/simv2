@@ -630,6 +630,29 @@
       1942
     ]
   },
+  "net.minecraft.entity.ItemEntity": {
+    "\u003cinit\u003e(Lnet/minecraft/entity/EntityType;Lnet/minecraft/world/World;)V": [
+      63
+    ],
+    "\u003cinit\u003e(Lnet/minecraft/world/World;DDDLnet/minecraft/item/ItemStack;)V": [
+      69
+    ],
+    "\u003cinit\u003e(Lnet/minecraft/world/World;DDDLnet/minecraft/item/ItemStack;DDD)V": [
+      73,
+      74,
+      75,
+      76
+    ],
+    "initDataTracker(Lnet/minecraft/entity/data/DataTracker$Builder;)V": [
+      120
+    ],
+    "onTrackedDataSet(Lnet/minecraft/entity/data/TrackedData;)V": [
+      402
+    ],
+    "setStack(Lnet/minecraft/item/ItemStack;)V": [
+      397
+    ]
+  },
   "net.minecraft.entity.LivingEntity": {
     "applyArmorToDamage(Lnet/minecraft/entity/damage/DamageSource;F)F": [
       1837,
