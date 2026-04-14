@@ -64,7 +64,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.random.Random;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.profiler.Profilers;
 import net.minecraft.world.GameRules;
@@ -139,10 +138,6 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     protected SlicedLivingEntity(EntityType<? extends LivingEntity> entityType, World world) {
         super(entityType, world);
     }
-
-    public boolean horizontalCollision;
-
-    public final Random random = Random.create();
 
     public int age;
 
@@ -753,7 +748,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
         if ((this.horizontalCollision || this.jumping) && (this.isClimbing() || (this.wasInPowderSnow && PowderSnowBlock.canWalkOnPowderSnow(((LivingEntity) (this.entityBridge)))))) {
             vec3d = new Vec3d(vec3d.x, 0.2, vec3d.z);
         }
-        return null;
+        return vec3d;
     }
 
     public Vec3d applyFluidMovingSpeed(double gravity, boolean falling, Vec3d motion) {

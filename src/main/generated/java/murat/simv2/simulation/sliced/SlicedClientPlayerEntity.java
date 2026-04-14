@@ -46,12 +46,6 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
 
     public int abilityResyncCountdown;
 
-    public boolean jumping;
-
-    public float sidewaysSpeed;
-
-    public float forwardSpeed;
-
     public boolean isMainPlayer() {
         return true;
     }
@@ -59,8 +53,6 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
     public boolean isHoldingOntoLadder() {
         return (!this.getAbilities().flying) && super.isHoldingOntoLadder();
     }
-
-    public boolean noClip;
 
     private void pushOutOfBlocks(double x, double z) {
         BlockPos blockPos = BlockPos.ofFloored(x, this.getY(), z);

@@ -134,6 +134,9 @@ public class SyncCodeGenerator {
         if (realValue == null) {
             return null;
         }
+        if (simValue == realValue) {
+            return realValue;
+        }
         if (isSimpleValueType(realValue.getClass())) {
             return cloneSimpleValue(realValue);
         }
@@ -155,6 +158,9 @@ public class SyncCodeGenerator {
         }
 
         Object target = simValue;
+        if (target != null && !realValue.getClass().isInstance(target)) {
+            target = null;
+        }
         if (target == null) {
             Object cloned = tryCloneObject(realValue);
             if (cloned != null) {
@@ -212,7 +218,21 @@ public class SyncCodeGenerator {
         if (target == null) {
             target = new java.util.LinkedHashMap();
         }
-        target.clear();
+        try {
+            target.clear();
+        } catch (UnsupportedOperationException ex) {
+            java.util.Map replacement = instantiateMap(realMap.getClass());
+            if (replacement == null) {
+                replacement = new java.util.LinkedHashMap();
+            } else {
+                try {
+                    replacement.clear();
+                } catch (UnsupportedOperationException ignored) {
+                    replacement = new java.util.LinkedHashMap();
+                }
+            }
+            target = replacement;
+        }
         for (java.util.Map.Entry<?, ?> entry : realMap.entrySet()) {
             Object key = syncValue(entry.getKey(), null, seen);
             Object value = syncValue(entry.getValue(), null, seen);
@@ -227,13 +247,25 @@ public class SyncCodeGenerator {
             ? (java.util.Collection) existing
             : instantiateCollection(realCollection.getClass());
         if (target == null) {
-            target = new java.util.ArrayList();
+            target = createMutableCollection(realCollection);
         }
-        target.clear();
+        try {
+            target.clear();
+        } catch (UnsupportedOperationException ex) {
+            target = createMutableCollection(realCollection);
+        }
         for (Object value : realCollection) {
             target.add(syncValue(value, null, seen));
         }
         return target;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private static java.util.Collection createMutableCollection(java.util.Collection<?> source) {
+        if (source instanceof java.util.Set<?>) {
+            return new java.util.LinkedHashSet();
+        }
+        return new java.util.ArrayList();
     }
 
     private static Object cloneSimpleValue(Object value) throws ReflectiveOperationException {

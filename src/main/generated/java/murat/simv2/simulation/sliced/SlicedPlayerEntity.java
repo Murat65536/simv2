@@ -47,19 +47,13 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
 
     public int lastAttackedTicks;
 
-    public boolean jumping;
-
     public float riptideAttackDamage;
 
     public boolean velocityModified;
 
-    public double fallDistance;
-
     protected boolean clipAtLedge() {
         return this.isSneaking();
     }
-
-    public boolean invulnerable;
 
     protected boolean canChangeIntoPose(EntityPose pose) {
         return this.getWorld().isSpaceEmpty(((PlayerEntity) (this.entityBridge)), this.getDimensions(pose).getBoxAt(this.getPos()).contract(1.0E-7));

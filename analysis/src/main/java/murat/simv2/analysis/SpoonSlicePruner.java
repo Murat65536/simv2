@@ -103,6 +103,7 @@ public class SpoonSlicePruner {
 
             Set<String> emittedSimpleNames = new LinkedHashSet<>();
             Set<String> hierarchyDefinedMethods = new LinkedHashSet<>();
+            Set<String> hierarchyDefinedFields = new LinkedHashSet<>();
             // Collect access widener entries needed for private members
             Set<String> awEntries = new TreeSet<>();
             // Methods found during a child's transitive closure that belong to a parent class
@@ -110,6 +111,9 @@ public class SpoonSlicePruner {
             // Track which sigs each class contributed to hierarchyDefinedMethods
             // so we can remove them before re-processing
             Map<String, Set<String>> classContributedSigs = new LinkedHashMap<>();
+            // Track which fields each class contributed to hierarchyDefinedFields
+            // so we can remove them before re-processing
+            Map<String, Set<String>> classContributedFields = new LinkedHashMap<>();
 
             for (String className : AnalysisConfig.TARGET_CLASSES_DOT) {
                 Map<String, Set<Integer>> methodLines = sliceLines.get(className);
@@ -127,13 +131,17 @@ public class SpoonSlicePruner {
                 // Include any methods deferred from child classes
                 List<CtMethod<?>> extraMethods = deferredMethods.remove(type.getSimpleName());
 
-                Set<String> before = new LinkedHashSet<>(hierarchyDefinedMethods);
+                Set<String> beforeMethods = new LinkedHashSet<>(hierarchyDefinedMethods);
+                Set<String> beforeFields = new LinkedHashSet<>(hierarchyDefinedFields);
                 buildSlicedClass(type, methodLines, outputDir, factory,
-                    emittedSimpleNames, typeIndex, hierarchyDefinedMethods, awEntries,
+                    emittedSimpleNames, typeIndex, hierarchyDefinedMethods, hierarchyDefinedFields, awEntries,
                     deferredMethods, extraMethods);
-                Set<String> contributed = new LinkedHashSet<>(hierarchyDefinedMethods);
-                contributed.removeAll(before);
-                classContributedSigs.put(type.getSimpleName(), contributed);
+                Set<String> contributedMethods = new LinkedHashSet<>(hierarchyDefinedMethods);
+                contributedMethods.removeAll(beforeMethods);
+                classContributedSigs.put(type.getSimpleName(), contributedMethods);
+                Set<String> contributedFields = new LinkedHashSet<>(hierarchyDefinedFields);
+                contributedFields.removeAll(beforeFields);
+                classContributedFields.put(type.getSimpleName(), contributedFields);
                 emittedSimpleNames.add(type.getSimpleName());
             }
 
@@ -150,13 +158,24 @@ public class SpoonSlicePruner {
                     Set<String> previousSigs = classContributedSigs.getOrDefault(
                         type.getSimpleName(), Set.of());
                     hierarchyDefinedMethods.removeAll(previousSigs);
+                    Set<String> previousFields = classContributedFields.getOrDefault(
+                        type.getSimpleName(), Set.of());
+                    hierarchyDefinedFields.removeAll(previousFields);
 
                     Map<String, Set<Integer>> methodLines = sliceLines.getOrDefault(className, Map.of());
                     System.out.println("Re-processing " + type.getSimpleName()
                         + " with " + extra.size() + " deferred methods from children");
+                    Set<String> beforeMethods = new LinkedHashSet<>(hierarchyDefinedMethods);
+                    Set<String> beforeFields = new LinkedHashSet<>(hierarchyDefinedFields);
                     buildSlicedClass(type, methodLines, outputDir, factory,
-                        emittedSimpleNames, typeIndex, hierarchyDefinedMethods, awEntries,
+                        emittedSimpleNames, typeIndex, hierarchyDefinedMethods, hierarchyDefinedFields, awEntries,
                         deferredMethods, extra);
+                    Set<String> contributedMethods = new LinkedHashSet<>(hierarchyDefinedMethods);
+                    contributedMethods.removeAll(beforeMethods);
+                    classContributedSigs.put(type.getSimpleName(), contributedMethods);
+                    Set<String> contributedFields = new LinkedHashSet<>(hierarchyDefinedFields);
+                    contributedFields.removeAll(beforeFields);
+                    classContributedFields.put(type.getSimpleName(), contributedFields);
                 }
             }
 
@@ -357,6 +376,7 @@ public class SpoonSlicePruner {
                                    Set<String> emittedSimpleNames,
                                    Map<String, CtType<?>> typeIndex,
                                    Set<String> hierarchyDefinedMethods,
+                                   Set<String> hierarchyDefinedFields,
                                    Set<String> awEntries,
                                    Map<String, List<CtMethod<?>>> deferredMethods,
                                    List<CtMethod<?>> extraMethods) throws IOException {
@@ -400,6 +420,7 @@ public class SpoonSlicePruner {
             int before = countStatements(cloned);
             pruneByWalaLines(cloned, walaLines);
             preserveConstructorDelegation(cloned, original, extendsRef != null, factory);
+            repairEntityMovePositionAdvance(cloned, simpleName, factory);
             int after = countStatements(cloned);
             int returnsAfter = cloned.getBody() == null ? 0
                 : cloned.getBody().getElements(new TypeFilter<>(CtReturn.class)).size();
@@ -572,7 +593,7 @@ public class SpoonSlicePruner {
         // ── Phase 6: Build output ──
         List<CtMethod<?>> allMethods = new ArrayList<>(emittedMethods);
         allMethods.addAll(abstractStubMethods);
-        List<CtField<?>> fieldDecls = extractFieldDeclarations(type, allMethods, typeIndex);
+        List<CtField<?>> fieldDecls = extractFieldDeclarations(type, allMethods, typeIndex, hierarchyDefinedFields);
         rewriteTrackedDataFieldInitializers(fieldDecls, simpleName, factory);
         retargetStaticFieldAccessesToLocalSlicedType(allMethods, fieldDecls, simpleName);
 
@@ -595,6 +616,9 @@ public class SpoonSlicePruner {
         // Update hierarchy tracking
         hierarchyDefinedMethods.addAll(definedSigs);
         hierarchyDefinedMethods.addAll(stubNames);
+        for (CtField<?> fieldDecl : fieldDecls) {
+            hierarchyDefinedFields.add(fieldDecl.getSimpleName());
+        }
     }
 
     // ── Method resolution helpers ──
@@ -1174,9 +1198,38 @@ public class SpoonSlicePruner {
         Factory factory = method.getFactory();
         CtTypeReference<?> returnType = method.getType();
         CtExpression<?> defaultValue = createDefaultValue(factory, returnType);
+        if (defaultValue instanceof CtLiteral<?> literal && literal.getValue() == null) {
+            CtExpression<?> localFallback = findLocalReturnFallback(method, returnType, factory);
+            if (localFallback != null) {
+                defaultValue = localFallback;
+            }
+        }
         CtReturn<?> ret = factory.createReturn();
         ((CtReturn<Object>) ret).setReturnedExpression((CtExpression<Object>) defaultValue);
         method.getBody().addStatement(ret);
+    }
+
+    private CtExpression<?> findLocalReturnFallback(CtMethod<?> method,
+                                                    CtTypeReference<?> returnType,
+                                                    Factory factory) {
+        if (method.getBody() == null || returnType == null || returnType.isPrimitive()) {
+            return null;
+        }
+        List<CtStatement> statements = method.getBody().getStatements();
+        for (int i = statements.size() - 1; i >= 0; i--) {
+            CtStatement statement = statements.get(i);
+            if (!(statement instanceof CtLocalVariable<?> localVar)) {
+                continue;
+            }
+            CtTypeReference<?> localType = localVar.getType();
+            if (localType == null) {
+                continue;
+            }
+            if (returnType.getSimpleName().equals(localType.getSimpleName())) {
+                return factory.Code().createCodeSnippetExpression(localVar.getSimpleName());
+            }
+        }
+        return null;
     }
 
     private void voidifyUnusedReturns(List<CtMethod<?>> methods,
@@ -1364,10 +1417,75 @@ public class SpoonSlicePruner {
         return count;
     }
 
+    /**
+     * WALA can prune the accumulator assignment inside Entity#move's axis loop,
+     * leaving a no-op loop that never advances position.
+     * When that pattern is detected, reinsert vec3d2 = vec3d3.
+     */
+    private void repairEntityMovePositionAdvance(CtMethod<?> method,
+                                                 String sourceSimpleName,
+                                                 Factory factory) {
+        if (!"Entity".equals(sourceSimpleName)
+            || !"move".equals(method.getSimpleName())
+            || method.getBody() == null) {
+            return;
+        }
+        for (CtForEach forEach : method.getElements(new TypeFilter<>(CtForEach.class))) {
+            CtStatement bodyStatement = forEach.getBody();
+            if (bodyStatement == null) {
+                continue;
+            }
+            CtBlock<?> bodyBlock;
+            if (bodyStatement instanceof CtBlock<?> block) {
+                bodyBlock = block;
+            } else {
+                CtBlock<?> wrapped = factory.createBlock();
+                wrapped.addStatement(bodyStatement.clone());
+                forEach.setBody(wrapped);
+                bodyBlock = wrapped;
+            }
+
+            for (CtIf conditional : bodyBlock.getElements(new TypeFilter<>(CtIf.class))) {
+                CtStatement thenStatement = conditional.getThenStatement();
+                if (thenStatement == null) {
+                    continue;
+                }
+                CtBlock<?> thenBlock;
+                if (thenStatement instanceof CtBlock<?> block) {
+                    thenBlock = block;
+                } else {
+                    CtBlock<?> wrappedThen = factory.createBlock();
+                    wrappedThen.addStatement(thenStatement.clone());
+                    conditional.setThenStatement(wrappedThen);
+                    thenBlock = wrappedThen;
+                }
+
+                boolean declaresStepVec = thenBlock.getStatements().stream().anyMatch(
+                    statement -> statement instanceof CtLocalVariable<?> localVariable
+                        && "vec3d3".equals(localVariable.getSimpleName()));
+                boolean updatesAccumulatedPos = thenBlock.getElements(new TypeFilter<>(CtAssignment.class)).stream()
+                    .map(CtAssignment.class::cast)
+                    .anyMatch(assignment -> assignmentWritesVariable(assignment.getAssigned(), "vec3d2"));
+                if (declaresStepVec && !updatesAccumulatedPos) {
+                    thenBlock.addStatement(factory.Code().createCodeSnippetStatement("vec3d2 = vec3d3"));
+                }
+            }
+        }
+    }
+
+    private boolean assignmentWritesVariable(CtExpression<?> assigned, String variableName) {
+        if (assigned instanceof CtVariableWrite<?> variableWrite) {
+            return variableName.equals(variableWrite.getVariable().getSimpleName());
+        }
+        return assigned instanceof CtVariableAccess<?> variableAccess
+            && variableName.equals(variableAccess.getVariable().getSimpleName());
+    }
+
     // ── Field and import handling ──
 
     private List<CtField<?>> extractFieldDeclarations(CtType<?> type, List<CtMethod<?>> methods,
-                                                       Map<String, CtType<?>> typeIndex) {
+                                                       Map<String, CtType<?>> typeIndex,
+                                                       Set<String> inheritedFieldNames) {
         // Collect all field names referenced in methods via AST walk
         Set<String> referencedFieldNames = new HashSet<>();
         for (CtMethod<?> m : methods) {
@@ -1380,8 +1498,9 @@ public class SpoonSlicePruner {
         Set<String> added = new HashSet<>();
 
         // Walk up the hierarchy to find fields referenced in methods.
-        // (With a targeted guard below to avoid shadowing dataTracker.)
-        addReferencedFields(type, typeIndex, referencedFieldNames, decls, added);
+        // Skip inherited fields that are already provided by generated sliced superclasses
+        // to avoid shadowing (e.g. movement inputs in ClientPlayerEntity).
+        addReferencedFields(type, typeIndex, referencedFieldNames, decls, added, inheritedFieldNames);
 
         // Transitive closure: field initializers may reference other fields (e.g., uuid → random)
         boolean changed = true;
@@ -1400,7 +1519,7 @@ public class SpoonSlicePruner {
             }
             if (!newRefs.isEmpty()) {
                 int before = decls.size();
-                addReferencedFields(type, typeIndex, newRefs, decls, added);
+                addReferencedFields(type, typeIndex, newRefs, decls, added, inheritedFieldNames);
                 changed = decls.size() > before;
             }
         }
@@ -1452,14 +1571,15 @@ public class SpoonSlicePruner {
 
     private void addReferencedFields(CtType<?> type, Map<String, CtType<?>> typeIndex,
                                        Set<String> referencedFieldNames,
-                                       List<CtField<?>> decls, Set<String> added) {
+                                       List<CtField<?>> decls, Set<String> added,
+                                       Set<String> inheritedFieldNames) {
         CtType<?> current = type;
         while (current != null) {
             for (CtField<?> field : current.getFields()) {
                 String name = field.getSimpleName();
-                if (current != type && "dataTracker".equals(name)) {
-                    // Avoid redeclaring Entity.dataTracker in subclasses like
-                    // SlicedLivingEntity where it shadows the initialized root field.
+                if (current != type && inheritedFieldNames.contains(name)) {
+                    // This field is already present in a generated sliced superclass.
+                    // Do not redeclare it in this subclass.
                     continue;
                 }
                 if (!added.contains(name) && referencedFieldNames.contains(name)) {

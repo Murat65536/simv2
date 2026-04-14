@@ -273,6 +273,7 @@ public abstract class SlicedEntity {
                     double e = vec3d.getComponentAlongAxis(axis);
                     if (e != 0.0) {
                         Vec3d vec3d3 = vec3d2.offset(axis.getPositiveDirection(), e);
+                        vec3d2 = vec3d3;
                     }
                 }
                 this.setPosition(vec3d2);

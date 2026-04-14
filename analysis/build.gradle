@@ -28,38 +28,64 @@ application {
     mainClass = 'murat.simv2.analysis.MovementFieldAnalyzer'
 }
 
-run {
-    jvmArgs = ['-Xmx55g', '-XX:+UseParallelGC', '-Dcom.ibm.wala.fixedpoint.impl.verbose=true', '-noverify']
+def analysisJvmArgs = ['-Xmx55g', '-XX:+UseParallelGC', '-Dcom.ibm.wala.fixedpoint.impl.verbose=true', '-noverify']
 
-    doFirst {
-        // Find a linemapped JAR + sources JAR pair from the same hash
-        def loomCache = file("${rootProject.projectDir}/.gradle/loom-cache/minecraftMaven/net/minecraft")
-        def linemappedJar = ""
-        def sourcesJar = ""
-        if (loomCache.exists()) {
-            loomCache.eachDir { hashDir ->
-                if (!hashDir.name.startsWith('minecraft-merged-')) return
-                hashDir.eachDir { versionDir ->
-                    def sources = versionDir.listFiles()?.find { it.name.endsWith('-sources.jar') }
-                    def jar = versionDir.listFiles()?.find {
-                        it.name.endsWith('.jar') && !it.name.contains('sources') && !it.name.contains('backup')
-                    }
-                    if (sources != null && jar != null) {
-                        linemappedJar = jar.absolutePath
-                        sourcesJar = sources.absolutePath
-                    }
+def resolveAnalysisArgs = { String mode ->
+    // Find a linemapped JAR + sources JAR pair from the same hash
+    def loomCache = file("${rootProject.projectDir}/.gradle/loom-cache/minecraftMaven/net/minecraft")
+    def linemappedJar = ""
+    def sourcesJar = ""
+    if (loomCache.exists()) {
+        loomCache.eachDir { hashDir ->
+            if (!hashDir.name.startsWith('minecraft-merged-')) return
+            hashDir.eachDir { versionDir ->
+                def sources = versionDir.listFiles()?.find { it.name.endsWith('-sources.jar') }
+                def jar = versionDir.listFiles()?.find {
+                    it.name.endsWith('.jar') && !it.name.contains('sources') && !it.name.contains('backup')
+                }
+                if (sources != null && jar != null) {
+                    linemappedJar = jar.absolutePath
+                    sourcesJar = sources.absolutePath
                 }
             }
         }
-        def defaultMcJar = linemappedJar ?: "${gradle.gradleUserHomeDir}/caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-merged/1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2/minecraft-merged-1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2.jar"
-        def defaultOutputDir = file("${rootProject.projectDir}/src/main/generated").absolutePath
-        def defaultSpoonClasspath = project.findProperty('spoonClasspath') ?: ""
-
-        setArgs([
-            project.findProperty('mcJar') ?: defaultMcJar,
-            project.findProperty('outputDir') ?: defaultOutputDir,
-            project.findProperty('sourcesJar') ?: sourcesJar,
-            defaultSpoonClasspath
-        ])
     }
+    def defaultMcJar = linemappedJar ?: "${gradle.gradleUserHomeDir}/caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-merged/1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2/minecraft-merged-1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2.jar"
+    def defaultOutputDir = file("${rootProject.projectDir}/src/main/generated").absolutePath
+    def defaultSpoonClasspath = project.findProperty('spoonClasspath') ?: ""
+
+    return [
+        project.findProperty('mcJar') ?: defaultMcJar,
+        project.findProperty('outputDir') ?: defaultOutputDir,
+        project.findProperty('sourcesJar') ?: sourcesJar,
+        defaultSpoonClasspath,
+        mode
+    ]
+}
+
+def configureAnalysisExec = { JavaExec execTask, String mode ->
+    execTask.jvmArgs = analysisJvmArgs
+    execTask.doFirst {
+        execTask.setArgs(resolveAnalysisArgs(mode))
+    }
+}
+
+tasks.named('run', JavaExec) { JavaExec runTask ->
+    configureAnalysisExec(runTask, 'all')
+}
+
+tasks.register('runWala', JavaExec) { JavaExec walaTask ->
+    group = 'application'
+    description = 'Run only the WALA analysis/codegen phase.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = application.mainClass
+    configureAnalysisExec(walaTask, 'wala')
+}
+
+tasks.register('runSpoon', JavaExec) { JavaExec spoonTask ->
+    group = 'application'
+    description = 'Run only the Spoon/runtime-generation phase using existing WALA artifacts.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = application.mainClass
+    configureAnalysisExec(spoonTask, 'spoon')
 }

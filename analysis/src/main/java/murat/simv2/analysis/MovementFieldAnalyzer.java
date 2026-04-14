@@ -1,5 +1,7 @@
 package murat.simv2.analysis;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.ibm.wala.ipa.callgraph.*;
 import com.ibm.wala.ipa.callgraph.cha.CHACallGraph;
 import com.ibm.wala.ipa.callgraph.impl.DefaultEntrypoint;
@@ -18,6 +20,7 @@ import com.ibm.wala.core.util.config.AnalysisScopeReader;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -26,7 +29,7 @@ public class MovementFieldAnalyzer {
 
     public static void main(String[] args) throws Exception {
         if (args.length < 3) {
-            System.err.println("Usage: MovementFieldAnalyzer <minecraft-jar> <output-dir> <sources-jar> [extra-spoon-classpath]");
+            System.err.println("Usage: MovementFieldAnalyzer <minecraft-jar> <output-dir> <sources-jar> [extra-spoon-classpath] [mode: all|wala|spoon]");
             System.exit(1);
         }
 
@@ -34,7 +37,14 @@ public class MovementFieldAnalyzer {
         Path outputDir = Path.of(args[1]);
         String sourcesJar = args[2];
         String extraSpoonClasspath = args.length >= 4 ? args[3] : "";
+        PipelineMode mode = PipelineMode.from(args.length >= 5 ? args[4] : "all");
         Files.createDirectories(outputDir);
+
+        if (mode == PipelineMode.SPOON_ONLY) {
+            runSpoonOnly(minecraftJar, outputDir, sourcesJar, extraSpoonClasspath);
+            System.out.println("\n=== Spoon phase complete ===");
+            return;
+        }
 
         System.out.println("=== WALA Movement Field Analysis ===");
         System.out.println("Minecraft JAR: " + minecraftJar);
@@ -131,35 +141,122 @@ public class MovementFieldAnalyzer {
         generator.generate(classified);
 
         // Step 9: Backward slice for line-level analysis
+        Map<String, Map<String, Set<Integer>>> sliceLines = null;
         if (pa != null) {
             System.out.println("\n=== Phase 2: Backward Slice + Spoon Pruning ===");
             BackwardSliceExporter sliceExporter = new BackwardSliceExporter(cg, pa, cha);
-            Map<String, Map<String, Set<Integer>>> sliceLines = sliceExporter.computeSliceLines();
+            sliceLines = sliceExporter.computeSliceLines();
             sliceExporter.exportToJson(sliceLines, outputDir.resolve("movement-slice.json"));
-
-            // Step 10: Spoon source pruning
-            if (!sourcesJar.isEmpty() && Files.exists(Path.of(sourcesJar))) {
-                System.out.println("\nRunning Spoon source pruning...");
-                SpoonSlicePruner pruner = new SpoonSlicePruner(
-                    Path.of(sourcesJar),
-                    Path.of(minecraftJar),
-                    extraSpoonClasspath,
-                    sliceLines
-                );
-                pruner.pruneAndWrite(outputDir.resolve("java/murat/simv2/simulation/sliced"));
-
-                RuntimeSimClassGenerator runtimeGenerator = new RuntimeSimClassGenerator(outputDir);
-                runtimeGenerator.generate(classified);
-            } else {
-                System.out.println("No sources JAR provided — skipping Spoon pruning.");
-                System.out.println("  Run with: -PsourcesJar=<path-to-sources.jar>");
-            }
         } else {
             System.out.println("\nSkipping backward slice (no pointer analysis with CHA call graph).");
         }
 
+        if (mode == PipelineMode.WALA_ONLY) {
+            System.out.println("\nWALA-only mode selected — skipping Spoon phase.");
+            System.out.println("\n=== Analysis complete ===");
+            exclusionsFile.delete();
+            return;
+        }
+
+        if (sliceLines != null) {
+            runSpoonPhase(minecraftJar, outputDir, sourcesJar, extraSpoonClasspath, classified, sliceLines);
+        } else {
+            System.out.println("Skipping Spoon phase because backward slice data is unavailable.");
+        }
+
         System.out.println("\n=== Analysis complete ===");
         exclusionsFile.delete();
+    }
+
+    private static void runSpoonOnly(String minecraftJar,
+                                     Path outputDir,
+                                     String sourcesJar,
+                                     String extraSpoonClasspath) throws Exception {
+        List<FieldResult> fields = loadFieldManifest(outputDir.resolve("movement-fields.txt"));
+        Map<String, Map<String, Set<Integer>>> sliceLines = loadSliceLines(outputDir.resolve("movement-slice.json"));
+        runSpoonPhase(minecraftJar, outputDir, sourcesJar, extraSpoonClasspath, fields, sliceLines);
+    }
+
+    private static void runSpoonPhase(String minecraftJar,
+                                      Path outputDir,
+                                      String sourcesJar,
+                                      String extraSpoonClasspath,
+                                      List<FieldResult> classified,
+                                      Map<String, Map<String, Set<Integer>>> sliceLines) throws Exception {
+        if (sourcesJar.isEmpty() || !Files.exists(Path.of(sourcesJar))) {
+            throw new IllegalStateException("Spoon phase requires a valid sources JAR. Pass -PsourcesJar=<path-to-sources.jar>.");
+        }
+        System.out.println("\nRunning Spoon source pruning...");
+        SpoonSlicePruner pruner = new SpoonSlicePruner(
+            Path.of(sourcesJar),
+            Path.of(minecraftJar),
+            extraSpoonClasspath,
+            sliceLines
+        );
+        pruner.pruneAndWrite(outputDir.resolve("java/murat/simv2/simulation/sliced"));
+
+        RuntimeSimClassGenerator runtimeGenerator = new RuntimeSimClassGenerator(outputDir);
+        runtimeGenerator.generate(classified);
+    }
+
+    private static List<FieldResult> loadFieldManifest(Path manifestPath) throws IOException {
+        if (!Files.exists(manifestPath)) {
+            throw new IllegalStateException("Missing movement field manifest: " + manifestPath
+                + ". Run WALA phase first.");
+        }
+        List<FieldResult> fields = new ArrayList<>();
+        for (String line : Files.readAllLines(manifestPath)) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                continue;
+            }
+            String[] parts = trimmed.split("\\s+");
+            if (parts.length < 4) {
+                throw new IllegalStateException("Invalid movement field manifest line: " + line);
+            }
+            fields.add(new FieldResult(
+                parts[1],
+                parts[2],
+                parts[3],
+                FieldResult.FieldCategory.valueOf(parts[0])
+            ));
+        }
+        if (fields.isEmpty()) {
+            throw new IllegalStateException("Movement field manifest is empty: " + manifestPath);
+        }
+        return fields;
+    }
+
+    private static Map<String, Map<String, Set<Integer>>> loadSliceLines(Path slicePath) throws IOException {
+        if (!Files.exists(slicePath)) {
+            throw new IllegalStateException("Missing movement slice JSON: " + slicePath
+                + ". Run WALA phase first.");
+        }
+        Type mapType = new TypeToken<Map<String, Map<String, Set<Integer>>>>() { }.getType();
+        String json = Files.readString(slicePath);
+        Map<String, Map<String, Set<Integer>>> sliceLines = new Gson().fromJson(json, mapType);
+        if (sliceLines == null || sliceLines.isEmpty()) {
+            throw new IllegalStateException("Movement slice JSON is empty: " + slicePath);
+        }
+        return sliceLines;
+    }
+
+    private enum PipelineMode {
+        ALL,
+        WALA_ONLY,
+        SPOON_ONLY;
+
+        private static PipelineMode from(String raw) {
+            if (raw == null || raw.isBlank()) {
+                return ALL;
+            }
+            return switch (raw.trim().toLowerCase(Locale.ROOT)) {
+                case "all" -> ALL;
+                case "wala" -> WALA_ONLY;
+                case "spoon" -> SPOON_ONLY;
+                default -> throw new IllegalArgumentException("Unknown mode '" + raw + "'. Use one of: all, wala, spoon.");
+            };
+        }
     }
 
     private static File writeExclusions() throws IOException {
