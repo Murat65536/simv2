@@ -288,7 +288,7 @@ public class BackwardSliceExporter {
         for (String target : AnalysisConfig.TARGET_CLASSES) {
             TypeReference targetRef = TypeReference.findOrCreate(cha.getScope().getApplicationLoader(), target);
             IClass targetClass = cha.lookupClass(targetRef);
-            if (targetClass != null && cha.isSubclassOf(targetClass, clazz)) {
+            if (targetClass != null && cha.isSubclassOf(clazz, targetClass)) {
                 return true;
             }
         }

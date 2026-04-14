@@ -15,111 +15,91 @@ public final class GeneratedSync {
     }
 
     public static void sync(ClientPlayerEntity real, SlicedClientPlayerEntity sim) {
-        // ── AbstractClientPlayerEntity ──
+        if (!(sim instanceof RuntimeSlicedClientPlayerEntity runtimeSim)) {
+            throw new IllegalStateException("sync target must be RuntimeSlicedClientPlayerEntity");
+        }
         // ── ClientPlayerEntity ──
-        syncMember(real, sim, "activeHand", true);
-        syncMember(real, sim, "autoJumpEnabled", true);
-        syncMember(real, sim, "falling", true);
-        syncMember(real, sim, "field_3938", true);
-        syncMember(real, sim, "inSneakingPose", true);
-        syncMember(real, sim, "input", true);
-        syncMember(real, sim, "lastNauseaIntensity", true);
-        syncMember(real, sim, "mountJumpStrength", true);
-        syncMember(real, sim, "nauseaIntensity", true);
-        syncMember(real, sim, "ticksLeftToDoubleTapSprint", true);
-        syncMember(real, sim, "ticksToNextAutoJump", true);
-        syncMember(real, sim, "underwaterVisibilityTicks", true);
-        syncMember(real, sim, "usingItem", true);
+        runtimeSim.activeHand = copyValue(real.activeHand, runtimeSim.activeHand, true);
+        runtimeSim.autoJumpEnabled = real.autoJumpEnabled;
+        runtimeSim.falling = real.falling;
+        runtimeSim.field_3938 = real.field_3938;
+        runtimeSim.inSneakingPose = real.inSneakingPose;
+        runtimeSim.input = copyValue(real.input, runtimeSim.input, true);
+        runtimeSim.lastNauseaIntensity = real.lastNauseaIntensity;
+        runtimeSim.mountJumpStrength = real.mountJumpStrength;
+        runtimeSim.nauseaIntensity = real.nauseaIntensity;
+        runtimeSim.ticksLeftToDoubleTapSprint = real.ticksLeftToDoubleTapSprint;
+        runtimeSim.ticksToNextAutoJump = real.ticksToNextAutoJump;
+        runtimeSim.underwaterVisibilityTicks = real.underwaterVisibilityTicks;
+        runtimeSim.usingItem = real.usingItem;
         // ── Entity ──
-        syncMember(real, sim, "blockPos", true);
-        syncMember(real, sim, "boundingBox", true);
-        syncMember(real, sim, "chunkPos", true);
-        syncMember(real, sim, "collidedSoftly", true);
-        syncMember(real, sim, "dimensions", true);
-        syncMember(real, sim, "fallDistance", true);
-        syncMember(real, sim, "fireTicks", true);
-        syncMember(real, sim, "fluidHeight", true);
-        syncMember(real, sim, "forceUpdateSupportingBlockPos", true);
-        syncMember(real, sim, "groundCollision", true);
-        syncMember(real, sim, "horizontalCollision", true);
-        syncMember(real, sim, "invulnerable", true);
-        syncMember(real, sim, "movementMultiplier", true);
-        syncMember(real, sim, "noClip", true);
-        syncMember(real, sim, "onGround", true);
-        syncMember(real, sim, "pistonMovementDelta", true);
-        syncMember(real, sim, "pistonMovementTick", true);
-        syncMember(real, sim, "pitch", true);
-        syncMember(real, sim, "portalCooldown", true);
-        syncMember(real, sim, "pos", true);
-        syncMember(real, sim, "speed", true);
-        syncMember(real, sim, "standingEyeHeight", true);
-        syncMember(real, sim, "stateAtPos", true);
-        syncMember(real, sim, "submergedFluidTag", true);
-        syncMember(real, sim, "supportingBlockPos", true);
-        syncMember(real, sim, "touchingWater", true);
-        syncMember(real, sim, "vehicle", true);
-        syncMember(real, sim, "velocity", true);
-        syncMember(real, sim, "velocityModified", true);
-        syncMember(real, sim, "verticalCollision", true);
-        syncMember(real, sim, "yaw", true);
+        runtimeSim.blockPos = copyValue(real.blockPos, runtimeSim.blockPos, true);
+        runtimeSim.boundingBox = copyValue(real.boundingBox, runtimeSim.boundingBox, true);
+        runtimeSim.chunkPos = copyValue(real.chunkPos, runtimeSim.chunkPos, true);
+        runtimeSim.collidedSoftly = real.collidedSoftly;
+        runtimeSim.dimensions = copyValue(real.dimensions, runtimeSim.dimensions, true);
+        runtimeSim.fallDistance = real.fallDistance;
+        runtimeSim.fireTicks = real.fireTicks;
+        runtimeSim.fluidHeight = copyValue(real.fluidHeight, runtimeSim.fluidHeight, true);
+        runtimeSim.forceUpdateSupportingBlockPos = real.forceUpdateSupportingBlockPos;
+        runtimeSim.groundCollision = real.groundCollision;
+        runtimeSim.horizontalCollision = real.horizontalCollision;
+        runtimeSim.invulnerable = real.invulnerable;
+        runtimeSim.movementMultiplier = copyValue(real.movementMultiplier, runtimeSim.movementMultiplier, true);
+        runtimeSim.noClip = real.noClip;
+        runtimeSim.onGround = real.onGround;
+        runtimeSim.pistonMovementDelta = copyValue(real.pistonMovementDelta, runtimeSim.pistonMovementDelta, true);
+        runtimeSim.pistonMovementTick = real.pistonMovementTick;
+        runtimeSim.pitch = real.pitch;
+        runtimeSim.portalCooldown = real.portalCooldown;
+        runtimeSim.pos = copyValue(real.pos, runtimeSim.pos, true);
+        runtimeSim.speed = real.speed;
+        runtimeSim.standingEyeHeight = real.standingEyeHeight;
+        runtimeSim.stateAtPos = copyValue(real.stateAtPos, runtimeSim.stateAtPos, true);
+        runtimeSim.submergedFluidTag = copyValue(real.submergedFluidTag, runtimeSim.submergedFluidTag, true);
+        runtimeSim.supportingBlockPos = copyValue(real.supportingBlockPos, runtimeSim.supportingBlockPos, true);
+        runtimeSim.touchingWater = real.touchingWater;
+        runtimeSim.vehicle = copyValue(real.vehicle, runtimeSim.vehicle, true);
+        runtimeSim.velocity = copyValue(real.velocity, runtimeSim.velocity, true);
+        runtimeSim.velocityModified = real.velocityModified;
+        runtimeSim.verticalCollision = real.verticalCollision;
+        runtimeSim.yaw = real.yaw;
         // ── LivingEntity ──
-        syncMember(real, sim, "activeItemStack", true);
-        syncMember(real, sim, "activeStatusEffects", true);
-        syncMember(real, sim, "attributes", true);
-        syncMember(real, sim, "climbingPos", true);
-        syncMember(real, sim, "equipment", true);
-        syncMember(real, sim, "forwardSpeed", true);
-        syncMember(real, sim, "glidingTicks", true);
-        syncMember(real, sim, "headYaw", true);
-        syncMember(real, sim, "itemUseTimeLeft", true);
-        syncMember(real, sim, "jumping", true);
-        syncMember(real, sim, "jumpingCooldown", true);
-        syncMember(real, sim, "movementSpeed", true);
-        syncMember(real, sim, "noDrag", true);
-        syncMember(real, sim, "riptideTicks", true);
-        syncMember(real, sim, "sidewaysSpeed", true);
-        syncMember(real, sim, "upwardSpeed", true);
+        runtimeSim.activeItemStack = copyValue(real.activeItemStack, runtimeSim.activeItemStack, true);
+        runtimeSim.activeStatusEffects = copyValue(real.activeStatusEffects, runtimeSim.activeStatusEffects, true);
+        runtimeSim.attributes = copyValue(real.attributes, runtimeSim.attributes, true);
+        runtimeSim.climbingPos = copyValue(real.climbingPos, runtimeSim.climbingPos, true);
+        runtimeSim.equipment = copyValue(real.equipment, runtimeSim.equipment, true);
+        runtimeSim.forwardSpeed = real.forwardSpeed;
+        runtimeSim.glidingTicks = real.glidingTicks;
+        runtimeSim.headYaw = real.headYaw;
+        runtimeSim.itemUseTimeLeft = real.itemUseTimeLeft;
+        runtimeSim.jumping = real.jumping;
+        runtimeSim.jumpingCooldown = real.jumpingCooldown;
+        runtimeSim.movementSpeed = real.movementSpeed;
+        runtimeSim.noDrag = real.noDrag;
+        runtimeSim.riptideTicks = real.riptideTicks;
+        runtimeSim.sidewaysSpeed = real.sidewaysSpeed;
+        runtimeSim.upwardSpeed = real.upwardSpeed;
         // ── PlayerEntity ──
-        syncMember(real, sim, "abilities", true);
-        syncMember(real, sim, "abilityResyncCountdown", true);
-        syncMember(real, sim, "hungerManager", true);
-        syncMember(real, sim, "inventory", true);
-        syncMember(real, sim, "lastStrideDistance", true);
-        syncMember(real, sim, "strideDistance", true);
+        runtimeSim.abilities = copyValue(real.abilities, runtimeSim.abilities, true);
+        runtimeSim.abilityResyncCountdown = real.abilityResyncCountdown;
+        runtimeSim.hungerManager = copyValue(real.hungerManager, runtimeSim.hungerManager, true);
+        runtimeSim.inventory = copyValue(real.inventory, runtimeSim.inventory, true);
+        runtimeSim.lastStrideDistance = real.lastStrideDistance;
+        runtimeSim.strideDistance = real.strideDistance;
     }
 
-    private static void syncMember(Object realOwner, Object simOwner, String memberName, boolean deepCopy) {
+
+    @SuppressWarnings("unchecked")
+    private static <T> T copyValue(T realValue, T simValue, boolean deepCopy) {
+        if (!deepCopy) {
+            return realValue;
+        }
         try {
-            MemberAccess realAccess = findReadableMember(realOwner.getClass(), memberName);
-            if (realAccess == null) {
-                throw new IllegalStateException("Missing readable member '" + memberName + "' on real type " + realOwner.getClass().getName());
-            }
-            MemberAccess simAccess = findAnyMember(simOwner.getClass(), memberName);
-            if (simAccess == null) {
-                throw new IllegalStateException("Missing target member '" + memberName + "' on sim type " + simOwner.getClass().getName());
-            }
-
-            Object realValue = realAccess.read(realOwner);
-            if (!simAccess.canWrite()) {
-                throw new IllegalStateException("Member '" + memberName + "' on sim type " + simOwner.getClass().getName() + " is not writable");
-            }
-            if (realValue == null) {
-                simAccess.write(simOwner, null);
-                return;
-            }
-
-            if (!deepCopy) {
-                simAccess.write(simOwner, realValue);
-                return;
-            }
-
-            Object simValue = simAccess.read(simOwner);
-            Object copied = syncValue(realValue, simValue, new ArrayList<>());
-            if (copied != simValue) {
-                simAccess.write(simOwner, copied);
-            }
+            return (T) syncValue(realValue, simValue, new ArrayList<>());
         } catch (ReflectiveOperationException ex) {
-            throw new IllegalStateException("Failed to sync member '" + memberName + "'", ex);
+            throw new IllegalStateException("Failed to deep copy sync value", ex);
         }
     }
 
@@ -170,7 +150,13 @@ public final class GeneratedSync {
                 if (Modifier.isStatic(field.getModifiers())) {
                     continue;
                 }
-                syncMember(realValue, simValue, field.getName(), true);
+                field.setAccessible(true);
+                Object realFieldValue = field.get(realValue);
+                Object simFieldValue = field.get(simValue);
+                Object copied = syncValue(realFieldValue, simFieldValue, seen);
+                if (!Modifier.isFinal(field.getModifiers()) && copied != simFieldValue) {
+                    field.set(simValue, copied);
+                }
             }
             current = current.getSuperclass();
         }
@@ -284,134 +270,9 @@ public final class GeneratedSync {
             || type.getName().startsWith("java.util.Optional");
     }
 
-    private static MemberAccess findReadableMember(Class<?> ownerType, String memberName) {
-        MemberAccess getterAccess = findGetter(ownerType, memberName);
-        if (getterAccess != null) {
-            return getterAccess;
-        }
-        return findField(ownerType, memberName);
-    }
-
-    private static MemberAccess findAnyMember(Class<?> ownerType, String memberName) {
-        MemberAccess getterAccess = findGetter(ownerType, memberName);
-        MemberAccess fieldAccess = findField(ownerType, memberName);
-        if (fieldAccess != null) {
-            return fieldAccess.withFallbackGetter(getterAccess);
-        }
-        return getterAccess;
-    }
-
-    private static MemberAccess findGetter(Class<?> ownerType, String memberName) {
-        String capitalized = Character.toUpperCase(memberName.charAt(0)) + memberName.substring(1);
-        for (String prefix : new String[] { "get", "is", "has" }) {
-            try {
-                Method getter = ownerType.getMethod(prefix + capitalized);
-                getter.setAccessible(true);
-                return MemberAccess.forGetter(getter);
-            } catch (NoSuchMethodException ignored) {
-            }
-        }
-        return null;
-    }
-
-    private static MemberAccess findField(Class<?> ownerType, String memberName) {
-        Class<?> current = ownerType;
-        while (current != null && current != Object.class) {
-            try {
-                Field field = current.getDeclaredField(memberName);
-                field.setAccessible(true);
-                return MemberAccess.forField(field);
-            } catch (NoSuchFieldException ignored) {
-                current = current.getSuperclass();
-            }
-        }
-        return null;
-    }
-
     private record SeenPair(Object realValue, Object simValue) {
         private boolean matches(Object otherReal, Object otherSim) {
             return realValue == otherReal && simValue == otherSim;
         }
     }
-
-    private static final class MemberAccess {
-        private final Field field;
-        private final Method getter;
-        private final Method setter;
-        private final MemberAccess fallbackGetter;
-
-        private MemberAccess(Field field, Method getter, Method setter, MemberAccess fallbackGetter) {
-            this.field = field;
-            this.getter = getter;
-            this.setter = setter;
-            this.fallbackGetter = fallbackGetter;
-        }
-
-        private static MemberAccess forField(Field field) {
-            Method setter = findSetter(field.getDeclaringClass(), field.getName(), field.getType());
-            return new MemberAccess(field, null, setter, null);
-        }
-
-        private static MemberAccess forGetter(Method getter) {
-            Method setter = findSetter(getter.getDeclaringClass(), inferMemberName(getter), getter.getReturnType());
-            return new MemberAccess(null, getter, setter, null);
-        }
-
-        private MemberAccess withFallbackGetter(MemberAccess fallback) {
-            return new MemberAccess(field, getter, setter, fallback);
-        }
-
-        private Object read(Object owner) throws ReflectiveOperationException {
-            if (field != null) {
-                return field.get(owner);
-            }
-            if (getter != null) {
-                return getter.invoke(owner);
-            }
-            return fallbackGetter != null ? fallbackGetter.read(owner) : null;
-        }
-
-        private boolean canWrite() {
-            return setter != null || (field != null && !Modifier.isFinal(field.getModifiers()));
-        }
-
-        private void write(Object owner, Object value) throws ReflectiveOperationException {
-            if (setter != null) {
-                setter.invoke(owner, value);
-            } else if (field != null && !Modifier.isFinal(field.getModifiers())) {
-                field.set(owner, value);
-            }
-        }
-
-        private static String inferMemberName(Method getter) {
-            String name = getter.getName();
-            if (name.startsWith("get") || name.startsWith("has")) {
-                return Character.toLowerCase(name.charAt(3)) + name.substring(4);
-            }
-            if (name.startsWith("is")) {
-                return Character.toLowerCase(name.charAt(2)) + name.substring(3);
-            }
-            return name;
-        }
-
-        private static Method findSetter(Class<?> ownerType, String memberName, Class<?> parameterType) {
-            String setterName = "set" + Character.toUpperCase(memberName.charAt(0)) + memberName.substring(1);
-            Class<?> current = ownerType;
-            while (current != null && current != Object.class) {
-                for (Method method : current.getDeclaredMethods()) {
-                    if (!method.getName().equals(setterName) || method.getParameterCount() != 1) {
-                        continue;
-                    }
-                    Class<?> candidateType = method.getParameterTypes()[0];
-                    if (candidateType.isAssignableFrom(parameterType) || parameterType.isAssignableFrom(candidateType)) {
-                        method.setAccessible(true);
-                        return method;
-                    }
-                }
-                current = current.getSuperclass();
-            }
-            return null;
-        }
-    }
-
 }

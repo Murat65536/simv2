@@ -169,6 +169,7 @@ public abstract class SlicedEntity {
     public final List<Entity.QueuedCollisionCheck> currentlyCheckedCollisions = new ObjectArrayList<>();
 
     public SlicedEntity(EntityType<?> type, World world) {
+        this.entityBridge = claimEntityBridgeBootstrap();
         this.dimensions = type.getDimensions();
         this.pos = Vec3d.ZERO;
         DataTracker.Builder builder = new DataTracker.Builder(((Entity) (this.entityBridge)));
@@ -998,4 +999,17 @@ public abstract class SlicedEntity {
     }
 
     protected Entity entityBridge;
+
+    private static final ThreadLocal ENTITY_BRIDGE_BOOTSTRAP = new ThreadLocal<>();
+
+    public static void pushEntityBridgeBootstrap(Entity entity) {
+        ENTITY_BRIDGE_BOOTSTRAP.set(entity);
+    }
+
+    private static Entity claimEntityBridgeBootstrap() {
+        net.minecraft.entity.Entity entity = (net.minecraft.entity.Entity) ENTITY_BRIDGE_BOOTSTRAP.get();
+        ENTITY_BRIDGE_BOOTSTRAP.remove();
+        if (entity == null) throw new IllegalStateException("Missing entity bridge bootstrap for sliced construction");
+        return entity;
+    }
 }

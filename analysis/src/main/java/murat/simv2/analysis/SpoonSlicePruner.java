@@ -1475,13 +1475,7 @@ public class SpoonSlicePruner {
         outputPackage.addType(slicedClass);
         try {
             if (extendsRef == null) {
-                CtField<?> entityBridgeField = factory.createField();
-                entityBridgeField.setSimpleName("entityBridge");
-                entityBridgeField.setType(factory.Type().createReference("net.minecraft.entity.Entity"));
-                entityBridgeField.addModifier(ModifierKind.PROTECTED);
-                entityBridgeField.setDocComment(
-                    "Real MC entity used as bridge for World and external API calls.");
-                slicedClass.addField(entityBridgeField);
+                addEntityBridgeBootstrapSupport(slicedClass, factory);
             }
 
             for (CtField<?> field : fieldDecls) {
@@ -1502,6 +1496,10 @@ public class SpoonSlicePruner {
                 slicedClass.addMethod(method);
             }
 
+            if (extendsRef == null) {
+                injectEntityBridgeBootstrapIntoRootConstructors(slicedClass, factory);
+            }
+
             CompilationUnit compilationUnit = factory.Core().createCompilationUnit();
             compilationUnit.setFile(outFile.toFile());
             compilationUnit.setDeclaredPackage(outputPackage);
@@ -1519,6 +1517,73 @@ public class SpoonSlicePruner {
             for (CtType<?> placeholderType : placeholderTypes) {
                 outputPackage.removeType(placeholderType);
             }
+        }
+    }
+
+    private void addEntityBridgeBootstrapSupport(CtClass<?> slicedClass, Factory factory) {
+        CtField<?> entityBridgeField = factory.createField();
+        entityBridgeField.setSimpleName("entityBridge");
+        entityBridgeField.setType(factory.Type().createReference("net.minecraft.entity.Entity"));
+        entityBridgeField.addModifier(ModifierKind.PROTECTED);
+        entityBridgeField.setDocComment(
+            "Real MC entity used as bridge for World and external API calls.");
+        slicedClass.addField(entityBridgeField);
+
+        CtField<?> bootstrapField = factory.createField();
+        bootstrapField.setSimpleName("ENTITY_BRIDGE_BOOTSTRAP");
+        bootstrapField.setType(factory.Type().createReference("java.lang.ThreadLocal"));
+        bootstrapField.addModifier(ModifierKind.PRIVATE);
+        bootstrapField.addModifier(ModifierKind.STATIC);
+        bootstrapField.addModifier(ModifierKind.FINAL);
+        bootstrapField.setDefaultExpression(factory.Code().createCodeSnippetExpression("new ThreadLocal<>()"));
+        slicedClass.addField(bootstrapField);
+
+        CtMethod<Void> pushBootstrap = factory.createMethod();
+        pushBootstrap.setSimpleName("pushEntityBridgeBootstrap");
+        pushBootstrap.addModifier(ModifierKind.PUBLIC);
+        pushBootstrap.addModifier(ModifierKind.STATIC);
+        pushBootstrap.setType(factory.Type().VOID_PRIMITIVE);
+
+        CtParameter<?> entityParameter = factory.Core().createParameter();
+        entityParameter.setType(factory.Type().createReference("net.minecraft.entity.Entity"));
+        entityParameter.setSimpleName("entity");
+        pushBootstrap.addParameter(entityParameter);
+
+        CtBlock<Void> pushBody = factory.createBlock();
+        pushBody.addStatement(factory.Code().createCodeSnippetStatement("ENTITY_BRIDGE_BOOTSTRAP.set(entity)"));
+        pushBootstrap.setBody(pushBody);
+        slicedClass.addMethod(pushBootstrap);
+
+        CtMethod<?> claimBootstrap = factory.createMethod();
+        claimBootstrap.setSimpleName("claimEntityBridgeBootstrap");
+        claimBootstrap.addModifier(ModifierKind.PRIVATE);
+        claimBootstrap.addModifier(ModifierKind.STATIC);
+        claimBootstrap.setType(factory.Type().createReference("net.minecraft.entity.Entity"));
+
+        CtBlock<?> claimBody = factory.createBlock();
+        claimBody.addStatement(factory.Code().createCodeSnippetStatement(
+            "net.minecraft.entity.Entity entity = (net.minecraft.entity.Entity) ENTITY_BRIDGE_BOOTSTRAP.get()"));
+        claimBody.addStatement(factory.Code().createCodeSnippetStatement("ENTITY_BRIDGE_BOOTSTRAP.remove()"));
+        claimBody.addStatement(factory.Code().createCodeSnippetStatement(
+            "if (entity == null) throw new IllegalStateException(\"Missing entity bridge bootstrap for sliced construction\")"));
+        claimBody.addStatement(factory.Code().createCodeSnippetStatement("return entity"));
+        claimBootstrap.setBody((CtBlock) claimBody);
+        slicedClass.addMethod((CtMethod<?>) claimBootstrap);
+    }
+
+    private void injectEntityBridgeBootstrapIntoRootConstructors(CtClass<?> slicedClass, Factory factory) {
+        for (CtConstructor<?> constructor : slicedClass.getConstructors()) {
+            CtBlock<?> body = constructor.getBody();
+            if (body == null) {
+                continue;
+            }
+            if (!body.getStatements().isEmpty()) {
+                CtStatement first = body.getStatements().get(0);
+                if (first.toString().contains("claimEntityBridgeBootstrap()")) {
+                    continue;
+                }
+            }
+            body.insertBegin(factory.Code().createCodeSnippetStatement("this.entityBridge = claimEntityBridgeBootstrap()"));
         }
     }
 

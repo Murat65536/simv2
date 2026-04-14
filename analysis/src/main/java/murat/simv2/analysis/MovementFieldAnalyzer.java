@@ -147,6 +147,9 @@ public class MovementFieldAnalyzer {
                     sliceLines
                 );
                 pruner.pruneAndWrite(outputDir.resolve("java/murat/simv2/simulation/sliced"));
+
+                RuntimeSimClassGenerator runtimeGenerator = new RuntimeSimClassGenerator(outputDir);
+                runtimeGenerator.generate(classified);
             } else {
                 System.out.println("No sources JAR provided — skipping Spoon pruning.");
                 System.out.println("  Run with: -PsourcesJar=<path-to-sources.jar>");
