@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
 // Generated - do not edit
 public abstract class SlicedAbstractClientPlayerEntity extends SlicedPlayerEntity {
     @Nullable
-    private PlayerListEntry playerListEntry;
+    public PlayerListEntry playerListEntry;
 
     public SlicedAbstractClientPlayerEntity(ClientWorld world, GameProfile profile) {
         super(world, world.getSpawnPos(), world.getSpawnAngle(), profile);

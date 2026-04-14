@@ -32,7 +32,7 @@ public abstract class SlicedClientPlayerEntity extends SlicedAbstractClientPlaye
 
     public Input input = new Input();
 
-    protected MinecraftClient client;
+    public MinecraftClient client;
 
     public boolean usingItem;
 

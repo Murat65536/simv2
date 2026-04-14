@@ -133,7 +133,13 @@ public class SyncCodeGenerator {
 
         // Skip excluded fields
         if (AnalysisConfig.EXCLUDED_FIELDS.contains(name)) return null;
-        return "syncMember(real, sim, \"" + escapeJavaString(name) + "\")";
+        boolean deepCopy = requiresDeepCopy(field);
+        return "syncMember(real, sim, \"" + escapeJavaString(name) + "\", " + deepCopy + ")";
+    }
+
+    private boolean requiresDeepCopy(FieldResult field) {
+        return field.category() == FieldResult.FieldCategory.MOD
+            || field.category() == FieldResult.FieldCategory.MOD_REF;
     }
 
     private boolean isFieldFinal(FieldResult field) {
@@ -222,26 +228,35 @@ public class SyncCodeGenerator {
     private String generatedSyncHelpersSource() {
         return """
 
-    private static void syncMember(Object realOwner, Object simOwner, String memberName) {
+    private static void syncMember(Object realOwner, Object simOwner, String memberName, boolean deepCopy) {
         try {
             MemberAccess realAccess = findReadableMember(realOwner.getClass(), memberName);
+            if (realAccess == null) {
+                throw new IllegalStateException("Missing readable member '" + memberName + "' on real type " + realOwner.getClass().getName());
+            }
             MemberAccess simAccess = findAnyMember(simOwner.getClass(), memberName);
-            if (realAccess == null || simAccess == null) {
-                return;
+            if (simAccess == null) {
+                throw new IllegalStateException("Missing target member '" + memberName + "' on sim type " + simOwner.getClass().getName());
             }
 
             Object realValue = realAccess.read(realOwner);
+            if (!simAccess.canWrite()) {
+                throw new IllegalStateException("Member '" + memberName + "' on sim type " + simOwner.getClass().getName() + " is not writable");
+            }
             if (realValue == null) {
-                if (simAccess.canWrite()) {
-                    simAccess.write(simOwner, null);
-                }
+                simAccess.write(simOwner, null);
+                return;
+            }
+
+            if (!deepCopy) {
+                simAccess.write(simOwner, realValue);
                 return;
             }
 
             Object simValue = simAccess.read(simOwner);
-            Object synced = syncValue(realValue, simValue, new ArrayList<>());
-            if (simAccess.canWrite() && synced != simValue) {
-                simAccess.write(simOwner, synced);
+            Object copied = syncValue(realValue, simValue, new ArrayList<>());
+            if (copied != simValue) {
+                simAccess.write(simOwner, copied);
             }
         } catch (ReflectiveOperationException ex) {
             throw new IllegalStateException("Failed to sync member '" + memberName + "'", ex);
@@ -295,7 +310,7 @@ public class SyncCodeGenerator {
                 if (Modifier.isStatic(field.getModifiers())) {
                     continue;
                 }
-                syncMember(realValue, simValue, field.getName());
+                syncMember(realValue, simValue, field.getName(), true);
             }
             current = current.getSuperclass();
         }

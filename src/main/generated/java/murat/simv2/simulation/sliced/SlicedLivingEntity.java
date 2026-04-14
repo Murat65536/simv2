@@ -80,30 +80,30 @@ import org.jetbrains.annotations.Nullable;
 public abstract class SlicedLivingEntity extends SlicedEntity {
     public static final double GRAVITY = 0.08;
 
-    protected static final TrackedData<Byte> LIVING_FLAGS = DataTracker.registerData(LivingEntity.class, TrackedDataHandlerRegistry.BYTE);
+    public static final TrackedData<Byte> LIVING_FLAGS = DataTracker.registerData(LivingEntity.class, TrackedDataHandlerRegistry.BYTE);
 
-    private static final TrackedData<Float> HEALTH = DataTracker.registerData(LivingEntity.class, TrackedDataHandlerRegistry.FLOAT);
+    public static final TrackedData<Float> HEALTH = DataTracker.registerData(LivingEntity.class, TrackedDataHandlerRegistry.FLOAT);
 
-    private static final TrackedData<Optional<BlockPos>> SLEEPING_POSITION = DataTracker.registerData(LivingEntity.class, TrackedDataHandlerRegistry.OPTIONAL_BLOCK_POS);
+    public static final TrackedData<Optional<BlockPos>> SLEEPING_POSITION = DataTracker.registerData(LivingEntity.class, TrackedDataHandlerRegistry.OPTIONAL_BLOCK_POS);
 
-    private AttributeContainer attributes;
+    public AttributeContainer attributes;
 
-    private final DamageTracker damageTracker = new DamageTracker(((LivingEntity) (this.entityBridge)));
+    public final DamageTracker damageTracker = new DamageTracker(((LivingEntity) (this.entityBridge)));
 
-    private final Map<RegistryEntry<StatusEffect>, StatusEffectInstance> activeStatusEffects = Maps.<RegistryEntry<StatusEffect>, StatusEffectInstance>newHashMap();
+    public final Map<RegistryEntry<StatusEffect>, StatusEffectInstance> activeStatusEffects = Maps.<RegistryEntry<StatusEffect>, StatusEffectInstance>newHashMap();
 
-    private boolean noDrag = false;
+    public boolean noDrag = false;
 
     public float headYaw;
 
     @Nullable
-    protected LazyEntityReference<PlayerEntity> attackingPlayer;
+    public LazyEntityReference<PlayerEntity> attackingPlayer;
 
-    protected int playerHitTimer;
+    public int playerHitTimer;
 
-    protected boolean dead;
+    public boolean dead;
 
-    protected float lastDamageTaken;
+    public float lastDamageTaken;
 
     public boolean jumping;
 
@@ -113,20 +113,20 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
 
     public float forwardSpeed;
 
-    protected PositionInterpolator interpolator = new PositionInterpolator(((LivingEntity) (this.entityBridge)));
+    public PositionInterpolator interpolator = new PositionInterpolator(((LivingEntity) (this.entityBridge)));
 
-    protected double serverHeadYaw;
+    public double serverHeadYaw;
 
-    protected int headTrackingIncrements;
+    public int headTrackingIncrements;
 
     @Nullable
-    private LazyEntityReference<LivingEntity> attackerReference;
+    public LazyEntityReference<LivingEntity> attackerReference;
 
-    private float movementSpeed;
+    public float movementSpeed;
 
     public int jumpingCooldown;
 
-    private float absorptionAmount;
+    public float absorptionAmount;
 
     public ItemStack activeItemStack = ItemStack.EMPTY;
 
@@ -134,9 +134,9 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
 
     public int riptideTicks;
 
-    private boolean experienceDroppingDisabled;
+    public boolean experienceDroppingDisabled;
 
-    protected EntityEquipment equipment;
+    public EntityEquipment equipment;
 
     protected SlicedLivingEntity(EntityType<? extends LivingEntity> entityType, World world) {
         super(entityType, world);
@@ -144,13 +144,13 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
 
     public boolean horizontalCollision;
 
-    protected final Random random = Random.create();
+    public final Random random = Random.create();
 
     public int age;
 
     public int timeUntilRegen;
 
-    protected DataTracker dataTracker;
+    public DataTracker dataTracker;
 
     protected void fall(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition) {
         if (!this.isTouchingWater()) {
@@ -159,7 +159,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
         super.fall(heightDifference, onGround, state, landedPosition);
     }
 
-    protected static final int GLIDING_FLAG_INDEX = 7;
+    public static final int GLIDING_FLAG_INDEX = 7;
 
     public boolean wasInPowderSnow;
 

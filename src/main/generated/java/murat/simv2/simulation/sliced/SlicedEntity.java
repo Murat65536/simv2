@@ -65,32 +65,32 @@ import org.jetbrains.annotations.Nullable;
 // Movement-relevant statements only (WALA backward slice + Spoon AST pruning)
 // Generated - do not edit
 public abstract class SlicedEntity {
-    private static final ImmutableList<Direction.Axis> X_THEN_Z = ImmutableList.of(Direction.Axis.Y, Direction.Axis.X, Direction.Axis.Z);
+    public static final ImmutableList<Direction.Axis> X_THEN_Z = ImmutableList.of(Direction.Axis.Y, Direction.Axis.X, Direction.Axis.Z);
 
-    private static final ImmutableList<Direction.Axis> Z_THEN_X = ImmutableList.of(Direction.Axis.Y, Direction.Axis.Z, Direction.Axis.X);
+    public static final ImmutableList<Direction.Axis> Z_THEN_X = ImmutableList.of(Direction.Axis.Y, Direction.Axis.Z, Direction.Axis.X);
 
-    private static final Box NULL_BOX = new Box(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    public static final Box NULL_BOX = new Box(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 
-    private EntityType<?> type;
+    public EntityType<?> type;
 
     @Nullable
     public Entity vehicle;
 
-    private World world;
+    public World world;
 
     public Vec3d pos;
 
     public BlockPos blockPos;
 
-    private Vec3d velocity = Vec3d.ZERO;
+    public Vec3d velocity = Vec3d.ZERO;
 
-    private float yaw;
+    public float yaw;
 
-    private float pitch;
+    public float pitch;
 
-    private Box boundingBox = Entity.NULL_BOX;
+    public Box boundingBox = Entity.NULL_BOX;
 
-    private boolean onGround;
+    public boolean onGround;
 
     public boolean horizontalCollision;
 
@@ -101,13 +101,13 @@ public abstract class SlicedEntity {
     public Vec3d movementMultiplier = Vec3d.ZERO;
 
     @Nullable
-    private Entity.RemovalReason removalReason;
+    public Entity.RemovalReason removalReason;
 
     public float distanceTraveled;
 
     public double fallDistance;
 
-    private float nextStepSoundDistance = 1.0F;
+    public float nextStepSoundDistance = 1.0F;
 
     public double lastRenderX;
 
@@ -117,45 +117,45 @@ public abstract class SlicedEntity {
 
     public boolean noClip;
 
-    protected final Random random = Random.create();
+    public final Random random = Random.create();
 
     public boolean touchingWater;
 
     public Object2DoubleMap<TagKey<Fluid>> fluidHeight = new Object2DoubleArrayMap<>(2);
 
-    private final Set<TagKey<Fluid>> submergedFluidTag = new HashSet();
+    public final Set<TagKey<Fluid>> submergedFluidTag = new HashSet();
 
-    protected boolean firstUpdate = true;
+    public boolean firstUpdate = true;
 
-    protected DataTracker dataTracker;
+    public DataTracker dataTracker;
 
-    protected static final TrackedData<Byte> FLAGS = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BYTE);
+    public static final TrackedData<Byte> FLAGS = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BYTE);
 
-    private static final int SNEAKING_FLAG_INDEX = 1;
+    public static final int SNEAKING_FLAG_INDEX = 1;
 
-    private static final int SPRINTING_FLAG_INDEX = 3;
+    public static final int SPRINTING_FLAG_INDEX = 3;
 
-    private static final int SWIMMING_FLAG_INDEX = 4;
+    public static final int SWIMMING_FLAG_INDEX = 4;
 
-    private static final TrackedData<Integer> AIR = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.INTEGER);
+    public static final TrackedData<Integer> AIR = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.INTEGER);
 
-    private static final TrackedData<Optional<Text>> CUSTOM_NAME = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.OPTIONAL_TEXT_COMPONENT);
+    public static final TrackedData<Optional<Text>> CUSTOM_NAME = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.OPTIONAL_TEXT_COMPONENT);
 
-    private static final TrackedData<Boolean> NAME_VISIBLE = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    public static final TrackedData<Boolean> NAME_VISIBLE = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
-    private static final TrackedData<Boolean> SILENT = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    public static final TrackedData<Boolean> SILENT = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
-    private static final TrackedData<Boolean> NO_GRAVITY = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    public static final TrackedData<Boolean> NO_GRAVITY = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
-    protected static final TrackedData<EntityPose> POSE = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.ENTITY_POSE);
+    public static final TrackedData<EntityPose> POSE = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.ENTITY_POSE);
 
-    private static final TrackedData<Integer> FROZEN_TICKS = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.INTEGER);
+    public static final TrackedData<Integer> FROZEN_TICKS = DataTracker.registerData(Entity.class, TrackedDataHandlerRegistry.INTEGER);
 
-    private boolean invulnerable;
+    public boolean invulnerable;
 
-    protected UUID uuid = MathHelper.randomUuid(this.random);
+    public UUID uuid = MathHelper.randomUuid(this.random);
 
-    private final double[] pistonMovementDelta = new double[]{ 0.0, 0.0, 0.0 };
+    public final double[] pistonMovementDelta = new double[]{ 0.0, 0.0, 0.0 };
 
     public EntityDimensions dimensions;
 
@@ -166,7 +166,7 @@ public abstract class SlicedEntity {
     @Nullable
     public BlockState stateAtPos = null;
 
-    private final List<Entity.QueuedCollisionCheck> currentlyCheckedCollisions = new ObjectArrayList<>();
+    public final List<Entity.QueuedCollisionCheck> currentlyCheckedCollisions = new ObjectArrayList<>();
 
     public SlicedEntity(EntityType<?> type, World world) {
         this.dimensions = type.getDimensions();

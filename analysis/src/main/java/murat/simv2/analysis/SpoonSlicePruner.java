@@ -1419,6 +1419,7 @@ public class SpoonSlicePruner {
                     if (cloned.getDefaultExpression() == null) {
                         cloned.removeModifier(ModifierKind.FINAL);
                     }
+                    makeSlicedFieldPublic(cloned);
                     decls.add(cloned);
                     added.add(name);
                 }
@@ -1429,6 +1430,15 @@ public class SpoonSlicePruner {
                 break;
             }
         }
+    }
+
+    private void makeSlicedFieldPublic(CtField<?> field) {
+        if (field == null) {
+            return;
+        }
+        field.removeModifier(ModifierKind.PRIVATE);
+        field.removeModifier(ModifierKind.PROTECTED);
+        field.addModifier(ModifierKind.PUBLIC);
     }
 
     private void writeSlicedCompilationUnit(Path outFile,

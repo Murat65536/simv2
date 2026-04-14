@@ -35,23 +35,23 @@ import org.jetbrains.annotations.Nullable;
 // Movement-relevant statements only (WALA backward slice + Spoon AST pruning)
 // Generated - do not edit
 public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
-    private static final TrackedData<Float> ABSORPTION_AMOUNT = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.FLOAT);
+    public static final TrackedData<Float> ABSORPTION_AMOUNT = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.FLOAT);
 
-    private final PlayerAbilities abilities = new PlayerAbilities();
+    public final PlayerAbilities abilities = new PlayerAbilities();
 
     public int experienceLevel = 0;
 
-    protected float damageTiltYaw;
+    public float damageTiltYaw;
 
     public SlicedPlayerEntity(World world, BlockPos pos, float yaw, GameProfile gameProfile) {
         super(EntityType.PLAYER, world);
     }
 
-    protected int lastAttackedTicks;
+    public int lastAttackedTicks;
 
     public boolean jumping;
 
-    protected float riptideAttackDamage;
+    public float riptideAttackDamage;
 
     public boolean velocityModified;
 
@@ -61,7 +61,7 @@ public abstract class SlicedPlayerEntity extends SlicedLivingEntity {
         return this.isSneaking();
     }
 
-    private boolean invulnerable;
+    public boolean invulnerable;
 
     protected boolean canChangeIntoPose(EntityPose pose) {
         return this.getWorld().isSpaceEmpty(((PlayerEntity) (this.entityBridge)), this.getDimensions(pose).getBoxAt(this.getPos()).contract(1.0E-7));

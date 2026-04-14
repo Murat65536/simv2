@@ -17,97 +17,106 @@ public final class GeneratedSync {
     public static void sync(ClientPlayerEntity real, SlicedClientPlayerEntity sim) {
         // ── AbstractClientPlayerEntity ──
         // ── ClientPlayerEntity ──
-        syncMember(real, sim, "activeHand");
-        syncMember(real, sim, "autoJumpEnabled");
-        syncMember(real, sim, "falling");
-        syncMember(real, sim, "field_3938");
-        syncMember(real, sim, "inSneakingPose");
-        syncMember(real, sim, "input");
-        syncMember(real, sim, "lastNauseaIntensity");
-        syncMember(real, sim, "mountJumpStrength");
-        syncMember(real, sim, "nauseaIntensity");
-        syncMember(real, sim, "ticksLeftToDoubleTapSprint");
-        syncMember(real, sim, "ticksToNextAutoJump");
-        syncMember(real, sim, "underwaterVisibilityTicks");
-        syncMember(real, sim, "usingItem");
+        syncMember(real, sim, "activeHand", true);
+        syncMember(real, sim, "autoJumpEnabled", true);
+        syncMember(real, sim, "falling", true);
+        syncMember(real, sim, "field_3938", true);
+        syncMember(real, sim, "inSneakingPose", true);
+        syncMember(real, sim, "input", true);
+        syncMember(real, sim, "lastNauseaIntensity", true);
+        syncMember(real, sim, "mountJumpStrength", true);
+        syncMember(real, sim, "nauseaIntensity", true);
+        syncMember(real, sim, "ticksLeftToDoubleTapSprint", true);
+        syncMember(real, sim, "ticksToNextAutoJump", true);
+        syncMember(real, sim, "underwaterVisibilityTicks", true);
+        syncMember(real, sim, "usingItem", true);
         // ── Entity ──
-        syncMember(real, sim, "blockPos");
-        syncMember(real, sim, "boundingBox");
-        syncMember(real, sim, "chunkPos");
-        syncMember(real, sim, "collidedSoftly");
-        syncMember(real, sim, "dimensions");
-        syncMember(real, sim, "fallDistance");
-        syncMember(real, sim, "fireTicks");
-        syncMember(real, sim, "fluidHeight");
-        syncMember(real, sim, "forceUpdateSupportingBlockPos");
-        syncMember(real, sim, "groundCollision");
-        syncMember(real, sim, "horizontalCollision");
-        syncMember(real, sim, "invulnerable");
-        syncMember(real, sim, "movementMultiplier");
-        syncMember(real, sim, "noClip");
-        syncMember(real, sim, "onGround");
-        syncMember(real, sim, "pistonMovementDelta");
-        syncMember(real, sim, "pistonMovementTick");
-        syncMember(real, sim, "pitch");
-        syncMember(real, sim, "portalCooldown");
-        syncMember(real, sim, "pos");
-        syncMember(real, sim, "speed");
-        syncMember(real, sim, "standingEyeHeight");
-        syncMember(real, sim, "stateAtPos");
-        syncMember(real, sim, "submergedFluidTag");
-        syncMember(real, sim, "supportingBlockPos");
-        syncMember(real, sim, "touchingWater");
-        syncMember(real, sim, "vehicle");
-        syncMember(real, sim, "velocity");
-        syncMember(real, sim, "velocityModified");
-        syncMember(real, sim, "verticalCollision");
-        syncMember(real, sim, "yaw");
+        syncMember(real, sim, "blockPos", true);
+        syncMember(real, sim, "boundingBox", true);
+        syncMember(real, sim, "chunkPos", true);
+        syncMember(real, sim, "collidedSoftly", true);
+        syncMember(real, sim, "dimensions", true);
+        syncMember(real, sim, "fallDistance", true);
+        syncMember(real, sim, "fireTicks", true);
+        syncMember(real, sim, "fluidHeight", true);
+        syncMember(real, sim, "forceUpdateSupportingBlockPos", true);
+        syncMember(real, sim, "groundCollision", true);
+        syncMember(real, sim, "horizontalCollision", true);
+        syncMember(real, sim, "invulnerable", true);
+        syncMember(real, sim, "movementMultiplier", true);
+        syncMember(real, sim, "noClip", true);
+        syncMember(real, sim, "onGround", true);
+        syncMember(real, sim, "pistonMovementDelta", true);
+        syncMember(real, sim, "pistonMovementTick", true);
+        syncMember(real, sim, "pitch", true);
+        syncMember(real, sim, "portalCooldown", true);
+        syncMember(real, sim, "pos", true);
+        syncMember(real, sim, "speed", true);
+        syncMember(real, sim, "standingEyeHeight", true);
+        syncMember(real, sim, "stateAtPos", true);
+        syncMember(real, sim, "submergedFluidTag", true);
+        syncMember(real, sim, "supportingBlockPos", true);
+        syncMember(real, sim, "touchingWater", true);
+        syncMember(real, sim, "vehicle", true);
+        syncMember(real, sim, "velocity", true);
+        syncMember(real, sim, "velocityModified", true);
+        syncMember(real, sim, "verticalCollision", true);
+        syncMember(real, sim, "yaw", true);
         // ── LivingEntity ──
-        syncMember(real, sim, "activeItemStack");
-        syncMember(real, sim, "activeStatusEffects");
-        syncMember(real, sim, "attributes");
-        syncMember(real, sim, "climbingPos");
-        syncMember(real, sim, "equipment");
-        syncMember(real, sim, "forwardSpeed");
-        syncMember(real, sim, "glidingTicks");
-        syncMember(real, sim, "headYaw");
-        syncMember(real, sim, "itemUseTimeLeft");
-        syncMember(real, sim, "jumping");
-        syncMember(real, sim, "jumpingCooldown");
-        syncMember(real, sim, "movementSpeed");
-        syncMember(real, sim, "noDrag");
-        syncMember(real, sim, "riptideTicks");
-        syncMember(real, sim, "sidewaysSpeed");
-        syncMember(real, sim, "upwardSpeed");
+        syncMember(real, sim, "activeItemStack", true);
+        syncMember(real, sim, "activeStatusEffects", true);
+        syncMember(real, sim, "attributes", true);
+        syncMember(real, sim, "climbingPos", true);
+        syncMember(real, sim, "equipment", true);
+        syncMember(real, sim, "forwardSpeed", true);
+        syncMember(real, sim, "glidingTicks", true);
+        syncMember(real, sim, "headYaw", true);
+        syncMember(real, sim, "itemUseTimeLeft", true);
+        syncMember(real, sim, "jumping", true);
+        syncMember(real, sim, "jumpingCooldown", true);
+        syncMember(real, sim, "movementSpeed", true);
+        syncMember(real, sim, "noDrag", true);
+        syncMember(real, sim, "riptideTicks", true);
+        syncMember(real, sim, "sidewaysSpeed", true);
+        syncMember(real, sim, "upwardSpeed", true);
         // ── PlayerEntity ──
-        syncMember(real, sim, "abilities");
-        syncMember(real, sim, "abilityResyncCountdown");
-        syncMember(real, sim, "hungerManager");
-        syncMember(real, sim, "inventory");
-        syncMember(real, sim, "lastStrideDistance");
-        syncMember(real, sim, "strideDistance");
+        syncMember(real, sim, "abilities", true);
+        syncMember(real, sim, "abilityResyncCountdown", true);
+        syncMember(real, sim, "hungerManager", true);
+        syncMember(real, sim, "inventory", true);
+        syncMember(real, sim, "lastStrideDistance", true);
+        syncMember(real, sim, "strideDistance", true);
     }
 
-    private static void syncMember(Object realOwner, Object simOwner, String memberName) {
+    private static void syncMember(Object realOwner, Object simOwner, String memberName, boolean deepCopy) {
         try {
             MemberAccess realAccess = findReadableMember(realOwner.getClass(), memberName);
+            if (realAccess == null) {
+                throw new IllegalStateException("Missing readable member '" + memberName + "' on real type " + realOwner.getClass().getName());
+            }
             MemberAccess simAccess = findAnyMember(simOwner.getClass(), memberName);
-            if (realAccess == null || simAccess == null) {
-                return;
+            if (simAccess == null) {
+                throw new IllegalStateException("Missing target member '" + memberName + "' on sim type " + simOwner.getClass().getName());
             }
 
             Object realValue = realAccess.read(realOwner);
+            if (!simAccess.canWrite()) {
+                throw new IllegalStateException("Member '" + memberName + "' on sim type " + simOwner.getClass().getName() + " is not writable");
+            }
             if (realValue == null) {
-                if (simAccess.canWrite()) {
-                    simAccess.write(simOwner, null);
-                }
+                simAccess.write(simOwner, null);
+                return;
+            }
+
+            if (!deepCopy) {
+                simAccess.write(simOwner, realValue);
                 return;
             }
 
             Object simValue = simAccess.read(simOwner);
-            Object synced = syncValue(realValue, simValue, new ArrayList<>());
-            if (simAccess.canWrite() && synced != simValue) {
-                simAccess.write(simOwner, synced);
+            Object copied = syncValue(realValue, simValue, new ArrayList<>());
+            if (copied != simValue) {
+                simAccess.write(simOwner, copied);
             }
         } catch (ReflectiveOperationException ex) {
             throw new IllegalStateException("Failed to sync member '" + memberName + "'", ex);
@@ -161,7 +170,7 @@ public final class GeneratedSync {
                 if (Modifier.isStatic(field.getModifiers())) {
                     continue;
                 }
-                syncMember(realValue, simValue, field.getName());
+                syncMember(realValue, simValue, field.getName(), true);
             }
             current = current.getSuperclass();
         }
