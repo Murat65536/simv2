@@ -19,6 +19,8 @@ public final class PathPredictionController {
 
     private static boolean enabled;
     private static RuntimeSlicedClientPlayerEntity simulator;
+    private static String lastFailureClass;
+    private static String lastFailureMessage;
 
     private PathPredictionController() {
     }
@@ -29,6 +31,7 @@ public final class PathPredictionController {
             dispatcher.register(literal("pathpredict")
                 .then(literal("on").executes(context -> setEnabled(context.getSource(), true)))
                 .then(literal("off").executes(context -> setEnabled(context.getSource(), false)))
+                .then(literal("status").executes(context -> reportStatus(context.getSource())))
             )
         );
     }
@@ -50,6 +53,7 @@ public final class PathPredictionController {
             sim.syncFrom(realPlayer);
             PathRenderer.setPath(predictPath(sim, PREDICTION_TICKS));
         } catch (RuntimeException ex) {
+            recordFailure(ex);
             enabled = false;
             simulator = null;
             PathRenderer.clearPath();
@@ -70,10 +74,11 @@ public final class PathPredictionController {
     }
 
     private static List<Vec3d> predictPath(RuntimeSlicedClientPlayerEntity sim, int ticks) {
-        List<Vec3d> positions = new ArrayList<>(ticks + 1);
+        int safeTicks = Math.max(0, ticks);
+        List<Vec3d> positions = new ArrayList<>(safeTicks + 1);
         positions.add(sim.getPos().add(0.0, 0.05, 0.0));
-        for (int i = 0; i < ticks; i++) {
-            sim.tickMovementInput();
+        for (int i = 0; i < safeTicks; i++) {
+            // tickMovement already applies movement input once per simulated tick.
             sim.tickMovement();
             positions.add(sim.getPos().add(0.0, 0.05, 0.0));
         }
@@ -86,9 +91,37 @@ public final class PathPredictionController {
             simulator = null;
             PathRenderer.clearPath();
         }
+        clearFailure();
         source.sendFeedback(Text.literal(enabled
             ? "Path prediction enabled"
             : "Path prediction disabled"));
         return Command.SINGLE_SUCCESS;
+    }
+
+    private static int reportStatus(FabricClientCommandSource source) {
+        source.sendFeedback(Text.literal("Path prediction status: enabled=" + enabled
+            + ", simulatorPresent=" + (simulator != null)
+            + ", lastFailure=" + formatLastFailure()));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static void recordFailure(RuntimeException ex) {
+        lastFailureClass = ex.getClass().getSimpleName();
+        lastFailureMessage = ex.getMessage();
+    }
+
+    private static void clearFailure() {
+        lastFailureClass = null;
+        lastFailureMessage = null;
+    }
+
+    private static String formatLastFailure() {
+        if (lastFailureClass == null) {
+            return "none";
+        }
+        if (lastFailureMessage == null || lastFailureMessage.isBlank()) {
+            return lastFailureClass;
+        }
+        return lastFailureClass + ": " + lastFailureMessage;
     }
 }

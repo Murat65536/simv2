@@ -101,8 +101,10 @@ public final class GeneratedSync {
         }
         try {
             return (T) syncValue(realValue, simValue, new ArrayList<>());
-        } catch (ReflectiveOperationException ex) {
-            throw new IllegalStateException("Failed to deep copy sync value", ex);
+        } catch (ReflectiveOperationException | java.lang.reflect.InaccessibleObjectException ex) {
+            // Fallback to the real instance when deep reflection is blocked.
+            // This favors simulation continuity over hard crashes.
+            return realValue;
         }
     }
 
@@ -156,15 +158,29 @@ public final class GeneratedSync {
         Class<?> current = realValue.getClass();
         while (current != null && current != Object.class) {
             for (Field field : current.getDeclaredFields()) {
-                if (Modifier.isStatic(field.getModifiers())) {
+                if (Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) {
                     continue;
                 }
-                field.setAccessible(true);
-                Object realFieldValue = field.get(realValue);
-                Object simFieldValue = field.get(simValue);
+                try {
+                    field.setAccessible(true);
+                } catch (java.lang.reflect.InaccessibleObjectException ignored) {
+                    continue;
+                }
+                Object realFieldValue;
+                Object simFieldValue;
+                try {
+                    realFieldValue = field.get(realValue);
+                    simFieldValue = field.get(simValue);
+                } catch (java.lang.reflect.InaccessibleObjectException ignored) {
+                    continue;
+                }
                 Object copied = syncValue(realFieldValue, simFieldValue, seen);
                 if (!Modifier.isFinal(field.getModifiers()) && copied != simFieldValue) {
-                    field.set(simValue, copied);
+                    try {
+                        field.set(simValue, copied);
+                    } catch (java.lang.reflect.InaccessibleObjectException ignored) {
+                        // Keep simulation running even if this member cannot be written.
+                    }
                 }
             }
             current = current.getSuperclass();

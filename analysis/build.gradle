@@ -66,7 +66,23 @@ def resolveAnalysisArgs = { String mode ->
 def configureAnalysisExec = { JavaExec execTask, String mode ->
     execTask.jvmArgs = analysisJvmArgs
     execTask.doFirst {
-        execTask.setArgs(resolveAnalysisArgs(mode))
+        def resolvedArgs = resolveAnalysisArgs(mode)
+        if (mode == 'spoon') {
+            def outputDir = file(resolvedArgs[1])
+            def missingArtifacts = []
+            if (!outputDir.toPath().resolve('movement-fields.txt').toFile().exists()) {
+                missingArtifacts << 'movement-fields.txt'
+            }
+            if (!outputDir.toPath().resolve('movement-slice.json').toFile().exists()) {
+                missingArtifacts << 'movement-slice.json'
+            }
+            if (!missingArtifacts.isEmpty()) {
+                throw new GradleException(
+                    "runSpoon requires WALA artifacts in ${outputDir}: ${missingArtifacts.join(', ')}. "
+                        + "Run :analysis:runWala first or set -PoutputDir accordingly.")
+            }
+        }
+        execTask.setArgs(resolvedArgs)
     }
 }
 
@@ -88,4 +104,11 @@ tasks.register('runSpoon', JavaExec) { JavaExec spoonTask ->
     classpath = sourceSets.main.runtimeClasspath
     mainClass = application.mainClass
     configureAnalysisExec(spoonTask, 'spoon')
+    mustRunAfter 'runWala'
+}
+
+tasks.register('runFullAnalysis') {
+    group = 'application'
+    description = 'Run WALA and Spoon phases sequentially with validated artifacts.'
+    dependsOn 'runWala', 'runSpoon'
 }

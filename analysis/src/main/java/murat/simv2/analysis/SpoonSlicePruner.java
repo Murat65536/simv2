@@ -64,6 +64,8 @@ public class SpoonSlicePruner {
     private final Path minecraftJar;
     private final List<Path> extraClasspathOverride;
     private final Map<String, Map<String, Set<Integer>>> sliceLines;
+    private final SlicedFieldPlanner fieldPlanner = new SlicedFieldPlanner();
+    private final SpoonRepairPasses repairPasses = new SpoonRepairPasses();
 
     public SpoonSlicePruner(Path sourcesJar,
                             Path minecraftJar,
@@ -457,7 +459,7 @@ public class SpoonSlicePruner {
             int before = countStatements(cloned);
             pruneByWalaLines(cloned, walaLines);
             preserveConstructorDelegation(cloned, original, extendsRef != null, factory);
-            repairEntityMovePositionAdvance(cloned, simpleName, factory);
+            repairPasses.repairMethodAfterPrune(cloned, simpleName, factory);
             int after = countStatements(cloned);
             int returnsAfter = cloned.getBody() == null ? 0
                 : cloned.getBody().getElements(new TypeFilter<>(CtReturn.class)).size();
@@ -682,9 +684,7 @@ public class SpoonSlicePruner {
                 if (!isSelf) continue;
 
                 String name = inv.getExecutable().getSimpleName();
-                if ("<init>".equals(name)) {
-                    // Constructor pseudo-calls are handled by constructor wrapping/preservation,
-                    // not by unresolved-this stub generation.
+                if (repairPasses.shouldSkipUnresolvedThisCall(name)) {
                     continue;
                 }
                 int argCount = inv.getArguments().size();
@@ -1459,198 +1459,18 @@ public class SpoonSlicePruner {
         return count;
     }
 
-    /**
-     * WALA can prune the accumulator assignment inside Entity#move's axis loop,
-     * leaving a no-op loop that never advances position.
-     * When that pattern is detected, reinsert vec3d2 = vec3d3.
-     */
-    private void repairEntityMovePositionAdvance(CtMethod<?> method,
-                                                 String sourceSimpleName,
-                                                 Factory factory) {
-        if (!"Entity".equals(sourceSimpleName)
-            || !"move".equals(method.getSimpleName())
-            || method.getBody() == null) {
-            return;
-        }
-        for (CtForEach forEach : method.getElements(new TypeFilter<>(CtForEach.class))) {
-            CtStatement bodyStatement = forEach.getBody();
-            if (bodyStatement == null) {
-                continue;
-            }
-            CtBlock<?> bodyBlock;
-            if (bodyStatement instanceof CtBlock<?> block) {
-                bodyBlock = block;
-            } else {
-                CtBlock<?> wrapped = factory.createBlock();
-                wrapped.addStatement(bodyStatement.clone());
-                forEach.setBody(wrapped);
-                bodyBlock = wrapped;
-            }
-
-            for (CtIf conditional : bodyBlock.getElements(new TypeFilter<>(CtIf.class))) {
-                CtStatement thenStatement = conditional.getThenStatement();
-                if (thenStatement == null) {
-                    continue;
-                }
-                CtBlock<?> thenBlock;
-                if (thenStatement instanceof CtBlock<?> block) {
-                    thenBlock = block;
-                } else {
-                    CtBlock<?> wrappedThen = factory.createBlock();
-                    wrappedThen.addStatement(thenStatement.clone());
-                    conditional.setThenStatement(wrappedThen);
-                    thenBlock = wrappedThen;
-                }
-
-                boolean declaresStepVec = thenBlock.getStatements().stream().anyMatch(
-                    statement -> statement instanceof CtLocalVariable<?> localVariable
-                        && "vec3d3".equals(localVariable.getSimpleName()));
-                boolean updatesAccumulatedPos = thenBlock.getElements(new TypeFilter<>(CtAssignment.class)).stream()
-                    .map(CtAssignment.class::cast)
-                    .anyMatch(assignment -> assignmentWritesVariable(assignment.getAssigned(), "vec3d2"));
-                if (declaresStepVec && !updatesAccumulatedPos) {
-                    thenBlock.addStatement(factory.Code().createCodeSnippetStatement("vec3d2 = vec3d3"));
-                }
-            }
-        }
-    }
-
-    private boolean assignmentWritesVariable(CtExpression<?> assigned, String variableName) {
-        if (assigned instanceof CtVariableWrite<?> variableWrite) {
-            return variableName.equals(variableWrite.getVariable().getSimpleName());
-        }
-        return assigned instanceof CtVariableAccess<?> variableAccess
-            && variableName.equals(variableAccess.getVariable().getSimpleName());
-    }
-
     // ── Field and import handling ──
 
     private List<CtField<?>> extractFieldDeclarations(CtType<?> type, List<CtMethod<?>> methods,
                                                        Map<String, CtType<?>> typeIndex,
                                                        Set<String> inheritedFieldNames) {
-        // Collect all field names referenced in methods via AST walk
-        Set<String> referencedFieldNames = new HashSet<>();
-        for (CtMethod<?> m : methods) {
-            for (CtFieldAccess<?> fa : m.getElements(new TypeFilter<>(CtFieldAccess.class))) {
-                referencedFieldNames.add(fa.getVariable().getSimpleName());
-            }
-        }
-
-        List<CtField<?>> decls = new ArrayList<>();
-        Set<String> added = new HashSet<>();
-
-        // Walk up the hierarchy to find fields referenced in methods.
-        // Skip inherited fields that are already provided by generated sliced superclasses
-        // to avoid shadowing (e.g. movement inputs in ClientPlayerEntity).
-        addReferencedFields(type, typeIndex, referencedFieldNames, decls, added, inheritedFieldNames);
-
-        // Transitive closure: field initializers may reference other fields (e.g., uuid → random)
-        boolean changed = true;
-        while (changed) {
-            changed = false;
-            Set<String> newRefs = new HashSet<>();
-            for (CtField<?> field : decls) {
-                if (field.getDefaultExpression() == null) continue;
-                for (CtFieldAccess<?> fa : field.getDefaultExpression().getElements(
-                        new TypeFilter<>(CtFieldAccess.class))) {
-                    String refName = fa.getVariable().getSimpleName();
-                    if (!added.contains(refName)) {
-                        newRefs.add(refName);
-                    }
-                }
-            }
-            if (!newRefs.isEmpty()) {
-                int before = decls.size();
-                addReferencedFields(type, typeIndex, newRefs, decls, added, inheritedFieldNames);
-                changed = decls.size() > before;
-            }
-        }
-        return decls;
+        return fieldPlanner.extractFieldDeclarations(type, methods, typeIndex, inheritedFieldNames);
     }
 
     private void rewriteTrackedDataFieldInitializers(List<CtField<?>> fieldDecls,
                                                      String sourceSimpleName,
                                                      Factory factory) {
-        if (fieldDecls == null || fieldDecls.isEmpty()) {
-            return;
-        }
-        Set<String> trackedFieldNames = vanillaTrackedFieldNames(sourceSimpleName);
-        if (trackedFieldNames.isEmpty()) {
-            return;
-        }
-        for (CtField<?> field : fieldDecls) {
-            if (field == null || field.getDefaultExpression() == null) {
-                continue;
-            }
-            if (!trackedFieldNames.contains(field.getSimpleName())) {
-                continue;
-            }
-            if (!(field.getDefaultExpression() instanceof CtInvocation<?> invocation)) {
-                continue;
-            }
-            CtExecutableReference<?> executable = invocation.getExecutable();
-            if (executable == null || !"registerData".equals(executable.getSimpleName())) {
-                continue;
-            }
-            CtTypeReference<?> declaringType = executable.getDeclaringType();
-            if (declaringType == null || !"DataTracker".equals(declaringType.getSimpleName())) {
-                continue;
-            }
-            field.setDefaultExpression(factory.Code().createCodeSnippetExpression(
-                sourceSimpleName + "." + field.getSimpleName()));
-        }
-    }
-
-    private Set<String> vanillaTrackedFieldNames(String sourceSimpleName) {
-        return switch (sourceSimpleName) {
-            case "Entity" -> Set.of("FLAGS", "AIR", "CUSTOM_NAME", "NAME_VISIBLE",
-                "SILENT", "NO_GRAVITY", "POSE", "FROZEN_TICKS");
-            case "LivingEntity" -> Set.of("LIVING_FLAGS", "HEALTH", "SLEEPING_POSITION");
-            case "PlayerEntity" -> Set.of("ABSORPTION_AMOUNT");
-            default -> Set.of();
-        };
-    }
-
-    private void addReferencedFields(CtType<?> type, Map<String, CtType<?>> typeIndex,
-                                       Set<String> referencedFieldNames,
-                                       List<CtField<?>> decls, Set<String> added,
-                                       Set<String> inheritedFieldNames) {
-        CtType<?> current = type;
-        while (current != null) {
-            for (CtField<?> field : current.getFields()) {
-                String name = field.getSimpleName();
-                if (current != type && inheritedFieldNames.contains(name)) {
-                    // This field is already present in a generated sliced superclass.
-                    // Do not redeclare it in this subclass.
-                    continue;
-                }
-                if (!added.contains(name) && referencedFieldNames.contains(name)) {
-                    CtField<?> cloned = field.clone();
-                    // Remove 'final' from fields without initializers — there is no
-                    // constructor in the sliced class to assign them.
-                    if (cloned.getDefaultExpression() == null) {
-                        cloned.removeModifier(ModifierKind.FINAL);
-                    }
-                    makeSlicedFieldPublic(cloned);
-                    decls.add(cloned);
-                    added.add(name);
-                }
-            }
-            if (current instanceof CtClass<?> ctClass && ctClass.getSuperclass() != null) {
-                current = typeIndex.get(ctClass.getSuperclass().getQualifiedName());
-            } else {
-                break;
-            }
-        }
-    }
-
-    private void makeSlicedFieldPublic(CtField<?> field) {
-        if (field == null) {
-            return;
-        }
-        field.removeModifier(ModifierKind.PRIVATE);
-        field.removeModifier(ModifierKind.PROTECTED);
-        field.addModifier(ModifierKind.PUBLIC);
+        fieldPlanner.rewriteTrackedDataFieldInitializers(fieldDecls, sourceSimpleName, factory);
     }
 
     private void writeSlicedCompilationUnit(Path outFile,
