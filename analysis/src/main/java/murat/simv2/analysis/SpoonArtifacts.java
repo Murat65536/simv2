@@ -6,6 +6,7 @@ import java.util.Set;
 
 record SpoonArtifacts(
     List<FieldResult> fields,
-    Map<String, Map<String, Set<Integer>>> sliceLines
+    Map<String, Map<String, Set<Integer>>> sliceLines,
+    MirrorClosure mirrorClosure
 ) {
 }

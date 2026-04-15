@@ -76,6 +76,9 @@ def configureAnalysisExec = { JavaExec execTask, String mode ->
             if (!outputDir.toPath().resolve('movement-slice.json').toFile().exists()) {
                 missingArtifacts << 'movement-slice.json'
             }
+            if (!outputDir.toPath().resolve('mirror-closure.json').toFile().exists()) {
+                missingArtifacts << 'mirror-closure.json'
+            }
             if (!missingArtifacts.isEmpty()) {
                 throw new GradleException(
                     "runSpoon requires WALA artifacts in ${outputDir}: ${missingArtifacts.join(', ')}. "

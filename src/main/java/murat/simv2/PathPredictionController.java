@@ -5,7 +5,7 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.lit
 import com.mojang.brigadier.Command;
 import java.util.ArrayList;
 import java.util.List;
-import murat.simv2.simulation.RuntimeSlicedClientPlayerEntity;
+import murat.simv2.simulation.RuntimeMirroredClientPlayerEntity;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -18,7 +18,7 @@ public final class PathPredictionController {
     private static final int PREDICTION_TICKS = 20;
 
     private static boolean enabled;
-    private static RuntimeSlicedClientPlayerEntity simulator;
+    private static RuntimeMirroredClientPlayerEntity simulator;
     private static String lastFailureClass;
     private static String lastFailureMessage;
 
@@ -49,7 +49,7 @@ public final class PathPredictionController {
         }
 
         try {
-            RuntimeSlicedClientPlayerEntity sim = ensureSimulator(client, realPlayer);
+            RuntimeMirroredClientPlayerEntity sim = ensureSimulator(client, realPlayer);
             sim.syncFrom(realPlayer);
             PathRenderer.setPath(predictPath(sim, PREDICTION_TICKS));
         } catch (RuntimeException ex) {
@@ -66,14 +66,14 @@ public final class PathPredictionController {
         }
     }
 
-    private static RuntimeSlicedClientPlayerEntity ensureSimulator(MinecraftClient client, ClientPlayerEntity realPlayer) {
+    private static RuntimeMirroredClientPlayerEntity ensureSimulator(MinecraftClient client, ClientPlayerEntity realPlayer) {
         if (simulator == null || !simulator.isBoundTo(realPlayer) || simulator.getWorld() != realPlayer.getWorld()) {
-            simulator = new RuntimeSlicedClientPlayerEntity(client, realPlayer);
+            simulator = new RuntimeMirroredClientPlayerEntity(client, realPlayer);
         }
         return simulator;
     }
 
-    private static List<Vec3d> predictPath(RuntimeSlicedClientPlayerEntity sim, int ticks) {
+    private static List<Vec3d> predictPath(RuntimeMirroredClientPlayerEntity sim, int ticks) {
         int safeTicks = Math.max(0, ticks);
         List<Vec3d> positions = new ArrayList<>(safeTicks + 1);
         positions.add(sim.getPos().add(0.0, 0.05, 0.0));

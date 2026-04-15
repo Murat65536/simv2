@@ -1,4 +1,55 @@
 {
+  "net.minecraft.SharedConstants": {
+    "\u003cclinit\u003e()V": [
+      0
+    ]
+  },
+  "net.minecraft.block.Block": {
+    "createColumnShape(DDD)Lnet/minecraft/util/shape/VoxelShape;": [
+      250
+    ],
+    "createColumnShape(DDDD)Lnet/minecraft/util/shape/VoxelShape;": [
+      254,
+      255,
+      256
+    ],
+    "createCuboidShape(DDDDDD)Lnet/minecraft/util/shape/VoxelShape;": [
+      233
+    ],
+    "createCuboidZShape(DDD)Lnet/minecraft/util/shape/VoxelShape;": [
+      260
+    ],
+    "createCuboidZShape(DDDD)Lnet/minecraft/util/shape/VoxelShape;": [
+      264,
+      265
+    ],
+    "createCuboidZShape(DDDDD)Lnet/minecraft/util/shape/VoxelShape;": [
+      269,
+      270
+    ]
+  },
+  "net.minecraft.block.CandleBlock": {
+    "\u003cclinit\u003e()V": [
+      40
+    ]
+  },
+  "net.minecraft.block.ExperimentalMinecartShapeContext$1": {
+    "\u003cclinit\u003e()V": [
+      30
+    ]
+  },
+  "net.minecraft.block.PowderSnowBlock": {
+    "canWalkOnPowderSnow(Lnet/minecraft/entity/Entity;)Z": [
+      135,
+      136,
+      138
+    ]
+  },
+  "net.minecraft.block.TrapdoorBlock": {
+    "\u003cclinit\u003e()V": [
+      38
+    ]
+  },
   "net.minecraft.client.network.AbstractClientPlayerEntity": {
     "getGameMode()Lnet/minecraft/world/GameMode;": [
       38,
@@ -148,6 +199,21 @@
     ],
     "wouldCollideAt(Lnet/minecraft/util/math/BlockPos;)Z": [
       446
+    ]
+  },
+  "net.minecraft.entity.DamageUtil": {
+    "getDamageLeft(Lnet/minecraft/entity/LivingEntity;FLnet/minecraft/entity/damage/DamageSource;FF)F": [
+      17,
+      18,
+      19,
+      22,
+      23,
+      28,
+      29
+    ],
+    "getInflictedDamage(FF)F": [
+      33,
+      34
     ]
   },
   "net.minecraft.entity.Entity": {
@@ -630,6 +696,58 @@
       1942
     ]
   },
+  "net.minecraft.entity.Entity$MoveEffect": {
+    "\u003cinit\u003e(Ljava/lang/String;IZZ)V": [
+      5518,
+      5519
+    ],
+    "emitsGameEvents()Z": [
+      5534
+    ],
+    "hasAny()Z": [
+      5527
+    ],
+    "playsSounds()Z": [
+      5541
+    ]
+  },
+  "net.minecraft.entity.EntityAttachments": {
+    "builder()Lnet/minecraft/entity/EntityAttachments$Builder;": [
+      24
+    ],
+    "of(FF)Lnet/minecraft/entity/EntityAttachments;": [
+      20
+    ]
+  },
+  "net.minecraft.entity.EntityAttachments$Builder": {
+    "add(Lnet/minecraft/entity/EntityAttachmentType;Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/entity/EntityAttachments$Builder;": [
+      80
+    ],
+    "build(FF)Lnet/minecraft/entity/EntityAttachments;": [
+      84,
+      88
+    ]
+  },
+  "net.minecraft.entity.EntityDimensions": {
+    "\u003cinit\u003e(FFZ)V": [
+      8
+    ],
+    "changing(FF)Lnet/minecraft/entity/EntityDimensions;": [
+      38
+    ],
+    "fixed(FF)Lnet/minecraft/entity/EntityDimensions;": [
+      42
+    ],
+    "getDefaultEyeHeight(F)F": [
+      12
+    ],
+    "withAttachments(Lnet/minecraft/entity/EntityAttachments$Builder;)Lnet/minecraft/entity/EntityDimensions;": [
+      50
+    ],
+    "withEyeHeight(F)Lnet/minecraft/entity/EntityDimensions;": [
+      46
+    ]
+  },
   "net.minecraft.entity.ItemEntity": {
     "\u003cinit\u003e(Lnet/minecraft/entity/EntityType;Lnet/minecraft/world/World;)V": [
       63
@@ -651,6 +769,22 @@
     ],
     "setStack(Lnet/minecraft/item/ItemStack;)V": [
       397
+    ]
+  },
+  "net.minecraft.entity.LazyEntityReference": {
+    "cast(Lnet/minecraft/world/entity/UniquelyIdentifiable;Ljava/lang/Class;)Lnet/minecraft/world/entity/UniquelyIdentifiable;": [
+      69
+    ],
+    "resolve(Lnet/minecraft/world/entity/EntityQueriable;Ljava/lang/Class;)Lnet/minecraft/world/entity/UniquelyIdentifiable;": [
+      46,
+      47,
+      48,
+      49,
+      56,
+      57,
+      58,
+      60,
+      64
     ]
   },
   "net.minecraft.entity.LivingEntity": {
@@ -1189,6 +1323,118 @@
       3604
     ]
   },
+  "net.minecraft.entity.MovementType": {
+    "\u003cclinit\u003e()V": [
+      0
+    ]
+  },
+  "net.minecraft.entity.data.DataTracker": {
+    "\u003cinit\u003e(Lnet/minecraft/entity/data/DataTracked;[Lnet/minecraft/entity/data/DataTracker$Entry;)V": [
+      25
+    ],
+    "get(Lnet/minecraft/entity/data/TrackedData;)Ljava/lang/Object;": [
+      53
+    ],
+    "getEntry(Lnet/minecraft/entity/data/TrackedData;)Lnet/minecraft/entity/data/DataTracker$Entry;": [
+      49
+    ],
+    "registerData(Ljava/lang/Class;Lnet/minecraft/entity/data/TrackedDataHandler;)Lnet/minecraft/entity/data/TrackedData;": [
+      40,
+      44
+    ],
+    "set(Lnet/minecraft/entity/data/TrackedData;Ljava/lang/Object;)V": [
+      57
+    ],
+    "set(Lnet/minecraft/entity/data/TrackedData;Ljava/lang/Object;Z)V": [
+      61,
+      62,
+      63,
+      64
+    ]
+  },
+  "net.minecraft.entity.data.DataTracker$Builder": {
+    "\u003cinit\u003e(Lnet/minecraft/entity/data/DataTracked;)V": [
+      144,
+      145
+    ],
+    "add(Lnet/minecraft/entity/data/TrackedData;Ljava/lang/Object;)Lnet/minecraft/entity/data/DataTracker$Builder;": [
+      157
+    ],
+    "build()Lnet/minecraft/entity/data/DataTracker;": [
+      243
+    ]
+  },
+  "net.minecraft.entity.data.DataTracker$Entry": {
+    "\u003cinit\u003e(Lnet/minecraft/entity/data/TrackedData;Ljava/lang/Object;)V": [
+      182
+    ],
+    "get()Ljava/lang/Object;": [
+      194
+    ],
+    "set(Ljava/lang/Object;)V": [
+      190
+    ]
+  },
+  "net.minecraft.entity.data.TrackedData": {
+    "equals(Ljava/lang/Object;)Z": [
+      5,
+      6,
+      7,
+      9,
+      11
+    ]
+  },
+  "net.minecraft.entity.data.TrackedDataHandler": {
+    "create(I)Lnet/minecraft/entity/data/TrackedData;": [
+      10
+    ],
+    "create(Lnet/minecraft/network/codec/PacketCodec;)Lnet/minecraft/entity/data/TrackedDataHandler;": [
+      22
+    ]
+  },
+  "net.minecraft.entity.data.TrackedDataHandlerRegistry": {
+    "\u003cclinit\u003e()V": [
+      0,
+      148,
+      149,
+      150,
+      151,
+      152,
+      153,
+      154,
+      155,
+      156,
+      157,
+      158,
+      159,
+      160,
+      161,
+      162,
+      163,
+      164,
+      165,
+      166,
+      167,
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      176,
+      177,
+      178,
+      179,
+      180,
+      181,
+      182
+    ],
+    "register(Lnet/minecraft/entity/data/TrackedDataHandler;)V": [
+      132
+    ]
+  },
   "net.minecraft.entity.player.PlayerEntity": {
     "adjustMovementForSneaking(Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/entity/MovementType;)Lnet/minecraft/util/math/Vec3d;": [
       1063,
@@ -1381,6 +1627,425 @@
     ],
     "wakeUp(ZZ)V": [
       1414
+    ]
+  },
+  "net.minecraft.item.Items": {
+    "\u003cclinit\u003e()V": [
+      1799
+    ]
+  },
+  "net.minecraft.item.equipment.EquipmentAssetKeys": {
+    "\u003cclinit\u003e()V": [
+      22
+    ]
+  },
+  "net.minecraft.state.property.EnumProperty": {
+    "\u003cinit\u003e(Ljava/lang/String;Ljava/lang/Class;Ljava/util/List;)V": [
+      42,
+      43,
+      45,
+      46
+    ],
+    "of(Ljava/lang/String;Ljava/lang/Class;)Lnet/minecraft/state/property/EnumProperty;": [
+      105
+    ],
+    "of(Ljava/lang/String;Ljava/lang/Class;Ljava/util/List;)Lnet/minecraft/state/property/EnumProperty;": [
+      160
+    ],
+    "of(Ljava/lang/String;Ljava/lang/Class;Ljava/util/function/Predicate;)Lnet/minecraft/state/property/EnumProperty;": [
+      124
+    ],
+    "of(Ljava/lang/String;Ljava/lang/Class;[Ljava/lang/Enum;)Lnet/minecraft/state/property/EnumProperty;": [
+      143
+    ]
+  },
+  "net.minecraft.state.property.Properties": {
+    "\u003cclinit\u003e()V": [
+      0,
+      231,
+      310
+    ]
+  },
+  "net.minecraft.util.Formatting": {
+    "\u003cclinit\u003e()V": [
+      0
+    ],
+    "\u003cinit\u003e(Ljava/lang/String;ILjava/lang/String;CILjava/lang/Integer;)V": [
+      69
+    ],
+    "\u003cinit\u003e(Ljava/lang/String;ILjava/lang/String;CZ)V": [
+      73
+    ],
+    "\u003cinit\u003e(Ljava/lang/String;ILjava/lang/String;CZILjava/lang/Integer;)V": [
+      82
+    ]
+  },
+  "net.minecraft.util.Hand": {
+    "\u003cclinit\u003e()V": [
+      0
+    ],
+    "method_36598()[Lnet/minecraft/util/Hand;": [
+      0
+    ],
+    "values()[Lnet/minecraft/util/Hand;": [
+      0
+    ]
+  },
+  "net.minecraft.util.Util": {
+    "\u003cclinit\u003e()V": [
+      0
+    ],
+    "createWorker(Ljava/lang/String;)Lnet/minecraft/util/thread/NameableExecutor;": [
+      205
+    ],
+    "getAvailableBackgroundThreads()I": [
+      238
+    ],
+    "getMaxBackgroundThreads()I": [
+      242
+    ],
+    "getOperatingSystem()Lnet/minecraft/util/Util$OperatingSystem;": [
+      527
+    ],
+    "mapEnum(Ljava/lang/Class;Ljava/util/function/Function;)Ljava/util/Map;": [
+      663
+    ]
+  },
+  "net.minecraft.util.collection.Class2IntMap": {
+    "get(Ljava/lang/Class;)I": [
+      20,
+      21,
+      25,
+      27,
+      28,
+      32
+    ],
+    "put(Ljava/lang/Class;)I": [
+      41,
+      42,
+      44
+    ]
+  },
+  "net.minecraft.util.collection.Int2ObjectBiMap": {
+    "\u003cinit\u003e(I)V": [
+      21,
+      22,
+      23
+    ],
+    "add(Ljava/lang/Object;)I": [
+      62,
+      63
+    ],
+    "create(I)Lnet/minecraft/util/collection/Int2ObjectBiMap;": [
+      35
+    ],
+    "nextId()I": [
+      68,
+      69,
+      72
+    ],
+    "put(Ljava/lang/Object;I)V": [
+      94,
+      95,
+      96,
+      98,
+      99,
+      102,
+      106,
+      107,
+      108,
+      109,
+      110,
+      111
+    ],
+    "resize(I)V": [
+      78,
+      80,
+      81,
+      82,
+      89,
+      90
+    ]
+  },
+  "net.minecraft.util.math.AxisTransformation": {
+    "\u003cinit\u003e(Ljava/lang/String;IIII)V": [
+      41
+    ]
+  },
+  "net.minecraft.util.math.BlockPos": {
+    "\u003cinit\u003e(III)V": [
+      71
+    ],
+    "down()Lnet/minecraft/util/math/BlockPos;": [
+      175
+    ],
+    "ofFloored(DDD)Lnet/minecraft/util/math/BlockPos;": [
+      103
+    ],
+    "offset(Lnet/minecraft/util/math/Direction;)Lnet/minecraft/util/math/BlockPos;": [
+      215
+    ]
+  },
+  "net.minecraft.util.math.BlockPos$Mutable": {
+    "\u003cinit\u003e()V": [
+      608
+    ],
+    "\u003cinit\u003e(III)V": [
+      612
+    ]
+  },
+  "net.minecraft.util.math.Direction": {
+    "\u003cclinit\u003e()V": [
+      0
+    ],
+    "\u003cinit\u003e(Ljava/lang/String;IIIILjava/lang/String;Lnet/minecraft/util/math/Direction$AxisDirection;Lnet/minecraft/util/math/Direction$Axis;Lnet/minecraft/util/math/Vec3i;)V": [
+      86,
+      87,
+      88,
+      89
+    ],
+    "getAxis()Lnet/minecraft/util/math/Direction$Axis;": [
+      289
+    ],
+    "getDirection()Lnet/minecraft/util/math/Direction$AxisDirection;": [
+      177
+    ],
+    "getOffsetX()I": [
+      269
+    ],
+    "getOffsetY()I": [
+      273
+    ],
+    "getOffsetZ()I": [
+      277
+    ]
+  },
+  "net.minecraft.util.math.Direction$Axis$1": {
+    "choose(DDD)D": [
+      441
+    ]
+  },
+  "net.minecraft.util.math.Direction$Axis$2": {
+    "choose(DDD)D": [
+      462
+    ]
+  },
+  "net.minecraft.util.math.Direction$Axis$3": {
+    "choose(DDD)D": [
+      488
+    ]
+  },
+  "net.minecraft.util.math.MathHelper": {
+    "\u003cclinit\u003e()V": [
+      0,
+      1003,
+      1004,
+      1005,
+      1006,
+      1007
+    ],
+    "approximatelyEquals(DD)Z": [
+      210
+    ],
+    "ceil(D)I": [
+      133,
+      134
+    ],
+    "clamp(DDD)D": [
+      150
+    ],
+    "clamp(FFF)F": [
+      146
+    ],
+    "cos(F)F": [
+      97
+    ],
+    "floor(D)I": [
+      110,
+      111
+    ],
+    "inverseSqrt(F)F": [
+      533
+    ],
+    "lerp(FFF)F": [
+      684
+    ],
+    "lerpAngleDegrees(DDD)D": [
+      782
+    ],
+    "sin(F)F": [
+      93
+    ],
+    "square(D)D": [
+      808
+    ],
+    "wrapDegrees(D)D": [
+      286,
+      287,
+      288,
+      291,
+      292,
+      295
+    ]
+  },
+  "net.minecraft.util.math.Vec2f": {
+    "\u003cinit\u003e(FF)V": [
+      26,
+      27
+    ]
+  },
+  "net.minecraft.util.math.Vec3d": {
+    "\u003cinit\u003e(DDD)V": [
+      123,
+      124,
+      125
+    ],
+    "add(DDD)Lnet/minecraft/util/math/Vec3d;": [
+      221
+    ],
+    "add(Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;": [
+      212
+    ],
+    "crossProduct(Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;": [
+      174
+    ],
+    "equals(Ljava/lang/Object;)Z": [
+      380,
+      381,
+      382,
+      383,
+      384,
+      385,
+      387
+    ],
+    "fromPolar(FF)Lnet/minecraft/util/math/Vec3d;": [
+      473,
+      474,
+      475,
+      476,
+      477
+    ],
+    "fromPolar(Lnet/minecraft/util/math/Vec2f;)Lnet/minecraft/util/math/Vec3d;": [
+      464
+    ],
+    "getComponentAlongAxis(Lnet/minecraft/util/math/Direction$Axis;)D": [
+      494
+    ],
+    "getX()D": [
+      511
+    ],
+    "getY()D": [
+      516
+    ],
+    "getZ()D": [
+      521
+    ],
+    "horizontalLength()D": [
+      365
+    ],
+    "horizontalLengthSquared()D": [
+      376
+    ],
+    "length()D": [
+      341
+    ],
+    "lengthSquared()D": [
+      352
+    ],
+    "multiply(D)Lnet/minecraft/util/math/Vec3d;": [
+      289
+    ],
+    "multiply(DDD)Lnet/minecraft/util/math/Vec3d;": [
+      318
+    ],
+    "multiply(Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;": [
+      307
+    ],
+    "normalize()Lnet/minecraft/util/math/Vec3d;": [
+      159,
+      160
+    ],
+    "of(Lnet/minecraft/util/math/Vec3i;)Lnet/minecraft/util/math/Vec3d;": [
+      77
+    ],
+    "offset(Lnet/minecraft/util/math/Direction;D)Lnet/minecraft/util/math/Vec3d;": [
+      506
+    ],
+    "subtract(DDD)Lnet/minecraft/util/math/Vec3d;": [
+      199
+    ],
+    "subtract(Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;": [
+      185
+    ],
+    "withAxis(Lnet/minecraft/util/math/Direction$Axis;D)Lnet/minecraft/util/math/Vec3d;": [
+      498,
+      499,
+      500,
+      501
+    ]
+  },
+  "net.minecraft.util.math.Vec3i": {
+    "\u003cinit\u003e(III)V": [
+      53,
+      54,
+      55
+    ],
+    "equals(Ljava/lang/Object;)Z": [
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      66
+    ],
+    "getX()I": [
+      83
+    ],
+    "getY()I": [
+      87
+    ],
+    "getZ()I": [
+      91
+    ]
+  },
+  "net.minecraft.util.shape.ArrayVoxelShape$1": {
+    "\u003cclinit\u003e()V": [
+      41
+    ]
+  },
+  "net.minecraft.util.shape.VoxelShapes": {
+    "calculateMaxOffset(Lnet/minecraft/util/math/Direction$Axis;Lnet/minecraft/util/math/Box;Ljava/lang/Iterable;D)D": [
+      203,
+      204,
+      205,
+      211
+    ],
+    "cuboid(DDDDDD)Lnet/minecraft/util/shape/VoxelShape;": [
+      48
+    ],
+    "cuboidUnchecked(DDDDDD)Lnet/minecraft/util/shape/VoxelShape;": [
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      62,
+      63
+    ],
+    "findRequiredBitResolution(DD)I": [
+      96,
+      97,
+      98,
+      99,
+      100,
+      101,
+      102,
+      103,
+      104,
+      108,
+      110
     ]
   }
 }

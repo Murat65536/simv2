@@ -176,8 +176,9 @@ public class BackwardSliceExporter {
             IMethod method = node.getMethod();
             String className = method.getDeclaringClass().getName().toString();
 
-            // Only keep lines in target classes
-            if (!isTargetClass(className)) continue;
+            // Keep all Minecraft classes reached by the slice, not only the
+            // primary entity/player hierarchy classes.
+            if (!isMinecraftClass(className)) continue;
 
             String methodName = method.getName().toString();
 
@@ -293,5 +294,10 @@ public class BackwardSliceExporter {
             }
         }
         return false;
+    }
+
+    private boolean isMinecraftClass(String className) {
+        return className != null
+            && (className.startsWith("Lnet/minecraft/") || className.startsWith("net/minecraft/"));
     }
 }

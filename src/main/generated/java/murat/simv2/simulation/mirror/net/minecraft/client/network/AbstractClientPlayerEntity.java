@@ -1,19 +1,21 @@
-package murat.simv2.simulation.sliced;
+package murat.simv2.simulation.mirror.net.minecraft.client.network;
+
 import com.mojang.authlib.GameProfile;
+import murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.world.GameMode;
 import org.jetbrains.annotations.Nullable;
-// Sliced from net.minecraft.client.network.AbstractClientPlayerEntity
+
+// Mirrored from net.minecraft.client.network.AbstractClientPlayerEntity
 // Movement-relevant statements only (WALA backward slice + Spoon AST pruning)
 // Generated - do not edit
-public abstract class SlicedAbstractClientPlayerEntity extends SlicedPlayerEntity {
+public abstract class AbstractClientPlayerEntity extends PlayerEntity {
     @Nullable
     public PlayerListEntry playerListEntry;
 
-    public SlicedAbstractClientPlayerEntity(ClientWorld world, GameProfile profile) {
+    public AbstractClientPlayerEntity(ClientWorld world, GameProfile profile) {
         super(world, world.getSpawnPos(), world.getSpawnAngle(), profile);
     }
 
@@ -31,3 +33,4 @@ public abstract class SlicedAbstractClientPlayerEntity extends SlicedPlayerEntit
         return this.playerListEntry;
     }
 }
+

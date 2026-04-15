@@ -120,6 +120,7 @@ final class SlicedFieldPlanner {
                         cloned.removeModifier(ModifierKind.FINAL);
                     }
                     makeSlicedFieldPublic(cloned);
+                    sanitizeInaccessibleNestedTypes(cloned);
                     declarations.add(cloned);
                     added.add(name);
                 }
@@ -139,5 +140,44 @@ final class SlicedFieldPlanner {
         field.removeModifier(ModifierKind.PRIVATE);
         field.removeModifier(ModifierKind.PROTECTED);
         field.addModifier(ModifierKind.PUBLIC);
+    }
+
+    private void sanitizeInaccessibleNestedTypes(CtField<?> field) {
+        if (field == null || field.getType() == null) {
+            return;
+        }
+        field.setType(sanitizeTypeReference(field.getType(), field.getFactory()));
+    }
+
+    private CtTypeReference<?> sanitizeTypeReference(CtTypeReference<?> reference, Factory factory) {
+        if (reference == null) {
+            return null;
+        }
+        if (isInaccessibleNestedType(reference)) {
+            return factory.Type().objectType();
+        }
+
+        CtTypeReference<?> sanitized = reference.clone();
+        List<CtTypeReference<?>> arguments = sanitized.getActualTypeArguments();
+        if (arguments != null && !arguments.isEmpty()) {
+            List<CtTypeReference<?>> rewritten = new ArrayList<>();
+            for (CtTypeReference<?> argument : arguments) {
+                rewritten.add(sanitizeTypeReference(argument, factory));
+            }
+            sanitized.setActualTypeArguments(rewritten);
+        }
+        return sanitized;
+    }
+
+    private boolean isInaccessibleNestedType(CtTypeReference<?> reference) {
+        String qualifiedName = reference.getQualifiedName();
+        if (qualifiedName != null && qualifiedName.contains("QueuedCollisionCheck")) {
+            return true;
+        }
+
+        CtType<?> declaration = reference.getTypeDeclaration();
+        return declaration != null
+            && declaration.getDeclaringType() != null
+            && declaration.hasModifier(ModifierKind.PRIVATE);
     }
 }

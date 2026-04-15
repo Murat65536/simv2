@@ -1,4 +1,5 @@
-package murat.simv2.simulation.sliced;
+package murat.simv2.simulation.mirror.net.minecraft.entity;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import it.unimi.dsi.fastutil.doubles.DoubleDoubleImmutablePair;
@@ -7,27 +8,28 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
+import murat.simv2.simulation.mirror.net.minecraft.block.PowderSnowBlock;
+import murat.simv2.simulation.mirror.net.minecraft.block.TrapdoorBlock;
+import murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData;
+import murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity;
+import murat.simv2.simulation.mirror.net.minecraft.item.Items;
+import murat.simv2.simulation.mirror.net.minecraft.util.Hand;
+import murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos;
+import murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper;
+import murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LadderBlock;
-import net.minecraft.block.PowderSnowBlock;
-import net.minecraft.block.TrapdoorBlock;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.AttributeModifierSlot;
 import net.minecraft.component.type.BlocksAttacksComponent;
 import net.minecraft.component.type.DeathProtectionComponent;
 import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.DamageUtil;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityEquipment;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.Flutterer;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.LazyEntityReference;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.MovementType;
 import net.minecraft.entity.PositionInterpolator;
 import net.minecraft.entity.attribute.AttributeContainer;
 import net.minecraft.entity.attribute.EntityAttribute;
@@ -37,18 +39,15 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageTracker;
 import net.minecraft.entity.damage.DamageType;
 import net.minecraft.entity.damage.DamageTypes;
-import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.passive.WolfEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.DamageTypeTags;
@@ -59,11 +58,7 @@ import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.stat.Stats;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.profiler.Profilers;
 import net.minecraft.world.GameRules;
@@ -71,21 +66,22 @@ import net.minecraft.world.World;
 import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-// Sliced from net.minecraft.entity.LivingEntity
+
+// Mirrored from net.minecraft.entity.LivingEntity
 // Movement-relevant statements only (WALA backward slice + Spoon AST pruning)
 // Generated - do not edit
-public abstract class SlicedLivingEntity extends SlicedEntity {
+public abstract class LivingEntity extends Entity {
     public static final double GRAVITY = 0.08;
 
-    public static final TrackedData<Byte> LIVING_FLAGS = LivingEntity.LIVING_FLAGS;
+    public static final net.minecraft.entity.data.TrackedData<Byte> LIVING_FLAGS = net.minecraft.entity.LivingEntity.LIVING_FLAGS;
 
-    public static final TrackedData<Float> HEALTH = LivingEntity.HEALTH;
+    public static final net.minecraft.entity.data.TrackedData<Float> HEALTH = net.minecraft.entity.LivingEntity.HEALTH;
 
-    public static final TrackedData<Optional<BlockPos>> SLEEPING_POSITION = LivingEntity.SLEEPING_POSITION;
+    public static final net.minecraft.entity.data.TrackedData<Optional<net.minecraft.util.math.BlockPos>> SLEEPING_POSITION = net.minecraft.entity.LivingEntity.SLEEPING_POSITION;
 
     public AttributeContainer attributes;
 
-    public final DamageTracker damageTracker = new DamageTracker(((LivingEntity) (this.entityBridge)));
+    public final DamageTracker damageTracker = new DamageTracker(((net.minecraft.entity.LivingEntity) (this.entityBridge)));
 
     public final Map<RegistryEntry<StatusEffect>, StatusEffectInstance> activeStatusEffects = Maps.<RegistryEntry<StatusEffect>, StatusEffectInstance>newHashMap();
 
@@ -94,7 +90,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     public float headYaw;
 
     @Nullable
-    public LazyEntityReference<PlayerEntity> attackingPlayer;
+    public net.minecraft.entity.LazyEntityReference<net.minecraft.entity.player.PlayerEntity> attackingPlayer;
 
     public int playerHitTimer;
 
@@ -110,14 +106,14 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
 
     public float forwardSpeed;
 
-    public PositionInterpolator interpolator = new PositionInterpolator(((LivingEntity) (this.entityBridge)));
+    public PositionInterpolator interpolator = new PositionInterpolator(((net.minecraft.entity.LivingEntity) (this.entityBridge)));
 
     public double serverHeadYaw;
 
     public int headTrackingIncrements;
 
     @Nullable
-    public LazyEntityReference<LivingEntity> attackerReference;
+    public net.minecraft.entity.LazyEntityReference<net.minecraft.entity.LivingEntity> attackerReference;
 
     public float movementSpeed;
 
@@ -135,7 +131,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
 
     public EntityEquipment equipment;
 
-    protected SlicedLivingEntity(EntityType<? extends LivingEntity> entityType, World world) {
+    protected LivingEntity(EntityType<? extends net.minecraft.entity.LivingEntity> entityType, World world) {
         super(entityType, world);
     }
 
@@ -143,7 +139,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
 
     public int timeUntilRegen;
 
-    protected void fall(double heightDifference, boolean onGround, BlockState state, BlockPos landedPosition) {
+    protected void fall(double heightDifference, boolean onGround, BlockState state, net.minecraft.util.math.BlockPos landedPosition) {
         if (!this.isTouchingWater()) {
             this.checkWaterState();
         }
@@ -155,7 +151,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     public boolean wasInPowderSnow;
 
     protected float getVelocityMultiplier() {
-        return MathHelper.lerp(((float) (this.getAttributeValue(EntityAttributes.MOVEMENT_EFFICIENCY))), super.getVelocityMultiplier(), 1.0F);
+        return net.minecraft.util.math.MathHelper.lerp(((float) (this.getAttributeValue(EntityAttributes.MOVEMENT_EFFICIENCY))), super.getVelocityMultiplier(), 1.0F);
     }
 
     public boolean isBaby() {
@@ -171,8 +167,8 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     public int getExperienceToDrop(ServerWorld world, @Nullable
-    Entity attacker) {
-        return EnchantmentHelper.getMobExperience(world, attacker, ((LivingEntity) (this.entityBridge)), this.getExperienceToDrop(world));
+    net.minecraft.entity.Entity attacker) {
+        return EnchantmentHelper.getMobExperience(world, attacker, ((net.minecraft.entity.LivingEntity) (this.entityBridge)), this.getExperienceToDrop(world));
     }
 
     protected int getExperienceToDrop(ServerWorld world) {
@@ -183,22 +179,22 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
         return false;
     }
 
-    public void setAttacking(PlayerEntity attackingPlayer, int playerHitTimer) {
-        this.setAttacking(new LazyEntityReference<>(attackingPlayer), playerHitTimer);
+    public void setAttacking(net.minecraft.entity.player.PlayerEntity attackingPlayer, int playerHitTimer) {
+        this.setAttacking(new net.minecraft.entity.LazyEntityReference<>(attackingPlayer), playerHitTimer);
     }
 
     public void setAttacking(UUID attackingPlayer, int playerHitTimer) {
-        this.setAttacking(new LazyEntityReference<>(attackingPlayer), playerHitTimer);
+        this.setAttacking(new net.minecraft.entity.LazyEntityReference<>(attackingPlayer), playerHitTimer);
     }
 
-    private void setAttacking(LazyEntityReference<PlayerEntity> attackingPlayer, int playerHitTimer) {
+    private void setAttacking(net.minecraft.entity.LazyEntityReference<net.minecraft.entity.player.PlayerEntity> attackingPlayer, int playerHitTimer) {
         this.attackingPlayer = attackingPlayer;
         this.playerHitTimer = playerHitTimer;
     }
 
     public void setAttacker(@Nullable
-    LivingEntity attacker) {
-        this.attackerReference = (attacker != null) ? new LazyEntityReference<>(attacker) : null;
+    net.minecraft.entity.LivingEntity attacker) {
+        this.attackerReference = (attacker != null) ? new net.minecraft.entity.LazyEntityReference<>(attacker) : null;
     }
 
     public boolean hasNoDrag() {
@@ -215,11 +211,11 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     public float getHealth() {
-        return this.dataTracker.get(SlicedLivingEntity.HEALTH);
+        return this.dataTracker.get(LivingEntity.HEALTH);
     }
 
     public void setHealth(float health) {
-        this.dataTracker.set(SlicedLivingEntity.HEALTH, MathHelper.clamp(health, 0.0F, this.getMaxHealth()));
+        this.dataTracker.set(LivingEntity.HEALTH, net.minecraft.util.math.MathHelper.clamp(health, 0.0F, this.getMaxHealth()));
     }
 
     public boolean isDead() {
@@ -260,7 +256,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
                     double d = 0.0;
                     double e = 0.0;
                     if (source.getSource() instanceof ProjectileEntity projectileEntity) {
-                        DoubleDoubleImmutablePair doubleDoubleImmutablePair = projectileEntity.getKnockback(((LivingEntity) (this.entityBridge)), source);
+                        DoubleDoubleImmutablePair doubleDoubleImmutablePair = projectileEntity.getKnockback(((net.minecraft.entity.LivingEntity) (this.entityBridge)), source);
                         d = -doubleDoubleImmutablePair.leftDouble();
                         e = -doubleDoubleImmutablePair.rightDouble();
                     } else if (source.getPosition() != null) {
@@ -293,12 +289,12 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
                     if ((source.getSource() instanceof PersistentProjectileEntity persistentProjectileEntity) && (persistentProjectileEntity.getPierceLevel() > 0)) {
                         return 0.0F;
                     } else {
-                        Vec3d vec3d = source.getPosition();
+                        net.minecraft.util.math.Vec3d vec3d = source.getPosition();
                         double d = 0.0;
                         if (vec3d != null) {
-                            Vec3d vec3d2 = this.getRotationVector(0.0F, this.getHeadYaw());
-                            Vec3d vec3d3 = vec3d.subtract(this.getPos());
-                            vec3d3 = new Vec3d(vec3d3.x, 0.0, vec3d3.z).normalize();
+                            net.minecraft.util.math.Vec3d vec3d2 = this.getRotationVector(0.0F, this.getHeadYaw());
+                            net.minecraft.util.math.Vec3d vec3d3 = vec3d.subtract(this.getPos());
+                            vec3d3 = new net.minecraft.util.math.Vec3d(vec3d3.x, 0.0, vec3d3.z).normalize();
                         }
                         float f = blocksAttacksComponent.getDamageReductionAmount(source, amount, d);
                         return f;
@@ -311,15 +307,15 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     protected void becomeAngry(DamageSource damageSource) {
-        if (((damageSource.getAttacker() instanceof LivingEntity livingEntity) && (!damageSource.isIn(DamageTypeTags.NO_ANGER))) && ((!damageSource.isOf(DamageTypes.WIND_CHARGE)) || (!this.getType().isIn(EntityTypeTags.NO_ANGER_FROM_WIND_CHARGE)))) {
+        if (((damageSource.getAttacker() instanceof net.minecraft.entity.LivingEntity livingEntity) && (!damageSource.isIn(DamageTypeTags.NO_ANGER))) && ((!damageSource.isOf(DamageTypes.WIND_CHARGE)) || (!this.getType().isIn(EntityTypeTags.NO_ANGER_FROM_WIND_CHARGE)))) {
             this.setAttacker(livingEntity);
         }
     }
 
     @Nullable
     protected void setAttackingPlayer(DamageSource damageSource) {
-        Entity entity = damageSource.getAttacker();
-        if (entity instanceof PlayerEntity playerEntity) {
+        net.minecraft.entity.Entity entity = damageSource.getAttacker();
+        if (entity instanceof net.minecraft.entity.player.PlayerEntity playerEntity) {
             this.setAttacking(playerEntity, 100);
         } else if ((entity instanceof WolfEntity wolfEntity) && wolfEntity.isTamed()) {
             if (wolfEntity.getOwnerReference() != null) {
@@ -337,7 +333,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
         } else {
             ItemStack itemStack = null;
             DeathProtectionComponent deathProtectionComponent = null;
-            for (Hand hand : Hand.values()) {
+            for (net.minecraft.util.Hand hand : net.minecraft.util.Hand.values()) {
                 ItemStack itemStack2 = this.getStackInHand(hand);
                 deathProtectionComponent = itemStack2.get(DataComponentTypes.DEATH_PROTECTION);
             }
@@ -350,14 +346,14 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
 
     public void onDeath(DamageSource damageSource) {
         if ((!this.isRemoved()) && (!this.dead)) {
-            Entity entity = damageSource.getAttacker();
-            LivingEntity livingEntity = this.getPrimeAdversary();
+            net.minecraft.entity.Entity entity = damageSource.getAttacker();
+            net.minecraft.entity.LivingEntity livingEntity = this.getPrimeAdversary();
             if (this.isSleeping()) {
                 this.wakeUp();
             }
             this.dead = true;
             if (this.getWorld() instanceof ServerWorld serverWorld) {
-                if ((entity == null) || entity.onKilledOther(serverWorld, ((LivingEntity) (this.entityBridge)))) {
+                if ((entity == null) || entity.onKilledOther(serverWorld, ((net.minecraft.entity.LivingEntity) (this.entityBridge)))) {
                     this.drop(serverWorld, damageSource);
                     this.onKilledBy(livingEntity);
                 }
@@ -366,16 +362,16 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     protected void onKilledBy(@Nullable
-    LivingEntity adversary) {
+    net.minecraft.entity.LivingEntity adversary) {
         if (this.getWorld() instanceof ServerWorld serverWorld) {
             boolean var6 = false;
             if (adversary instanceof WitherEntity) {
                 if (serverWorld.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) {
-                    BlockPos blockPos = this.getBlockPos();
+                    net.minecraft.util.math.BlockPos blockPos = this.getBlockPos();
                     BlockState blockState = Blocks.WITHER_ROSE.getDefaultState();
                 }
                 if (!var6) {
-                    ItemEntity itemEntity = new ItemEntity(this.getWorld(), this.getX(), this.getY(), this.getZ(), new ItemStack(Items.WITHER_ROSE));
+                    net.minecraft.entity.ItemEntity itemEntity = new net.minecraft.entity.ItemEntity(this.getWorld(), this.getX(), this.getY(), this.getZ(), new ItemStack(net.minecraft.item.Items.WITHER_ROSE));
                 }
             }
         }
@@ -387,13 +383,13 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     protected void dropExperience(ServerWorld world, @Nullable
-    Entity attacker) {
+    net.minecraft.entity.Entity attacker) {
         if ((!this.isExperienceDroppingDisabled()) && (this.shouldAlwaysDropExperience() || (((this.playerHitTimer > 0) && this.shouldDropExperience()) && world.getGameRules().getBoolean(GameRules.DO_MOB_LOOT)))) {
             ExperienceOrbEntity.spawn(world, this.getPos(), this.getExperienceToDrop(world, attacker));
         }
     }
 
-    protected float getAttackKnockbackAgainst(Entity target, DamageSource damageSource) {
+    protected float getAttackKnockbackAgainst(net.minecraft.entity.Entity target, DamageSource damageSource) {
         float f = ((float) (this.getAttributeValue(EntityAttributes.ATTACK_KNOCKBACK)));
         return this.getWorld() instanceof ServerWorld serverWorld ? EnchantmentHelper.modifyKnockback(serverWorld, this.getWeaponStack(), target, damageSource, f) : f;
     }
@@ -401,12 +397,12 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     public void takeKnockback(double strength, double x, double z) {
         strength *= 1.0 - this.getAttributeValue(EntityAttributes.KNOCKBACK_RESISTANCE);
         if (!(strength <= 0.0)) {
-            Vec3d vec3d = this.getVelocity();
+            net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
             while (((x * x) + (z * z)) < 1.0E-5F) {
                 x = (Math.random() - Math.random()) * 0.01;
                 z = (Math.random() - Math.random()) * 0.01;
             } 
-            Vec3d vec3d2 = new Vec3d(x, 0.0, z).normalize().multiply(strength);
+            net.minecraft.util.math.Vec3d vec3d2 = new net.minecraft.util.math.Vec3d(x, 0.0, z).normalize().multiply(strength);
             this.setVelocity((vec3d.x / 2.0) - vec3d2.x, this.isOnGround() ? Math.min(0.4, (vec3d.y / 2.0) + strength) : vec3d.y, (vec3d.z / 2.0) - vec3d2.z);
         }
     }
@@ -419,11 +415,11 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
         if (this.isSpectator()) {
             return false;
         } else {
-            BlockPos blockPos = this.getBlockPos();
+            net.minecraft.util.math.BlockPos blockPos = this.getBlockPos();
             BlockState blockState = this.getBlockStateAtPos();
             if (blockState.isIn(BlockTags.CLIMBABLE)) {
                 return true;
-            } else if ((blockState.getBlock() instanceof TrapdoorBlock) && this.canEnterTrapdoor(blockPos, blockState)) {
+            } else if ((blockState.getBlock() instanceof net.minecraft.block.TrapdoorBlock) && this.canEnterTrapdoor(blockPos, blockState)) {
                 return true;
             } else {
                 return false;
@@ -431,12 +427,12 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
         }
     }
 
-    private boolean canEnterTrapdoor(BlockPos pos, BlockState state) {
-        if (!((Boolean) (state.get(TrapdoorBlock.OPEN)))) {
+    private boolean canEnterTrapdoor(net.minecraft.util.math.BlockPos pos, BlockState state) {
+        if (!((Boolean) (state.get(net.minecraft.block.TrapdoorBlock.OPEN)))) {
             return false;
         } else {
             BlockState blockState = this.getWorld().getBlockState(pos.down());
-            return blockState.isOf(Blocks.LADDER) && (blockState.get(LadderBlock.FACING) == state.get(TrapdoorBlock.FACING));
+            return blockState.isOf(Blocks.LADDER) && (blockState.get(LadderBlock.FACING) == state.get(net.minecraft.block.TrapdoorBlock.FACING));
         }
     }
 
@@ -445,12 +441,12 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     public int getArmor() {
-        return MathHelper.floor(this.getAttributeValue(EntityAttributes.ARMOR));
+        return net.minecraft.util.math.MathHelper.floor(this.getAttributeValue(EntityAttributes.ARMOR));
     }
 
     protected float applyArmorToDamage(DamageSource source, float amount) {
         if (!source.isIn(DamageTypeTags.BYPASSES_ARMOR)) {
-            amount = DamageUtil.getDamageLeft(((LivingEntity) (this.entityBridge)), amount, source, this.getArmor(), ((float) (this.getAttributeValue(EntityAttributes.ARMOR_TOUGHNESS))));
+            amount = net.minecraft.entity.DamageUtil.getDamageLeft(((net.minecraft.entity.LivingEntity) (this.entityBridge)), amount, source, this.getArmor(), ((float) (this.getAttributeValue(EntityAttributes.ARMOR_TOUGHNESS))));
         }
         return amount;
     }
@@ -474,7 +470,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
             } else {
                 float k = 0.0F;
                 if (k > 0.0F) {
-                    amount = DamageUtil.getInflictedDamage(amount, k);
+                    amount = net.minecraft.entity.DamageUtil.getInflictedDamage(amount, k);
                 }
                 return amount;
             }
@@ -505,11 +501,11 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     @Nullable
-    public LivingEntity getPrimeAdversary() {
+    public net.minecraft.entity.LivingEntity getPrimeAdversary() {
         if (this.attackingPlayer != null) {
-            return ((LivingEntity) (this.attackingPlayer.resolve(this.getWorld(), PlayerEntity.class)));
+            return ((net.minecraft.entity.LivingEntity) (this.attackingPlayer.resolve(this.getWorld(), net.minecraft.entity.player.PlayerEntity.class)));
         } else {
-            return this.attackerReference != null ? ((LivingEntity) (this.attackerReference.resolve(this.getWorld(), LivingEntity.class))) : null;
+            return this.attackerReference != null ? ((net.minecraft.entity.LivingEntity) (this.attackerReference.resolve(this.getWorld(), net.minecraft.entity.LivingEntity.class))) : null;
         }
     }
 
@@ -538,10 +534,10 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
         return this.getMainHandStack();
     }
 
-    public ItemStack getStackInHand(Hand hand) {
-        if (hand == Hand.MAIN_HAND) {
+    public ItemStack getStackInHand(net.minecraft.util.Hand hand) {
+        if (hand == net.minecraft.util.Hand.MAIN_HAND) {
             return this.getEquippedStack(EquipmentSlot.MAINHAND);
-        } else if (hand == Hand.OFF_HAND) {
+        } else if (hand == net.minecraft.util.Hand.OFF_HAND) {
             return this.getEquippedStack(EquipmentSlot.OFFHAND);
         } else {
             throw new IllegalArgumentException("Invalid hand " + hand);
@@ -572,11 +568,11 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     public void jump() {
         float f = this.getJumpVelocity();
         if (!(f <= 1.0E-5F)) {
-            Vec3d vec3d = this.getVelocity();
+            net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
             this.setVelocity(vec3d.x, Math.max(f, vec3d.y), vec3d.z);
             if (this.isSprinting()) {
                 float g = this.getYaw() * ((float) (Math.PI / 180.0));
-                this.addVelocityInternal(new Vec3d((-MathHelper.sin(g)) * 0.2, 0.0, MathHelper.cos(g) * 0.2));
+                this.addVelocityInternal(new net.minecraft.util.math.Vec3d((-net.minecraft.util.math.MathHelper.sin(g)) * 0.2, 0.0, net.minecraft.util.math.MathHelper.cos(g) * 0.2));
             }
         }
     }
@@ -606,7 +602,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
         return bl && this.hasStatusEffect(StatusEffects.SLOW_FALLING) ? Math.min(this.getFinalGravity(), 0.01) : this.getFinalGravity();
     }
 
-    public void travel(Vec3d movementInput) {
+    public void travel(net.minecraft.util.math.Vec3d movementInput) {
         FluidState fluidState = this.getWorld().getFluidState(this.getBlockPos());
         if (((this.isTouchingWater() || this.isInLava()) && this.shouldSwimInFluids()) && (!this.canWalkOnFluid(fluidState))) {
             this.travelInFluid(movementInput);
@@ -617,11 +613,11 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
         }
     }
 
-    private void travelMidAir(Vec3d movementInput) {
-        BlockPos blockPos = this.getVelocityAffectingPos();
+    private void travelMidAir(net.minecraft.util.math.Vec3d movementInput) {
+        net.minecraft.util.math.BlockPos blockPos = this.getVelocityAffectingPos();
         float f = (this.isOnGround()) ? this.getWorld().getBlockState(blockPos).getBlock().getSlipperiness() : 1.0F;
         float g = f * 0.91F;
-        Vec3d vec3d = this.applyMovementInput(movementInput, f);
+        net.minecraft.util.math.Vec3d vec3d = this.applyMovementInput(movementInput, f);
         double d = vec3d.y;
         StatusEffectInstance statusEffectInstance = this.getStatusEffect(StatusEffects.LEVITATION);
         if (statusEffectInstance != null) {
@@ -637,7 +633,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
         }
     }
 
-    private void travelInFluid(Vec3d movementInput) {
+    private void travelInFluid(net.minecraft.util.math.Vec3d movementInput) {
         boolean bl = this.getVelocity().y <= 0.0;
         double d = this.getY();
         double e = this.getEffectiveGravity();
@@ -653,19 +649,19 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
                 g += (this.getMovementSpeed() - g) * h;
             }
             this.updateVelocity(g, movementInput);
-            this.move(MovementType.SELF, this.getVelocity());
-            Vec3d vec3d = this.getVelocity();
+            this.move(net.minecraft.entity.MovementType.SELF, this.getVelocity());
+            net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
             if (this.horizontalCollision && this.isClimbing()) {
-                vec3d = new Vec3d(vec3d.x, 0.2, vec3d.z);
+                vec3d = new net.minecraft.util.math.Vec3d(vec3d.x, 0.2, vec3d.z);
             }
             vec3d = vec3d.multiply(f, 0.8F, f);
             this.setVelocity(this.applyFluidMovingSpeed(e, bl, vec3d));
         } else {
             this.updateVelocity(0.02F, movementInput);
-            this.move(MovementType.SELF, this.getVelocity());
+            this.move(net.minecraft.entity.MovementType.SELF, this.getVelocity());
             if (this.getFluidHeight(FluidTags.LAVA) <= this.getSwimHeight()) {
                 this.setVelocity(this.getVelocity().multiply(0.5, 0.8F, 0.5));
-                Vec3d vec3d2 = this.applyFluidMovingSpeed(e, bl, this.getVelocity());
+                net.minecraft.util.math.Vec3d vec3d2 = this.applyFluidMovingSpeed(e, bl, this.getVelocity());
                 this.setVelocity(vec3d2);
             } else {
                 this.setVelocity(this.getVelocity().multiply(0.5));
@@ -674,20 +670,20 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
                 this.setVelocity(this.getVelocity().add(0.0, (-e) / 4.0, 0.0));
             }
         }
-        Vec3d vec3d2 = this.getVelocity();
+        net.minecraft.util.math.Vec3d vec3d2 = this.getVelocity();
         if (this.horizontalCollision && this.doesNotCollide(vec3d2.x, ((vec3d2.y + 0.6F) - this.getY()) + d, vec3d2.z)) {
             this.setVelocity(vec3d2.x, 0.3F, vec3d2.z);
         }
     }
 
-    private void travelGliding(Vec3d movementInput) {
+    private void travelGliding(net.minecraft.util.math.Vec3d movementInput) {
         if (this.isClimbing()) {
             this.travelMidAir(movementInput);
         } else {
-            Vec3d vec3d = this.getVelocity();
+            net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
             double d = vec3d.horizontalLength();
             this.setVelocity(this.calcGlidingVelocity(vec3d));
-            this.move(MovementType.SELF, this.getVelocity());
+            this.move(net.minecraft.entity.MovementType.SELF, this.getVelocity());
             if (!this.getWorld().isClient) {
                 double e = this.getVelocity().horizontalLength();
                 this.checkGlidingCollision(d, e);
@@ -695,20 +691,20 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
         }
     }
 
-    private Vec3d calcGlidingVelocity(Vec3d oldVelocity) {
-        Vec3d vec3d = this.getRotationVector();
+    private net.minecraft.util.math.Vec3d calcGlidingVelocity(net.minecraft.util.math.Vec3d oldVelocity) {
+        net.minecraft.util.math.Vec3d vec3d = this.getRotationVector();
         float f = this.getPitch() * ((float) (Math.PI / 180.0));
         double d = Math.sqrt((vec3d.x * vec3d.x) + (vec3d.z * vec3d.z));
         double e = oldVelocity.horizontalLength();
         double g = this.getEffectiveGravity();
-        double h = MathHelper.square(Math.cos(f));
+        double h = net.minecraft.util.math.MathHelper.square(Math.cos(f));
         oldVelocity = oldVelocity.add(0.0, g * ((-1.0) + (h * 0.75)), 0.0);
         if ((oldVelocity.y < 0.0) && (d > 0.0)) {
             double i = (oldVelocity.y * (-0.1)) * h;
             oldVelocity = oldVelocity.add((vec3d.x * i) / d, i, (vec3d.z * i) / d);
         }
         if ((f < 0.0F) && (d > 0.0)) {
-            double i = (e * (-MathHelper.sin(f))) * 0.04;
+            double i = (e * (-net.minecraft.util.math.MathHelper.sin(f))) * 0.04;
             oldVelocity = oldVelocity.add(((-vec3d.x) * i) / d, i * 3.2, ((-vec3d.z) * i) / d);
         }
         if (d > 0.0) {
@@ -727,50 +723,50 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
         }
     }
 
-    private void travelControlled(PlayerEntity controllingPlayer, Vec3d movementInput) {
-        Vec3d vec3d = this.getControlledMovementInput(controllingPlayer, movementInput);
+    private void travelControlled(net.minecraft.entity.player.PlayerEntity controllingPlayer, net.minecraft.util.math.Vec3d movementInput) {
+        net.minecraft.util.math.Vec3d vec3d = this.getControlledMovementInput(controllingPlayer, movementInput);
         if (this.canMoveVoluntarily()) {
             this.travel(vec3d);
         } else {
-            this.setVelocity(Vec3d.ZERO);
+            this.setVelocity(net.minecraft.util.math.Vec3d.ZERO);
         }
     }
 
-    protected Vec3d getControlledMovementInput(PlayerEntity controllingPlayer, Vec3d movementInput) {
+    protected net.minecraft.util.math.Vec3d getControlledMovementInput(net.minecraft.entity.player.PlayerEntity controllingPlayer, net.minecraft.util.math.Vec3d movementInput) {
         return movementInput;
     }
 
-    private Vec3d applyMovementInput(Vec3d movementInput, float slipperiness) {
+    private net.minecraft.util.math.Vec3d applyMovementInput(net.minecraft.util.math.Vec3d movementInput, float slipperiness) {
         this.updateVelocity(this.getMovementSpeed(slipperiness), movementInput);
         this.setVelocity(this.applyClimbingSpeed(this.getVelocity()));
-        this.move(MovementType.SELF, this.getVelocity());
-        Vec3d vec3d = this.getVelocity();
-        if ((this.horizontalCollision || this.jumping) && (this.isClimbing() || (this.wasInPowderSnow && PowderSnowBlock.canWalkOnPowderSnow(((LivingEntity) (this.entityBridge)))))) {
-            vec3d = new Vec3d(vec3d.x, 0.2, vec3d.z);
+        this.move(net.minecraft.entity.MovementType.SELF, this.getVelocity());
+        net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
+        if ((this.horizontalCollision || this.jumping) && (this.isClimbing() || (this.wasInPowderSnow && net.minecraft.block.PowderSnowBlock.canWalkOnPowderSnow(((net.minecraft.entity.LivingEntity) (this.entityBridge)))))) {
+            vec3d = new net.minecraft.util.math.Vec3d(vec3d.x, 0.2, vec3d.z);
         }
         return vec3d;
     }
 
-    public Vec3d applyFluidMovingSpeed(double gravity, boolean falling, Vec3d motion) {
+    public net.minecraft.util.math.Vec3d applyFluidMovingSpeed(double gravity, boolean falling, net.minecraft.util.math.Vec3d motion) {
         if ((gravity != 0.0) && (!this.isSprinting())) {
             double d = 0.0;
             if ((falling && (Math.abs(motion.y - 0.005) >= 0.003)) && (Math.abs(motion.y - (gravity / 16.0)) < 0.003)) {
             } else {
                 d = motion.y - (gravity / 16.0);
             }
-            return new Vec3d(motion.x, d, motion.z);
+            return new net.minecraft.util.math.Vec3d(motion.x, d, motion.z);
         } else {
             return motion;
         }
     }
 
-    private Vec3d applyClimbingSpeed(Vec3d motion) {
+    private net.minecraft.util.math.Vec3d applyClimbingSpeed(net.minecraft.util.math.Vec3d motion) {
         if (this.isClimbing()) {
             this.onLanding();
-            double d = MathHelper.clamp(motion.x, -0.15F, 0.15F);
-            double e = MathHelper.clamp(motion.z, -0.15F, 0.15F);
+            double d = net.minecraft.util.math.MathHelper.clamp(motion.x, -0.15F, 0.15F);
+            double e = net.minecraft.util.math.MathHelper.clamp(motion.z, -0.15F, 0.15F);
             double g = Math.max(motion.y, -0.15F);
-            motion = new Vec3d(d, g, e);
+            motion = new net.minecraft.util.math.Vec3d(d, g, e);
         }
         return motion;
     }
@@ -780,7 +776,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     protected float getOffGroundSpeed() {
-        return this.getControllingPassenger() instanceof PlayerEntity ? this.getMovementSpeed() * 0.1F : 0.02F;
+        return this.getControllingPassenger() instanceof net.minecraft.entity.player.PlayerEntity ? this.getMovementSpeed() * 0.1F : 0.02F;
     }
 
     public float getMovementSpeed() {
@@ -798,7 +794,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
         if (this.headTrackingIncrements > 0) {
             this.lerpHeadYaw(this.headTrackingIncrements, this.serverHeadYaw);
         }
-        Vec3d vec3d = this.getVelocity();
+        net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
         double d = vec3d.x;
         double e = vec3d.y;
         double f = vec3d.z;
@@ -835,11 +831,11 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
             this.tickGliding();
         }
         Box box = this.getBoundingBox();
-        Vec3d vec3d2 = new Vec3d(this.sidewaysSpeed, this.upwardSpeed, this.forwardSpeed);
+        net.minecraft.util.math.Vec3d vec3d2 = new net.minecraft.util.math.Vec3d(this.sidewaysSpeed, this.upwardSpeed, this.forwardSpeed);
         if (this.hasStatusEffect(StatusEffects.SLOW_FALLING) || this.hasStatusEffect(StatusEffects.LEVITATION)) {
             this.onLanding();
         }
-        if ((this.getControllingPassenger() instanceof PlayerEntity playerEntity) && this.isAlive()) {
+        if ((this.getControllingPassenger() instanceof net.minecraft.entity.player.PlayerEntity playerEntity) && this.isAlive()) {
             this.travelControlled(playerEntity, vec3d2);
         } else if (this.canMoveVoluntarily()) {
             this.travel(vec3d2);
@@ -875,13 +871,13 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     protected void tickCramming() {
-        List<Entity> list = this.getWorld().getCrammedEntities(((LivingEntity) (this.entityBridge)), this.getBoundingBox());
+        List<net.minecraft.entity.Entity> list = this.getWorld().getCrammedEntities(((net.minecraft.entity.LivingEntity) (this.entityBridge)), this.getBoundingBox());
         if (!list.isEmpty()) {
             if (this.getWorld() instanceof ServerWorld serverWorld) {
                 int i = serverWorld.getGameRules().getInt(GameRules.MAX_ENTITY_CRAMMING);
                 if (((i > 0) && (list.size() > (i - 1))) && (this.random.nextInt(4) == 0)) {
                     int j = 0;
-                    for (Entity entity : list) {
+                    for (net.minecraft.entity.Entity entity : list) {
                         if (!entity.hasVehicle()) {
                             j++;
                         }
@@ -896,22 +892,22 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
 
     protected void tickRiptide(Box a, Box b) {
         Box box = a.union(b);
-        List<Entity> list = this.getWorld().getOtherEntities(((LivingEntity) (this.entityBridge)), box);
+        List<net.minecraft.entity.Entity> list = this.getWorld().getOtherEntities(((net.minecraft.entity.LivingEntity) (this.entityBridge)), box);
         if (!list.isEmpty()) {
-            for (Entity entity : list) {
-                if (entity instanceof LivingEntity) {
-                    this.attackLivingEntity(((LivingEntity) (entity)));
+            for (net.minecraft.entity.Entity entity : list) {
+                if (entity instanceof net.minecraft.entity.LivingEntity) {
+                    this.attackLivingEntity(((net.minecraft.entity.LivingEntity) (entity)));
                     this.setVelocity(this.getVelocity().multiply(-0.2));
                 }
             }
         }
     }
 
-    protected void attackLivingEntity(LivingEntity target) {
+    protected void attackLivingEntity(net.minecraft.entity.LivingEntity target) {
     }
 
     public boolean isUsingRiptide() {
-        return (this.dataTracker.get(SlicedLivingEntity.LIVING_FLAGS) & 4) != 0;
+        return (this.dataTracker.get(LivingEntity.LIVING_FLAGS) & 4) != 0;
     }
 
     public PositionInterpolator getInterpolator() {
@@ -927,7 +923,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     public void setAbsorptionAmount(float absorptionAmount) {
-        this.setAbsorptionAmountUnclamped(MathHelper.clamp(absorptionAmount, 0.0F, this.getMaxAbsorption()));
+        this.setAbsorptionAmountUnclamped(net.minecraft.util.math.MathHelper.clamp(absorptionAmount, 0.0F, this.getMaxAbsorption()));
     }
 
     protected void setAbsorptionAmountUnclamped(float absorptionAmount) {
@@ -935,7 +931,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     public boolean isUsingItem() {
-        return (this.dataTracker.get(SlicedLivingEntity.LIVING_FLAGS) & 1) > 0;
+        return (this.dataTracker.get(LivingEntity.LIVING_FLAGS) & 1) > 0;
     }
 
     public ItemStack getActiveItem() {
@@ -949,7 +945,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
         } else {
             BlocksAttacksComponent blocksAttacksComponent = this.activeItemStack.get(DataComponentTypes.BLOCKS_ATTACKS);
             if (blocksAttacksComponent != null) {
-                int i = this.activeItemStack.getItem().getMaxUseTime(this.activeItemStack, ((LivingEntity) (this.entityBridge))) - this.itemUseTimeLeft;
+                int i = this.activeItemStack.getItem().getMaxUseTime(this.activeItemStack, ((net.minecraft.entity.LivingEntity) (this.entityBridge))) - this.itemUseTimeLeft;
                 if (i >= blocksAttacksComponent.getBlockDelayTicks()) {
                     return this.activeItemStack;
                 }
@@ -963,11 +959,11 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     public boolean isGliding() {
-        return this.getFlag(SlicedLivingEntity.GLIDING_FLAG_INDEX);
+        return this.getFlag(LivingEntity.GLIDING_FLAG_INDEX);
     }
 
-    public Optional<BlockPos> getSleepingPosition() {
-        return this.dataTracker.get(SlicedLivingEntity.SLEEPING_POSITION);
+    public Optional<net.minecraft.util.math.BlockPos> getSleepingPosition() {
+        return this.dataTracker.get(LivingEntity.SLEEPING_POSITION);
     }
 
     public boolean isSleeping() {
@@ -975,7 +971,7 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
     }
 
     public void wakeUp() {
-        Vec3d vec3d = this.getPos();
+        net.minecraft.util.math.Vec3d vec3d = this.getPos();
         this.setPosition(vec3d.x, vec3d.y, vec3d.z);
     }
 
@@ -994,18 +990,19 @@ public abstract class SlicedLivingEntity extends SlicedEntity {
 
     public float getStepHeight() {
         float f = ((float) (this.getAttributeValue(EntityAttributes.STEP_HEIGHT)));
-        return this.getControllingPassenger() instanceof PlayerEntity ? Math.max(f, 1.0F) : f;
+        return this.getControllingPassenger() instanceof net.minecraft.entity.player.PlayerEntity ? Math.max(f, 1.0F) : f;
     }
 
     protected void lerpHeadYaw(int headTrackingIncrements, double serverHeadYaw) {
-        this.headYaw = ((float) (MathHelper.lerpAngleDegrees(1.0 / headTrackingIncrements, ((double) (this.headYaw)), serverHeadYaw)));
+        this.headYaw = ((float) (net.minecraft.util.math.MathHelper.lerpAngleDegrees(1.0 / headTrackingIncrements, ((double) (this.headYaw)), serverHeadYaw)));
     }
 
     public boolean isInvulnerableTo(ServerWorld world, DamageSource source) {
-        return this.isAlwaysInvulnerableTo(source) || EnchantmentHelper.isInvulnerableTo(world, ((LivingEntity) (this.entityBridge)), source);
+        return this.isAlwaysInvulnerableTo(source) || EnchantmentHelper.isInvulnerableTo(world, ((net.minecraft.entity.LivingEntity) (this.entityBridge)), source);
     }
 
     public abstract void setVelocity(double x, double y, double z);
 
     public abstract void emitGameEvent(RegistryEntry<GameEvent> event);
 }
+

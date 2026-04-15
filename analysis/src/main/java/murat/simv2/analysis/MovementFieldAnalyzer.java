@@ -2,6 +2,7 @@ package murat.simv2.analysis;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,19 +35,21 @@ public final class MovementFieldAnalyzer {
                     + " Action: rerun with inputs where 0-1-Container-CFA pointer analysis succeeds, "
                     + "or run with mode=wala for WALA-only output.");
         }
-        runSpoonPhase(config, walaResult.classifiedFields(), walaResult.sliceLines());
+        runSpoonPhase(config, walaResult.classifiedFields(), walaResult.sliceLines(), walaResult.mirrorClosure());
         System.out.println("\n=== Analysis complete ===");
     }
 
     private static void runSpoonOnly(AnalysisRunConfig config) throws Exception {
         SpoonArtifacts artifacts = AnalysisArtifacts.loadForSpoon(config.outputDir());
-        runSpoonPhase(config, artifacts.fields(), artifacts.sliceLines());
+        runSpoonPhase(config, artifacts.fields(), artifacts.sliceLines(), artifacts.mirrorClosure());
     }
 
     private static void runSpoonPhase(AnalysisRunConfig config,
                                       List<FieldResult> classified,
-                                      Map<String, Map<String, Set<Integer>>> sliceLines) throws Exception {
+                                      Map<String, Map<String, Set<Integer>>> sliceLines,
+                                      MirrorClosure mirrorClosure) throws Exception {
         Path sourcesJarPath = requireSourcesJarForSpoon(config, config.mode());
+        Path slicedOutputDir = config.outputDir().resolve("java/murat/simv2/simulation/sliced");
 
         System.out.println("\nRunning Spoon source pruning...");
         SpoonSlicePruner pruner = new SpoonSlicePruner(
@@ -55,10 +58,17 @@ public final class MovementFieldAnalyzer {
             config.extraSpoonClasspath(),
             sliceLines
         );
-        pruner.pruneAndWrite(config.outputDir().resolve("java/murat/simv2/simulation/sliced"));
+        pruner.pruneAndWrite(slicedOutputDir);
 
-        RuntimeSimClassGenerator runtimeGenerator = new RuntimeSimClassGenerator(config.outputDir());
-        runtimeGenerator.generate(classified);
+        try {
+            MirrorClassEmitter mirrorEmitter = new MirrorClassEmitter(config.outputDir());
+            mirrorEmitter.emit(mirrorClosure);
+
+            RuntimeSimClassGenerator runtimeGenerator = new RuntimeSimClassGenerator(config.outputDir());
+            runtimeGenerator.generate(classified);
+        } finally {
+            deleteDirectoryIfExists(slicedOutputDir);
+        }
     }
 
     private static Path requireSourcesJarForSpoon(AnalysisRunConfig config, AnalysisMode mode) {
@@ -78,6 +88,27 @@ public final class MovementFieldAnalyzer {
                 + sourcesJarPath + ". Pass -PsourcesJar=<path-to-sources.jar>.");
         }
         return sourcesJarPath;
+    }
+
+    private static void deleteDirectoryIfExists(Path dir) throws Exception {
+        if (dir == null || !Files.exists(dir)) {
+            return;
+        }
+        try (var walk = Files.walk(dir)) {
+            walk.sorted(Comparator.reverseOrder())
+                .forEach(path -> {
+                    try {
+                        Files.deleteIfExists(path);
+                    } catch (Exception ex) {
+                        throw new RuntimeException("Failed to delete path: " + path, ex);
+                    }
+                });
+        } catch (RuntimeException ex) {
+            if (ex.getCause() instanceof Exception cause) {
+                throw cause;
+            }
+            throw ex;
+        }
     }
 
 }

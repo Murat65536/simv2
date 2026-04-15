@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 
 /**
  * Generates a concrete runtime simulator class used by path prediction.
- * The class is generated from field analysis + sliced source structure so
+ * The class is generated from field analysis + mirrored source structure so
  * hardcoded shim fields stay in sync with generation output.
  */
 public final class RuntimeSimClassGenerator {
@@ -25,7 +25,7 @@ public final class RuntimeSimClassGenerator {
         "\\b(public|protected|private)\\s+(?:static\\s+)?[^\\n;=]+\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(([^)]*)\\)");
 
     private static final Pattern TRACKED_GET = Pattern.compile(
-        "dataTracker\\.get\\(Sliced([A-Za-z0-9_]+)\\.([A-Z0-9_]+)\\)");
+        "dataTracker\\.get\\((?:[A-Za-z0-9_$.]+\\.)?([A-Za-z0-9_$]+)\\.([A-Z0-9_]+)\\)");
 
     private final Path outputDir;
 
@@ -34,21 +34,22 @@ public final class RuntimeSimClassGenerator {
     }
 
     void generate(List<FieldResult> fields) throws IOException {
-        Path slicedDir = outputDir.resolve("java/murat/simv2/simulation/sliced");
-        SlicedIntrospection sliced = inspectSlicedSources(slicedDir);
-        Set<String> placeholders = computePlaceholderFields(fields, sliced);
-        TrackerUsage trackerUsage = deriveTrackerUsage(sliced);
+        Path mirrorDir = outputDir.resolve("java/murat/simv2/simulation/mirror");
+        MirrorIntrospection mirror = inspectMirrorSources(mirrorDir);
+        Set<String> placeholders = computePlaceholderFields(fields, mirror);
+        TrackerUsage trackerUsage = deriveTrackerUsage(mirror);
 
         Path javaDir = outputDir.resolve("java/murat/simv2/simulation");
         Files.createDirectories(javaDir);
-        Path runtimeFile = javaDir.resolve("RuntimeSlicedClientPlayerEntity.java");
+        Files.deleteIfExists(javaDir.resolve("RuntimeSlicedClientPlayerEntity.java"));
+        Path runtimeFile = javaDir.resolve("RuntimeMirroredClientPlayerEntity.java");
         Files.writeString(runtimeFile, generateRuntimeClassSource(placeholders, trackerUsage));
-        System.out.println("Generated RuntimeSlicedClientPlayerEntity.java");
+        System.out.println("Generated RuntimeMirroredClientPlayerEntity.java");
     }
 
-    private SlicedIntrospection inspectSlicedSources(Path slicedDir) throws IOException {
-        if (!Files.isDirectory(slicedDir)) {
-            return new SlicedIntrospection(new LinkedHashSet<>(), new LinkedHashSet<>(),
+    private MirrorIntrospection inspectMirrorSources(Path mirrorDir) throws IOException {
+        if (!Files.isDirectory(mirrorDir)) {
+            return new MirrorIntrospection(new LinkedHashSet<>(), new LinkedHashSet<>(),
                 new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>());
         }
 
@@ -58,21 +59,23 @@ public final class RuntimeSimClassGenerator {
         Set<String> setterMembers = new LinkedHashSet<>();
         Set<String> trackedGetKeys = new LinkedHashSet<>();
 
-        try (var paths = Files.list(slicedDir)) {
-            for (Path file : (Iterable<Path>) paths.filter(path -> path.getFileName().toString().endsWith(".java"))::iterator) {
+        try (var paths = Files.walk(mirrorDir)) {
+            for (Path file : (Iterable<Path>) paths
+                .filter(Files::isRegularFile)
+                .filter(path -> path.getFileName().toString().endsWith(".java"))::iterator) {
                 String source = Files.readString(file);
                 parseFields(source, fieldNames, finalFields);
                 parseMethods(source, getterMembers, setterMembers);
                 parseTrackedGets(source, trackedGetKeys);
             }
         }
-        return new SlicedIntrospection(fieldNames, finalFields, getterMembers, setterMembers, trackedGetKeys);
+        return new MirrorIntrospection(fieldNames, finalFields, getterMembers, setterMembers, trackedGetKeys);
     }
 
     private void parseTrackedGets(String source, Set<String> trackedGetKeys) {
         Matcher matcher = TRACKED_GET.matcher(source);
         while (matcher.find()) {
-            trackedGetKeys.add("Sliced" + matcher.group(1) + "." + matcher.group(2));
+            trackedGetKeys.add(matcher.group(1) + "." + matcher.group(2));
         }
     }
 
@@ -126,7 +129,7 @@ public final class RuntimeSimClassGenerator {
         return count;
     }
 
-    private Set<String> computePlaceholderFields(List<FieldResult> fields, SlicedIntrospection sliced) {
+    private Set<String> computePlaceholderFields(List<FieldResult> fields, MirrorIntrospection mirror) {
         Set<String> placeholders = new LinkedHashSet<>();
         for (FieldResult field : fields) {
             String name = field.fieldName();
@@ -134,11 +137,11 @@ public final class RuntimeSimClassGenerator {
                 continue;
             }
 
-            boolean hasField = sliced.fieldNames().contains(name);
-            boolean hasGetter = sliced.getterMembers().contains(name);
-            boolean hasSetter = sliced.setterMembers().contains(name);
+            boolean hasField = mirror.fieldNames().contains(name);
+            boolean hasGetter = mirror.getterMembers().contains(name);
+            boolean hasSetter = mirror.setterMembers().contains(name);
             boolean readable = hasField || hasGetter;
-            boolean writable = hasSetter || (hasField && !sliced.finalFields().contains(name));
+            boolean writable = hasSetter || (hasField && !mirror.finalFields().contains(name));
 
             if (!readable || !writable) {
                 placeholders.add(name);
@@ -147,12 +150,12 @@ public final class RuntimeSimClassGenerator {
         return placeholders;
     }
 
-    private TrackerUsage deriveTrackerUsage(SlicedIntrospection sliced) {
-        Set<String> keys = sliced.trackedGetKeys();
-        boolean livingFlags = keys.contains("SlicedLivingEntity.LIVING_FLAGS");
-        boolean sleepingPosition = keys.contains("SlicedLivingEntity.SLEEPING_POSITION");
-        boolean health = keys.contains("SlicedLivingEntity.HEALTH");
-        boolean absorption = keys.contains("SlicedPlayerEntity.ABSORPTION_AMOUNT");
+    private TrackerUsage deriveTrackerUsage(MirrorIntrospection mirror) {
+        Set<String> keys = mirror.trackedGetKeys();
+        boolean livingFlags = keys.contains("LivingEntity.LIVING_FLAGS");
+        boolean sleepingPosition = keys.contains("LivingEntity.SLEEPING_POSITION");
+        boolean health = keys.contains("LivingEntity.HEALTH");
+        boolean absorption = keys.contains("PlayerEntity.ABSORPTION_AMOUNT");
         return new TrackerUsage(livingFlags, sleepingPosition, health, absorption);
     }
 
@@ -179,9 +182,8 @@ public final class RuntimeSimClassGenerator {
         sb.append("import java.util.Collection;\n");
         sb.append("import java.util.Map;\n");
         sb.append("import java.util.Optional;\n");
-        sb.append("import murat.simv2.simulation.sliced.SlicedClientPlayerEntity;\n");
-        sb.append("import murat.simv2.simulation.sliced.SlicedEntity;\n");
-        sb.append("import murat.simv2.simulation.sliced.SlicedLivingEntity;\n");
+        sb.append("import murat.simv2.simulation.mirror.net.minecraft.entity.Entity;\n");
+        sb.append("import murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity;\n");
         sb.append("import net.minecraft.client.MinecraftClient;\n");
         sb.append("import net.minecraft.client.network.ClientPlayNetworkHandler;\n");
         sb.append("import net.minecraft.client.network.ClientPlayerEntity;\n");
@@ -198,7 +200,7 @@ public final class RuntimeSimClassGenerator {
         sb.append("import net.minecraft.world.GameMode;\n");
         sb.append("import net.minecraft.world.event.GameEvent;\n\n");
         sb.append("// Generated by movement analysis — do not edit\n");
-        sb.append("public final class RuntimeSlicedClientPlayerEntity extends SlicedClientPlayerEntity {\n");
+        sb.append("public final class RuntimeMirroredClientPlayerEntity extends murat.simv2.simulation.mirror.net.minecraft.client.network.ClientPlayerEntity {\n");
         sb.append("    private final MinecraftClient minecraftClient;\n");
         sb.append("    private ClientPlayerEntity boundRealPlayer;\n");
         if (trackerUsage.livingFlags()) {
@@ -222,7 +224,7 @@ public final class RuntimeSimClassGenerator {
             sb.append('\n');
         }
 
-        sb.append("    public RuntimeSlicedClientPlayerEntity(MinecraftClient client, ClientPlayerEntity realPlayer) {\n");
+        sb.append("    public RuntimeMirroredClientPlayerEntity(MinecraftClient client, ClientPlayerEntity realPlayer) {\n");
         sb.append("        super(\n");
         sb.append("            prepareConstruction(client, realPlayer),\n");
         sb.append("            requireWorld(realPlayer),\n");
@@ -272,14 +274,14 @@ public final class RuntimeSimClassGenerator {
         sb.append("    }\n\n");
 
         sb.append("    private static boolean isBaseEntityTrackerKey(TrackedData<?> key) {\n");
-        sb.append("        return key == SlicedEntity.FLAGS\n");
-        sb.append("            || key == SlicedEntity.AIR\n");
-        sb.append("            || key == SlicedEntity.CUSTOM_NAME\n");
-        sb.append("            || key == SlicedEntity.NAME_VISIBLE\n");
-        sb.append("            || key == SlicedEntity.SILENT\n");
-        sb.append("            || key == SlicedEntity.NO_GRAVITY\n");
-        sb.append("            || key == SlicedEntity.POSE\n");
-        sb.append("            || key == SlicedEntity.FROZEN_TICKS;\n");
+        sb.append("        return key == Entity.FLAGS\n");
+        sb.append("            || key == Entity.AIR\n");
+        sb.append("            || key == Entity.CUSTOM_NAME\n");
+        sb.append("            || key == Entity.NAME_VISIBLE\n");
+        sb.append("            || key == Entity.SILENT\n");
+        sb.append("            || key == Entity.NO_GRAVITY\n");
+        sb.append("            || key == Entity.POSE\n");
+        sb.append("            || key == Entity.FROZEN_TICKS;\n");
         sb.append("    }\n\n");
 
         sb.append("    @Override\n");
@@ -361,9 +363,9 @@ public final class RuntimeSimClassGenerator {
         sb.append("    }\n\n");
 
         sb.append("    private void copyTrackedState(ClientPlayerEntity realPlayer) {\n");
-        sb.append("        this.getDataTracker().set(SlicedEntity.FLAGS, encodeEntityFlags(realPlayer));\n");
-        sb.append("        this.getDataTracker().set(SlicedEntity.POSE, realPlayer.getPose());\n");
-        sb.append("        this.getDataTracker().set(SlicedEntity.FROZEN_TICKS, realPlayer.getFrozenTicks());\n");
+        sb.append("        this.getDataTracker().set(Entity.FLAGS, encodeEntityFlags(realPlayer));\n");
+        sb.append("        this.getDataTracker().set(Entity.POSE, realPlayer.getPose());\n");
+        sb.append("        this.getDataTracker().set(Entity.FROZEN_TICKS, realPlayer.getFrozenTicks());\n");
         if (trackerUsage.livingFlags()) {
             sb.append("        this.livingFlagsMirror = encodeLivingFlags(realPlayer);\n");
         }
@@ -434,16 +436,16 @@ public final class RuntimeSimClassGenerator {
         sb.append("    private static byte encodeEntityFlags(ClientPlayerEntity realPlayer) {\n");
         sb.append("        byte flags = 0;\n");
         sb.append("        if (realPlayer.isSneaking()) {\n");
-        sb.append("            flags |= (byte) (1 << SlicedEntity.SNEAKING_FLAG_INDEX);\n");
+        sb.append("            flags |= (byte) (1 << Entity.SNEAKING_FLAG_INDEX);\n");
         sb.append("        }\n");
         sb.append("        if (realPlayer.isSprinting()) {\n");
-        sb.append("            flags |= (byte) (1 << SlicedEntity.SPRINTING_FLAG_INDEX);\n");
+        sb.append("            flags |= (byte) (1 << Entity.SPRINTING_FLAG_INDEX);\n");
         sb.append("        }\n");
         sb.append("        if (realPlayer.isSwimming()) {\n");
-        sb.append("            flags |= (byte) (1 << SlicedEntity.SWIMMING_FLAG_INDEX);\n");
+        sb.append("            flags |= (byte) (1 << Entity.SWIMMING_FLAG_INDEX);\n");
         sb.append("        }\n");
         sb.append("        if (realPlayer.isGliding()) {\n");
-        sb.append("            flags |= (byte) (1 << SlicedLivingEntity.GLIDING_FLAG_INDEX);\n");
+        sb.append("            flags |= (byte) (1 << LivingEntity.GLIDING_FLAG_INDEX);\n");
         sb.append("        }\n");
         sb.append("        return flags;\n");
         sb.append("    }\n\n");
@@ -469,7 +471,7 @@ public final class RuntimeSimClassGenerator {
         sb.append("    }\n\n");
 
         sb.append("    private static MinecraftClient prepareConstruction(MinecraftClient client, ClientPlayerEntity realPlayer) {\n");
-        sb.append("        SlicedEntity.pushEntityBridgeBootstrap(realPlayer);\n");
+        sb.append("        Entity.pushEntityBridgeBootstrap(realPlayer);\n");
         sb.append("        return client;\n");
         sb.append("    }\n\n");
 
@@ -501,7 +503,7 @@ public final class RuntimeSimClassGenerator {
         return sb.toString();
     }
 
-    private record SlicedIntrospection(Set<String> fieldNames,
+    private record MirrorIntrospection(Set<String> fieldNames,
                                        Set<String> finalFields,
                                        Set<String> getterMembers,
                                        Set<String> setterMembers,

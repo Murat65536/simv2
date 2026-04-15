@@ -1,6 +1,7 @@
 package murat.simv2.analysis;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -20,6 +21,8 @@ import java.util.regex.Pattern;
 final class AnalysisArtifacts {
     static final String FIELD_MANIFEST_SCHEMA = "movement-fields";
     static final int FIELD_MANIFEST_VERSION = 1;
+    static final String MIRROR_CLOSURE_SCHEMA = "mirror-closure";
+    static final int MIRROR_CLOSURE_VERSION = 1;
     static final Comparator<FieldResult> FIELD_MANIFEST_ORDER = Comparator
         .comparing(FieldResult::declaringClass)
         .thenComparing(FieldResult::fieldName)
@@ -30,6 +33,7 @@ final class AnalysisArtifacts {
     private static final Pattern FIELD_MANIFEST_CONTRACT_PATTERN = Pattern.compile("^([a-z0-9-]+)/v(\\d+)$");
     private static final String FIELD_MANIFEST_COLUMNS =
         "CATEGORY declaring_class field_name type_descriptor";
+    private static final Gson PRETTY_GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private AnalysisArtifacts() {
     }
@@ -42,10 +46,15 @@ final class AnalysisArtifacts {
         return outputDir.resolve("movement-slice.json");
     }
 
+    static Path mirrorClosurePath(Path outputDir) {
+        return outputDir.resolve("mirror-closure.json");
+    }
+
     static SpoonArtifacts loadForSpoon(Path outputDir) throws IOException {
         List<FieldResult> fields = loadFieldManifest(fieldManifestPath(outputDir));
         Map<String, Map<String, Set<Integer>>> sliceLines = loadSliceLines(sliceJsonPath(outputDir));
-        return new SpoonArtifacts(fields, sliceLines);
+        MirrorClosure mirrorClosure = loadMirrorClosure(mirrorClosurePath(outputDir));
+        return new SpoonArtifacts(fields, sliceLines, mirrorClosure);
     }
 
     static String expectedFieldManifestContractLine() {
@@ -213,6 +222,103 @@ final class AnalysisArtifacts {
         return canonicalizeSliceLines(rawSliceLines);
     }
 
+    static String expectedMirrorClosureContract() {
+        return MIRROR_CLOSURE_SCHEMA + "/v" + MIRROR_CLOSURE_VERSION;
+    }
+
+    static void writeMirrorClosure(MirrorClosure mirrorClosure, Path closurePath) throws IOException {
+        MirrorClosure canonical = canonicalizeMirrorClosure(mirrorClosure);
+        MirrorClosurePayload payload = new MirrorClosurePayload();
+        payload.contract = expectedMirrorClosureContract();
+        payload.classes = canonical.classes().stream().sorted().toList();
+        Map<String, List<String>> methodsByClass = new TreeMap<>();
+        for (Map.Entry<String, Set<String>> entry : canonical.methodsByClass().entrySet()) {
+            methodsByClass.put(entry.getKey(), entry.getValue().stream().sorted().toList());
+        }
+        payload.methodsByClass = methodsByClass;
+        Files.writeString(closurePath, PRETTY_GSON.toJson(payload));
+    }
+
+    static MirrorClosure loadMirrorClosure(Path closurePath) throws IOException {
+        if (!Files.exists(closurePath)) {
+            throw new IllegalStateException("Missing mirror closure JSON: " + closurePath
+                + ". Run WALA phase (:analysis:runWala) to regenerate artifacts.");
+        }
+        MirrorClosurePayload payload = new Gson().fromJson(Files.readString(closurePath), MirrorClosurePayload.class);
+        if (payload == null) {
+            throw new IllegalStateException("Mirror closure JSON could not be parsed: " + closurePath);
+        }
+        if (!expectedMirrorClosureContract().equals(payload.contract)) {
+            throw new IllegalStateException("Mirror closure contract mismatch in " + closurePath
+                + ". Expected '" + expectedMirrorClosureContract() + "', found '" + payload.contract
+                + "'. Run WALA phase (:analysis:runWala) to regenerate artifacts.");
+        }
+
+        Set<String> classes = payload.classes == null ? Set.of() : new LinkedHashSet<>(payload.classes);
+        Map<String, Set<String>> methodsByClass = new LinkedHashMap<>();
+        if (payload.methodsByClass != null) {
+            for (Map.Entry<String, List<String>> entry : payload.methodsByClass.entrySet()) {
+                List<String> selectors = entry.getValue();
+                methodsByClass.put(
+                    entry.getKey(),
+                    selectors == null ? Set.of() : new LinkedHashSet<>(selectors)
+                );
+            }
+        }
+
+        return canonicalizeMirrorClosure(new MirrorClosure(classes, methodsByClass));
+    }
+
+    private static MirrorClosure canonicalizeMirrorClosure(MirrorClosure mirrorClosure) {
+        if (mirrorClosure == null) {
+            throw new IllegalStateException("Mirror closure data is null.");
+        }
+
+        TreeSet<String> classes = new TreeSet<>();
+        if (mirrorClosure.classes() != null) {
+            for (String className : mirrorClosure.classes()) {
+                classes.add(validateMirrorClassName(className));
+            }
+        }
+
+        TreeMap<String, Set<String>> methodsByClass = new TreeMap<>();
+        if (mirrorClosure.methodsByClass() != null) {
+            for (Map.Entry<String, Set<String>> entry : mirrorClosure.methodsByClass().entrySet()) {
+                String className = validateMirrorClassName(entry.getKey());
+                classes.add(className);
+
+                TreeSet<String> selectors = new TreeSet<>();
+                Set<String> rawSelectors = entry.getValue();
+                if (rawSelectors != null) {
+                    for (String selector : rawSelectors) {
+                        if (selector == null || selector.isBlank()) {
+                            throw new IllegalStateException(
+                                "Mirror closure contains empty method selector for class " + className);
+                        }
+                        selectors.add(selector.trim());
+                    }
+                }
+                methodsByClass.put(className, Set.copyOf(selectors));
+            }
+        }
+
+        if (classes.isEmpty()) {
+            throw new IllegalStateException("Mirror closure has no classes after validation.");
+        }
+        return new MirrorClosure(Set.copyOf(classes), Map.copyOf(new LinkedHashMap<>(methodsByClass)));
+    }
+
+    private static String validateMirrorClassName(String className) {
+        if (className == null || className.isBlank()) {
+            throw new IllegalStateException("Mirror closure contains empty class name.");
+        }
+        String normalized = className.trim();
+        if (!normalized.startsWith("net.minecraft.")) {
+            throw new IllegalStateException("Mirror closure class must be in net.minecraft.* but found: " + className);
+        }
+        return normalized;
+    }
+
     private static Map<String, Map<String, Set<Integer>>> canonicalizeSliceLines(
         Map<String, Map<String, Set<Integer>>> rawSliceLines
     ) {
@@ -254,5 +360,11 @@ final class AnalysisArtifacts {
             throw new IllegalStateException("Slice JSON had no usable slice lines after validation.");
         }
         return Map.copyOf(canonical);
+    }
+
+    private static final class MirrorClosurePayload {
+        String contract;
+        List<String> classes;
+        Map<String, List<String>> methodsByClass;
     }
 }

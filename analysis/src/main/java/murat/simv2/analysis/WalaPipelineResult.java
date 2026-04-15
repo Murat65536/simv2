@@ -7,6 +7,7 @@ import java.util.Set;
 record WalaPipelineResult(
     List<FieldResult> classifiedFields,
     Map<String, Map<String, Set<Integer>>> sliceLines,
+    MirrorClosure mirrorClosure,
     SpoonPrerequisiteStatus spoonPrerequisiteStatus
 ) {
     enum SpoonPrerequisiteStatus {
@@ -18,7 +19,10 @@ record WalaPipelineResult(
     boolean isSpoonReady() {
         return spoonPrerequisiteStatus == SpoonPrerequisiteStatus.READY
             && sliceLines != null
-            && !sliceLines.isEmpty();
+            && !sliceLines.isEmpty()
+            && mirrorClosure != null
+            && mirrorClosure.classes() != null
+            && !mirrorClosure.classes().isEmpty();
     }
 
     String spoonReadinessDetail() {
