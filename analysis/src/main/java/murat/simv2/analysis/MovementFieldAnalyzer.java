@@ -61,11 +61,11 @@ public final class MovementFieldAnalyzer {
         pruner.pruneAndWrite(slicedOutputDir);
 
         try {
-            MirrorClassEmitter mirrorEmitter = new MirrorClassEmitter(config.outputDir());
+            MirrorClassEmitter mirrorEmitter = new MirrorClassEmitter(
+                config.outputDir(),
+                Path.of(config.minecraftJar())
+            );
             mirrorEmitter.emit(mirrorClosure);
-
-            RuntimeSimClassGenerator runtimeGenerator = new RuntimeSimClassGenerator(config.outputDir());
-            runtimeGenerator.generate(classified);
         } finally {
             deleteDirectoryIfExists(slicedOutputDir);
         }

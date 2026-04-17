@@ -339,18 +339,15 @@ final class AnalysisArtifacts {
                     throw new IllegalStateException("Slice JSON contains empty method selector in " + className);
                 }
                 Set<Integer> lines = methodEntry.getValue();
-                if (lines == null || lines.isEmpty()) {
-                    continue;
-                }
                 TreeSet<Integer> sortedLines = new TreeSet<>(Comparator.naturalOrder());
-                for (Integer line : lines) {
-                    if (line != null && line > 0) {
-                        sortedLines.add(line);
+                if (lines != null) {
+                    for (Integer line : lines) {
+                        if (line != null && line > 0) {
+                            sortedLines.add(line);
+                        }
                     }
                 }
-                if (!sortedLines.isEmpty()) {
-                    methods.put(methodSelector, Set.copyOf(sortedLines));
-                }
+                methods.put(methodSelector, sortedLines.isEmpty() ? Set.of() : Set.copyOf(sortedLines));
             }
             if (!methods.isEmpty()) {
                 canonical.put(className, new LinkedHashMap<>(methods));

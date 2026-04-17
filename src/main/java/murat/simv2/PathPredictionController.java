@@ -5,7 +5,6 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.lit
 import com.mojang.brigadier.Command;
 import java.util.ArrayList;
 import java.util.List;
-import murat.simv2.simulation.RuntimeMirroredClientPlayerEntity;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -18,7 +17,8 @@ public final class PathPredictionController {
     private static final int PREDICTION_TICKS = 20;
 
     private static boolean enabled;
-    private static RuntimeMirroredClientPlayerEntity simulator;
+    private static murat.simv2.simulation.mirror.net.minecraft.client.network.ClientPlayerEntity simulator;
+    private static ClientPlayerEntity boundRealPlayer;
     private static String lastFailureClass;
     private static String lastFailureMessage;
 
@@ -44,18 +44,20 @@ public final class PathPredictionController {
         ClientPlayerEntity realPlayer = client.player;
         if (realPlayer == null || client.world == null || client.getNetworkHandler() == null) {
             simulator = null;
+            boundRealPlayer = null;
             PathRenderer.clearPath();
             return;
         }
 
         try {
-            RuntimeMirroredClientPlayerEntity sim = ensureSimulator(client, realPlayer);
-            sim.syncFrom(realPlayer);
+            murat.simv2.simulation.mirror.net.minecraft.client.network.ClientPlayerEntity sim = ensureSimulator(realPlayer);
+            syncSimulator(sim, realPlayer);
             PathRenderer.setPath(predictPath(sim, PREDICTION_TICKS));
         } catch (RuntimeException ex) {
             recordFailure(ex);
             enabled = false;
             simulator = null;
+            boundRealPlayer = null;
             PathRenderer.clearPath();
             client.execute(() -> {
                 if (client.player != null) {
@@ -66,29 +68,139 @@ public final class PathPredictionController {
         }
     }
 
-    private static RuntimeMirroredClientPlayerEntity ensureSimulator(MinecraftClient client, ClientPlayerEntity realPlayer) {
-        if (simulator == null || !simulator.isBoundTo(realPlayer) || simulator.getWorld() != realPlayer.getWorld()) {
-            simulator = new RuntimeMirroredClientPlayerEntity(client, realPlayer);
+    private static murat.simv2.simulation.mirror.net.minecraft.client.network.ClientPlayerEntity ensureSimulator(ClientPlayerEntity realPlayer) {
+        if (simulator == null || boundRealPlayer != realPlayer) {
+            simulator = createSimulator(realPlayer);
+            boundRealPlayer = realPlayer;
         }
         return simulator;
     }
 
-    private static List<Vec3d> predictPath(RuntimeMirroredClientPlayerEntity sim, int ticks) {
+    private static murat.simv2.simulation.mirror.net.minecraft.client.network.ClientPlayerEntity createSimulator(ClientPlayerEntity realPlayer) {
+        return new murat.simv2.simulation.mirror.net.minecraft.client.network.ClientPlayerEntity() {
+            @Override
+            protected void initDataTracker(murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker.Builder builder) {
+            }
+
+            @Override
+            public boolean damage(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld world,
+                                  murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource source,
+                                  float amount) {
+                return false;
+            }
+
+            @Override
+            public void emitGameEvent(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.world.event.GameEvent> event) {
+            }
+
+            @Override
+            public murat.simv2.simulation.mirror.net.minecraft.world.GameMode getGameMode() {
+                return (boundRealPlayer != null && boundRealPlayer.isSpectator())
+                    ? murat.simv2.simulation.mirror.net.minecraft.world.GameMode.SPECTATOR
+                    : murat.simv2.simulation.mirror.net.minecraft.world.GameMode.SURVIVAL;
+            }
+
+            @Override
+            public void setVelocity(double x, double y, double z) {
+                this.velocity = new murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d(x, y, z);
+            }
+        };
+    }
+
+    private static void syncSimulator(murat.simv2.simulation.mirror.net.minecraft.client.network.ClientPlayerEntity sim,
+                                      ClientPlayerEntity realPlayer) {
+        invokeGeneratedSync(realPlayer, sim);
+        sim.getDataTracker().set(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.FLAGS, encodeEntityFlags(realPlayer));
+        sim.getDataTracker().set(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.POSE, toMirrorEntityPose(realPlayer.getPose()));
+        sim.getDataTracker().set(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.FROZEN_TICKS, realPlayer.getFrozenTicks());
+        sim.getDataTracker().set(
+            murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity.SLEEPING_POSITION,
+            realPlayer.getSleepingPosition().map(PathPredictionController::toMirrorBlockPos)
+        );
+        sim.getDataTracker().set(murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity.HEALTH, realPlayer.getHealth());
+        sim.getDataTracker().set(murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity.LIVING_FLAGS, encodeLivingFlags(realPlayer));
+    }
+
+    private static void invokeGeneratedSync(ClientPlayerEntity realPlayer,
+                                            murat.simv2.simulation.mirror.net.minecraft.client.network.ClientPlayerEntity sim) {
+        for (var method : murat.simv2.simulation.GeneratedSync.class.getDeclaredMethods()) {
+            if (!method.getName().equals("sync") || method.getParameterCount() != 2) {
+                continue;
+            }
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            if (!parameterTypes[0].isAssignableFrom(realPlayer.getClass())) {
+                continue;
+            }
+            if (!parameterTypes[1].isAssignableFrom(sim.getClass())) {
+                continue;
+            }
+            try {
+                method.invoke(null, realPlayer, sim);
+                return;
+            } catch (ReflectiveOperationException ex) {
+                throw new IllegalStateException("Failed to invoke GeneratedSync.sync", ex);
+            }
+        }
+        throw new IllegalStateException("No compatible GeneratedSync.sync overload found");
+    }
+
+    private static List<Vec3d> predictPath(murat.simv2.simulation.mirror.net.minecraft.client.network.ClientPlayerEntity sim, int ticks) {
         int safeTicks = Math.max(0, ticks);
         List<Vec3d> positions = new ArrayList<>(safeTicks + 1);
-        positions.add(sim.getPos().add(0.0, 0.05, 0.0));
+        positions.add(toVanillaVec(sim.getPos()).add(0.0, 0.05, 0.0));
         for (int i = 0; i < safeTicks; i++) {
             // tickMovement already applies movement input once per simulated tick.
             sim.tickMovement();
-            positions.add(sim.getPos().add(0.0, 0.05, 0.0));
+            positions.add(toVanillaVec(sim.getPos()).add(0.0, 0.05, 0.0));
         }
         return positions;
+    }
+
+    private static Vec3d toVanillaVec(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d value) {
+        return new Vec3d(value.x, value.y, value.z);
+    }
+
+    private static murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos toMirrorBlockPos(net.minecraft.util.math.BlockPos value) {
+        return new murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos(value.getX(), value.getY(), value.getZ());
+    }
+
+    private static murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose toMirrorEntityPose(net.minecraft.entity.EntityPose value) {
+        return murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose.valueOf(value.name());
+    }
+
+    private static byte encodeEntityFlags(ClientPlayerEntity realPlayer) {
+        byte flags = 0;
+        if (realPlayer.isSneaking()) {
+            flags |= (byte) (1 << murat.simv2.simulation.mirror.net.minecraft.entity.Entity.SNEAKING_FLAG_INDEX);
+        }
+        if (realPlayer.isSprinting()) {
+            flags |= (byte) (1 << murat.simv2.simulation.mirror.net.minecraft.entity.Entity.SPRINTING_FLAG_INDEX);
+        }
+        if (realPlayer.isSwimming()) {
+            flags |= (byte) (1 << murat.simv2.simulation.mirror.net.minecraft.entity.Entity.SWIMMING_FLAG_INDEX);
+        }
+        if (realPlayer.isGliding()) {
+            flags |= (byte) (1 << murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity.GLIDING_FLAG_INDEX);
+        }
+        return flags;
+    }
+
+    private static byte encodeLivingFlags(ClientPlayerEntity realPlayer) {
+        byte flags = 0;
+        if (realPlayer.isUsingItem()) {
+            flags |= 1;
+        }
+        if (realPlayer.isUsingRiptide()) {
+            flags |= 4;
+        }
+        return flags;
     }
 
     private static int setEnabled(FabricClientCommandSource source, boolean newValue) {
         enabled = newValue;
         if (!enabled) {
             simulator = null;
+            boundRealPlayer = null;
             PathRenderer.clearPath();
         }
         clearFailure();

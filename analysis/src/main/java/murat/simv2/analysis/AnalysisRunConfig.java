@@ -20,8 +20,19 @@ record AnalysisRunConfig(
         String minecraftJar = args[0];
         Path outputDir = Path.of(args[1]);
         String sourcesJar = args[2];
-        String extraSpoonClasspath = args.length >= 4 ? args[3] : "";
-        AnalysisMode mode = AnalysisMode.from(args.length >= 5 ? args[4] : "all");
+        String extraSpoonClasspath = "";
+        AnalysisMode mode = AnalysisMode.ALL;
+        if (args.length >= 4) {
+            String fourthArg = args[3];
+            try {
+                mode = AnalysisMode.from(fourthArg);
+            } catch (IllegalArgumentException ignored) {
+                extraSpoonClasspath = fourthArg;
+            }
+        }
+        if (args.length >= 5) {
+            mode = AnalysisMode.from(args[4]);
+        }
         Files.createDirectories(outputDir);
         return new AnalysisRunConfig(
             minecraftJar,

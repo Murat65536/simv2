@@ -1,10 +1,8 @@
 package murat.simv2.simulation.mirror.net.minecraft.client.network;
 
-import com.mojang.authlib.GameProfile;
 import murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.world.GameMode;
 import org.jetbrains.annotations.Nullable;
 
@@ -14,10 +12,6 @@ import org.jetbrains.annotations.Nullable;
 public abstract class AbstractClientPlayerEntity extends PlayerEntity {
     @Nullable
     public PlayerListEntry playerListEntry;
-
-    public AbstractClientPlayerEntity(ClientWorld world, GameProfile profile) {
-        super(world, world.getSpawnPos(), world.getSpawnAngle(), profile);
-    }
 
     @Nullable
     public GameMode getGameMode() {
@@ -32,5 +26,9 @@ public abstract class AbstractClientPlayerEntity extends PlayerEntity {
         }
         return this.playerListEntry;
     }
+
+    public AbstractClientPlayerEntity() {
+    }
+
 }
 

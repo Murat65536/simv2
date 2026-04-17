@@ -21,7 +21,8 @@ final class SlicedFieldPlanner {
     List<CtField<?>> extractFieldDeclarations(CtType<?> type,
                                               List<CtMethod<?>> methods,
                                               Map<String, CtType<?>> typeIndex,
-                                              Set<String> inheritedFieldNames) {
+                                              Set<String> inheritedFieldNames,
+                                              boolean includeInitializerClosure) {
         Set<String> referencedFieldNames = new HashSet<>();
         for (CtMethod<?> method : methods) {
             for (CtFieldAccess<?> fieldAccess : method.getElements(new TypeFilter<>(CtFieldAccess.class))) {
@@ -33,26 +34,28 @@ final class SlicedFieldPlanner {
         Set<String> added = new HashSet<>();
         addReferencedFields(type, typeIndex, referencedFieldNames, declarations, added, inheritedFieldNames);
 
-        boolean changed = true;
-        while (changed) {
-            changed = false;
-            Set<String> newReferences = new HashSet<>();
-            for (CtField<?> field : declarations) {
-                if (field.getDefaultExpression() == null) {
-                    continue;
-                }
-                for (CtFieldAccess<?> fieldAccess : field.getDefaultExpression().getElements(
-                    new TypeFilter<>(CtFieldAccess.class))) {
-                    String refName = fieldAccess.getVariable().getSimpleName();
-                    if (!added.contains(refName)) {
-                        newReferences.add(refName);
+        if (includeInitializerClosure) {
+            boolean changed = true;
+            while (changed) {
+                changed = false;
+                Set<String> newReferences = new HashSet<>();
+                for (CtField<?> field : declarations) {
+                    if (field.getDefaultExpression() == null) {
+                        continue;
+                    }
+                    for (CtFieldAccess<?> fieldAccess : field.getDefaultExpression().getElements(
+                        new TypeFilter<>(CtFieldAccess.class))) {
+                        String refName = fieldAccess.getVariable().getSimpleName();
+                        if (!added.contains(refName)) {
+                            newReferences.add(refName);
+                        }
                     }
                 }
-            }
-            if (!newReferences.isEmpty()) {
-                int before = declarations.size();
-                addReferencedFields(type, typeIndex, newReferences, declarations, added, inheritedFieldNames);
-                changed = declarations.size() > before;
+                if (!newReferences.isEmpty()) {
+                    int before = declarations.size();
+                    addReferencedFields(type, typeIndex, newReferences, declarations, added, inheritedFieldNames);
+                    changed = declarations.size() > before;
+                }
             }
         }
         return declarations;

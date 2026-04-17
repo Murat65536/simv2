@@ -8,46 +8,50 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
+import murat.simv2.simulation.mirror.net.minecraft.block.Blocks;
 import murat.simv2.simulation.mirror.net.minecraft.block.PowderSnowBlock;
 import murat.simv2.simulation.mirror.net.minecraft.block.TrapdoorBlock;
+import murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttribute;
+import murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes;
 import murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData;
+import murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffect;
+import murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffects;
 import murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity;
+import murat.simv2.simulation.mirror.net.minecraft.item.ItemStack;
 import murat.simv2.simulation.mirror.net.minecraft.item.Items;
 import murat.simv2.simulation.mirror.net.minecraft.util.Hand;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos;
+import murat.simv2.simulation.mirror.net.minecraft.util.math.Box;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.LadderBlock;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.AttributeModifierSlot;
 import net.minecraft.component.type.BlocksAttacksComponent;
 import net.minecraft.component.type.DeathProtectionComponent;
+import net.minecraft.component.type.EquippableComponent;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.EntityEquipment;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.Flutterer;
 import net.minecraft.entity.PositionInterpolator;
-import net.minecraft.entity.attribute.AttributeContainer;
-import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.damage.DamageTracker;
 import net.minecraft.entity.damage.DamageType;
 import net.minecraft.entity.damage.DamageTypes;
-import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.item.ItemStack;
+import net.minecraft.loot.LootTable;
+import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.loot.context.LootContextTypes;
+import net.minecraft.loot.context.LootWorldContext;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.DamageTypeTags;
@@ -55,15 +59,13 @@ import net.minecraft.registry.tag.EntityTypeTags;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.registry.tag.TagKey;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.stat.Stats;
-import net.minecraft.util.math.Box;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.profiler.Profilers;
 import net.minecraft.world.GameRules;
-import net.minecraft.world.World;
-import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,24 +75,20 @@ import org.jetbrains.annotations.Nullable;
 public abstract class LivingEntity extends Entity {
     public static final double GRAVITY = 0.08;
 
-    public static final net.minecraft.entity.data.TrackedData<Byte> LIVING_FLAGS = net.minecraft.entity.LivingEntity.LIVING_FLAGS;
+    public static final murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<Byte> LIVING_FLAGS = murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity.LIVING_FLAGS;
 
-    public static final net.minecraft.entity.data.TrackedData<Float> HEALTH = net.minecraft.entity.LivingEntity.HEALTH;
+    public static final murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<Float> HEALTH = murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity.HEALTH;
 
-    public static final net.minecraft.entity.data.TrackedData<Optional<net.minecraft.util.math.BlockPos>> SLEEPING_POSITION = net.minecraft.entity.LivingEntity.SLEEPING_POSITION;
+    public static final murat.simv2.simulation.mirror.net.minecraft.entity.EntityDimensions SLEEPING_DIMENSIONS = murat.simv2.simulation.mirror.net.minecraft.entity.EntityDimensions.fixed(0.2F, 0.2F).withEyeHeight(0.2F);
 
-    public AttributeContainer attributes;
-
-    public final DamageTracker damageTracker = new DamageTracker(((net.minecraft.entity.LivingEntity) (this.entityBridge)));
-
-    public final Map<RegistryEntry<StatusEffect>, StatusEffectInstance> activeStatusEffects = Maps.<RegistryEntry<StatusEffect>, StatusEffectInstance>newHashMap();
+    public final Map<RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffect>, StatusEffectInstance> activeStatusEffects = Maps.<RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffect>, StatusEffectInstance>newHashMap();
 
     public boolean noDrag = false;
 
     public float headYaw;
 
     @Nullable
-    public net.minecraft.entity.LazyEntityReference<net.minecraft.entity.player.PlayerEntity> attackingPlayer;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference<murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity> attackingPlayer;
 
     public int playerHitTimer;
 
@@ -106,22 +104,18 @@ public abstract class LivingEntity extends Entity {
 
     public float forwardSpeed;
 
-    public PositionInterpolator interpolator = new PositionInterpolator(((net.minecraft.entity.LivingEntity) (this.entityBridge)));
+    public PositionInterpolator interpolator = new PositionInterpolator(this);
 
     public double serverHeadYaw;
 
     public int headTrackingIncrements;
 
     @Nullable
-    public net.minecraft.entity.LazyEntityReference<net.minecraft.entity.LivingEntity> attackerReference;
-
-    public float movementSpeed;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference<murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity> attackerReference;
 
     public int jumpingCooldown;
 
-    public float absorptionAmount;
-
-    public ItemStack activeItemStack = ItemStack.EMPTY;
+    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack activeItemStack = murat.simv2.simulation.mirror.net.minecraft.item.ItemStack.EMPTY;
 
     public int itemUseTimeLeft;
 
@@ -131,17 +125,35 @@ public abstract class LivingEntity extends Entity {
 
     public EntityEquipment equipment;
 
-    protected LivingEntity(EntityType<? extends net.minecraft.entity.LivingEntity> entityType, World world) {
-        super(entityType, world);
-    }
+    public double lastX;
 
-    public int age;
+    public double lastY;
+
+    public double lastZ;
 
     public int timeUntilRegen;
 
-    protected void fall(double heightDifference, boolean onGround, BlockState state, net.minecraft.util.math.BlockPos landedPosition) {
+    protected void fall(double heightDifference, boolean onGround, BlockState state, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos landedPosition) {
         if (!this.isTouchingWater()) {
             this.checkWaterState();
+        }
+        if (((this.getWorld() instanceof ServerWorld serverWorld) && onGround) && (this.fallDistance > 0.0)) {
+            double d = Math.max(0, murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.floor(this.getUnsafeFallDistance(this.fallDistance)));
+            if ((d > 0.0) && (!state.isAir())) {
+                double e = this.getX();
+                double f = this.getY();
+                double g = this.getZ();
+                murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos blockPos = this.getBlockPos();
+                if ((landedPosition.getX() != blockPos.getX()) || (landedPosition.getZ() != blockPos.getZ())) {
+                    double h = (e - landedPosition.getX()) - 0.5;
+                    double i = (g - landedPosition.getZ()) - 0.5;
+                    double j = Math.max(Math.abs(h), Math.abs(i));
+                    e = (landedPosition.getX() + 0.5) + ((h / j) * 0.5);
+                    g = (landedPosition.getZ() + 0.5) + ((i / j) * 0.5);
+                }
+                double h = Math.min(0.2F + (d / 15.0), 2.5);
+                int k = ((int) (150.0 * h));
+            }
         }
         super.fall(heightDifference, onGround, state, landedPosition);
     }
@@ -151,62 +163,76 @@ public abstract class LivingEntity extends Entity {
     public boolean wasInPowderSnow;
 
     protected float getVelocityMultiplier() {
-        return net.minecraft.util.math.MathHelper.lerp(((float) (this.getAttributeValue(EntityAttributes.MOVEMENT_EFFICIENCY))), super.getVelocityMultiplier(), 1.0F);
+        return murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.lerp(((float) (this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.MOVEMENT_EFFICIENCY))), super.getVelocityMultiplier(), 1.0F);
+    }
+
+    protected void addPowderSnowSlowIfNeeded() {
+        if (!this.getLandingBlockState().isAir()) {
+            int i = this.getFrozenTicks();
+        }
     }
 
     public boolean isBaby() {
         return false;
     }
 
-    public boolean shouldSwimInFluids() {
-        return true;
-    }
-
     public boolean shouldDropExperience() {
         return !this.isBaby();
     }
 
+    protected boolean shouldDropLoot() {
+        return !this.isBaby();
+    }
+
     public int getExperienceToDrop(ServerWorld world, @Nullable
-    net.minecraft.entity.Entity attacker) {
-        return EnchantmentHelper.getMobExperience(world, attacker, ((net.minecraft.entity.LivingEntity) (this.entityBridge)), this.getExperienceToDrop(world));
+    murat.simv2.simulation.mirror.net.minecraft.entity.Entity attacker) {
+        return EnchantmentHelper.getMobExperience(world, attacker, this, this.getExperienceToDrop(world));
     }
 
-    protected int getExperienceToDrop(ServerWorld world) {
-        return 0;
+    @Nullable
+    public murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity getAttackingPlayer() {
+        return ((murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity) (murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference.resolve(this.attackingPlayer, this.getWorld(), murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity.class)));
     }
 
-    protected boolean shouldAlwaysDropExperience() {
-        return false;
-    }
-
-    public void setAttacking(net.minecraft.entity.player.PlayerEntity attackingPlayer, int playerHitTimer) {
-        this.setAttacking(new net.minecraft.entity.LazyEntityReference<>(attackingPlayer), playerHitTimer);
+    public void setAttacking(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity attackingPlayer, int playerHitTimer) {
+        this.setAttacking(new murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference<>(attackingPlayer), playerHitTimer);
     }
 
     public void setAttacking(UUID attackingPlayer, int playerHitTimer) {
-        this.setAttacking(new net.minecraft.entity.LazyEntityReference<>(attackingPlayer), playerHitTimer);
+        this.setAttacking(new murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference<>(attackingPlayer), playerHitTimer);
     }
 
-    private void setAttacking(net.minecraft.entity.LazyEntityReference<net.minecraft.entity.player.PlayerEntity> attackingPlayer, int playerHitTimer) {
+    private void setAttacking(murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference<murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity> attackingPlayer, int playerHitTimer) {
         this.attackingPlayer = attackingPlayer;
         this.playerHitTimer = playerHitTimer;
     }
 
     public void setAttacker(@Nullable
-    net.minecraft.entity.LivingEntity attacker) {
-        this.attackerReference = (attacker != null) ? new net.minecraft.entity.LazyEntityReference<>(attacker) : null;
+    murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity attacker) {
+        this.attackerReference = (attacker != null) ? new murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference<>(attacker) : null;
     }
 
     public boolean hasNoDrag() {
         return this.noDrag;
     }
 
-    public boolean hasStatusEffect(RegistryEntry<StatusEffect> effect) {
+    public void onEquipStack(murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot slot, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack oldStack, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack newStack) {
+        if ((!this.getWorld().isClient()) && (!this.isSpectator())) {
+            if ((!murat.simv2.simulation.mirror.net.minecraft.item.ItemStack.areItemsAndComponentsEqual(oldStack, newStack)) && (!this.firstUpdate)) {
+                EquippableComponent equippableComponent = newStack.get(DataComponentTypes.EQUIPPABLE);
+                if (((!this.isSilent()) && (equippableComponent != null)) && (slot == equippableComponent.slot())) {
+                    this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), this.getEquipSound(slot, newStack, equippableComponent), this.getSoundCategory(), 1.0F, 1.0F, this.random.nextLong());
+                }
+            }
+        }
+    }
+
+    public boolean hasStatusEffect(RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffect> effect) {
         return this.activeStatusEffects.containsKey(effect);
     }
 
     @Nullable
-    public StatusEffectInstance getStatusEffect(RegistryEntry<StatusEffect> effect) {
+    public StatusEffectInstance getStatusEffect(RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffect> effect) {
         return ((StatusEffectInstance) (this.activeStatusEffects.get(effect)));
     }
 
@@ -215,17 +241,17 @@ public abstract class LivingEntity extends Entity {
     }
 
     public void setHealth(float health) {
-        this.dataTracker.set(LivingEntity.HEALTH, net.minecraft.util.math.MathHelper.clamp(health, 0.0F, this.getMaxHealth()));
+        this.dataTracker.set(LivingEntity.HEALTH, murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.clamp(health, 0.0F, this.getMaxHealth()));
     }
 
     public boolean isDead() {
         return this.getHealth() <= 0.0F;
     }
 
-    public boolean damage(ServerWorld world, DamageSource source, float amount) {
+    public void damage(ServerWorld world, DamageSource source, float amount) {
         if (this.isInvulnerableTo(world, source)) {
         } else if (this.isDead()) {
-        } else if (source.isIn(DamageTypeTags.IS_FIRE) && this.hasStatusEffect(StatusEffects.FIRE_RESISTANCE)) {
+        } else if (source.isIn(DamageTypeTags.IS_FIRE) && this.hasStatusEffect(murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffects.FIRE_RESISTANCE)) {
         } else {
             if (this.isSleeping()) {
                 this.wakeUp();
@@ -236,7 +262,8 @@ public abstract class LivingEntity extends Entity {
             if (source.isIn(DamageTypeTags.IS_FREEZING) && this.getType().isIn(EntityTypeTags.FREEZE_HURTS_EXTRA_TYPES)) {
                 amount *= 5.0F;
             }
-            if (source.isIn(DamageTypeTags.DAMAGES_HELMET) && (!this.getEquippedStack(EquipmentSlot.HEAD).isEmpty())) {
+            if (source.isIn(DamageTypeTags.DAMAGES_HELMET) && (!this.getEquippedStack(murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot.HEAD).isEmpty())) {
+                this.damageHelmet(source, amount);
                 amount *= 0.75F;
             }
             boolean bl2 = true;
@@ -256,7 +283,7 @@ public abstract class LivingEntity extends Entity {
                     double d = 0.0;
                     double e = 0.0;
                     if (source.getSource() instanceof ProjectileEntity projectileEntity) {
-                        DoubleDoubleImmutablePair doubleDoubleImmutablePair = projectileEntity.getKnockback(((net.minecraft.entity.LivingEntity) (this.entityBridge)), source);
+                        DoubleDoubleImmutablePair doubleDoubleImmutablePair = projectileEntity.getKnockback(this, source);
                         d = -doubleDoubleImmutablePair.leftDouble();
                         e = -doubleDoubleImmutablePair.rightDouble();
                     } else if (source.getPosition() != null) {
@@ -268,33 +295,40 @@ public abstract class LivingEntity extends Entity {
             }
             if (this.isDead()) {
                 if (!this.tryUseDeathProtector(source)) {
+                    if (bl2) {
+                        this.playSound(this.getDeathSound());
+                        this.playThornsSound(source);
+                    }
                     this.onDeath(source);
                 }
+            } else if (bl2) {
+                this.playHurtSound(source);
+                this.playThornsSound(source);
             }
             boolean bl3 = (!bl) || (amount > 0.0F);
         }
-        return false;
     }
 
     public float getDamageBlockedAmount(ServerWorld world, DamageSource source, float amount) {
         if (amount <= 0.0F) {
             return 0.0F;
         } else {
-            ItemStack itemStack = this.getBlockingItem();
+            murat.simv2.simulation.mirror.net.minecraft.item.ItemStack itemStack = this.getBlockingItem();
             if (itemStack == null) {
                 return 0.0F;
             } else {
                 BlocksAttacksComponent blocksAttacksComponent = itemStack.get(DataComponentTypes.BLOCKS_ATTACKS);
-                if ((blocksAttacksComponent != null) && (!((Boolean) (blocksAttacksComponent.bypassedBy().map(source::isIn).orElse(false))))) {
+                if ((blocksAttacksComponent != null) && (!((Boolean) (blocksAttacksComponent.bypassedBy().map(tag -> source.isIn((murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey) tag)).orElse(false))))) {
                     if ((source.getSource() instanceof PersistentProjectileEntity persistentProjectileEntity) && (persistentProjectileEntity.getPierceLevel() > 0)) {
                         return 0.0F;
                     } else {
-                        net.minecraft.util.math.Vec3d vec3d = source.getPosition();
+                        murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = source.getPosition();
                         double d = 0.0;
                         if (vec3d != null) {
-                            net.minecraft.util.math.Vec3d vec3d2 = this.getRotationVector(0.0F, this.getHeadYaw());
-                            net.minecraft.util.math.Vec3d vec3d3 = vec3d.subtract(this.getPos());
-                            vec3d3 = new net.minecraft.util.math.Vec3d(vec3d3.x, 0.0, vec3d3.z).normalize();
+                            murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d2 = this.getRotationVector(0.0F, this.getHeadYaw());
+                            murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d3 = vec3d.subtract(this.getPos());
+                            vec3d3 = new murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d(vec3d3.x, 0.0, vec3d3.z).normalize();
+                            d = Math.acos(vec3d3.dotProduct(vec3d2));
                         }
                         float f = blocksAttacksComponent.getDamageReductionAmount(source, amount, d);
                         return f;
@@ -306,16 +340,23 @@ public abstract class LivingEntity extends Entity {
         }
     }
 
+    private void playThornsSound(DamageSource damageSource) {
+        if (damageSource.isOf(DamageTypes.THORNS)) {
+            SoundCategory soundCategory = (this instanceof PlayerEntity) ? SoundCategory.PLAYERS : SoundCategory.HOSTILE;
+            this.getWorld().playSound(null, this.getPos().x, this.getPos().y, this.getPos().z, SoundEvents.ENCHANT_THORNS_HIT, soundCategory);
+        }
+    }
+
     protected void becomeAngry(DamageSource damageSource) {
-        if (((damageSource.getAttacker() instanceof net.minecraft.entity.LivingEntity livingEntity) && (!damageSource.isIn(DamageTypeTags.NO_ANGER))) && ((!damageSource.isOf(DamageTypes.WIND_CHARGE)) || (!this.getType().isIn(EntityTypeTags.NO_ANGER_FROM_WIND_CHARGE)))) {
+        if (((damageSource.getAttacker() instanceof murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity livingEntity) && (!damageSource.isIn(DamageTypeTags.NO_ANGER))) && ((!damageSource.isOf(DamageTypes.WIND_CHARGE)) || (!this.getType().isIn(EntityTypeTags.NO_ANGER_FROM_WIND_CHARGE)))) {
             this.setAttacker(livingEntity);
         }
     }
 
     @Nullable
-    protected void setAttackingPlayer(DamageSource damageSource) {
-        net.minecraft.entity.Entity entity = damageSource.getAttacker();
-        if (entity instanceof net.minecraft.entity.player.PlayerEntity playerEntity) {
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity setAttackingPlayer(DamageSource damageSource) {
+        murat.simv2.simulation.mirror.net.minecraft.entity.Entity entity = damageSource.getAttacker();
+        if (entity instanceof murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity playerEntity) {
             this.setAttacking(playerEntity, 100);
         } else if ((entity instanceof WolfEntity wolfEntity) && wolfEntity.isTamed()) {
             if (wolfEntity.getOwnerReference() != null) {
@@ -325,17 +366,18 @@ public abstract class LivingEntity extends Entity {
                 this.playerHitTimer = 0;
             }
         }
+        return ((murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity) (murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference.resolve(this.attackingPlayer, this.getWorld(), murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity.class)));
     }
 
     private boolean tryUseDeathProtector(DamageSource source) {
         if (source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
             return false;
         } else {
-            ItemStack itemStack = null;
+            murat.simv2.simulation.mirror.net.minecraft.item.ItemStack itemStack = null;
             DeathProtectionComponent deathProtectionComponent = null;
-            for (net.minecraft.util.Hand hand : net.minecraft.util.Hand.values()) {
-                ItemStack itemStack2 = this.getStackInHand(hand);
-                deathProtectionComponent = itemStack2.get(DataComponentTypes.DEATH_PROTECTION);
+            for (murat.simv2.simulation.mirror.net.minecraft.util.Hand hand : murat.simv2.simulation.mirror.net.minecraft.util.Hand.values()) {
+                murat.simv2.simulation.mirror.net.minecraft.item.ItemStack itemStack2 = this.getStackInHand(hand);
+                deathProtectionComponent = (murat.simv2.simulation.mirror.net.minecraft.component.type.DeathProtectionComponent) itemStack2.get(DataComponentTypes.DEATH_PROTECTION);
             }
             if (itemStack != null) {
                 this.setHealth(1.0F);
@@ -344,16 +386,27 @@ public abstract class LivingEntity extends Entity {
         }
     }
 
+    protected void playHurtSound(DamageSource damageSource) {
+        this.playSound(this.getHurtSound(damageSource));
+    }
+
+    public void playSound(@Nullable
+    SoundEvent sound) {
+        if (sound != null) {
+            this.playSound(sound, this.getSoundVolume(), this.getSoundPitch());
+        }
+    }
+
     public void onDeath(DamageSource damageSource) {
         if ((!this.isRemoved()) && (!this.dead)) {
-            net.minecraft.entity.Entity entity = damageSource.getAttacker();
-            net.minecraft.entity.LivingEntity livingEntity = this.getPrimeAdversary();
+            murat.simv2.simulation.mirror.net.minecraft.entity.Entity entity = damageSource.getAttacker();
+            murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity livingEntity = this.getPrimeAdversary();
             if (this.isSleeping()) {
                 this.wakeUp();
             }
             this.dead = true;
             if (this.getWorld() instanceof ServerWorld serverWorld) {
-                if ((entity == null) || entity.onKilledOther(serverWorld, ((net.minecraft.entity.LivingEntity) (this.entityBridge)))) {
+                if ((entity == null) || entity.onKilledOther(serverWorld, this)) {
                     this.drop(serverWorld, damageSource);
                     this.onKilledBy(livingEntity);
                 }
@@ -362,16 +415,16 @@ public abstract class LivingEntity extends Entity {
     }
 
     protected void onKilledBy(@Nullable
-    net.minecraft.entity.LivingEntity adversary) {
+    murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity adversary) {
         if (this.getWorld() instanceof ServerWorld serverWorld) {
             boolean var6 = false;
             if (adversary instanceof WitherEntity) {
                 if (serverWorld.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) {
-                    net.minecraft.util.math.BlockPos blockPos = this.getBlockPos();
-                    BlockState blockState = Blocks.WITHER_ROSE.getDefaultState();
+                    murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos blockPos = this.getBlockPos();
+                    BlockState blockState = murat.simv2.simulation.mirror.net.minecraft.block.Blocks.WITHER_ROSE.getDefaultState();
                 }
                 if (!var6) {
-                    net.minecraft.entity.ItemEntity itemEntity = new net.minecraft.entity.ItemEntity(this.getWorld(), this.getX(), this.getY(), this.getZ(), new ItemStack(net.minecraft.item.Items.WITHER_ROSE));
+                    murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity itemEntity = new murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity(this.getWorld(), this.getX(), this.getY(), this.getZ(), new murat.simv2.simulation.mirror.net.minecraft.item.ItemStack(murat.simv2.simulation.mirror.net.minecraft.item.Items.WITHER_ROSE));
                 }
             }
         }
@@ -379,32 +432,49 @@ public abstract class LivingEntity extends Entity {
 
     protected void drop(ServerWorld world, DamageSource damageSource) {
         boolean bl = this.playerHitTimer > 0;
+        if (this.shouldDropLoot() && world.getGameRules().getBoolean(GameRules.DO_MOB_LOOT)) {
+            this.dropLoot(world, damageSource, bl);
+        }
         this.dropExperience(world, damageSource.getAttacker());
     }
 
     protected void dropExperience(ServerWorld world, @Nullable
-    net.minecraft.entity.Entity attacker) {
+    murat.simv2.simulation.mirror.net.minecraft.entity.Entity attacker) {
         if ((!this.isExperienceDroppingDisabled()) && (this.shouldAlwaysDropExperience() || (((this.playerHitTimer > 0) && this.shouldDropExperience()) && world.getGameRules().getBoolean(GameRules.DO_MOB_LOOT)))) {
             ExperienceOrbEntity.spawn(world, this.getPos(), this.getExperienceToDrop(world, attacker));
         }
     }
 
-    protected float getAttackKnockbackAgainst(net.minecraft.entity.Entity target, DamageSource damageSource) {
-        float f = ((float) (this.getAttributeValue(EntityAttributes.ATTACK_KNOCKBACK)));
+    protected float getAttackKnockbackAgainst(murat.simv2.simulation.mirror.net.minecraft.entity.Entity target, DamageSource damageSource) {
+        float f = ((float) (this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.ATTACK_KNOCKBACK)));
         return this.getWorld() instanceof ServerWorld serverWorld ? EnchantmentHelper.modifyKnockback(serverWorld, this.getWeaponStack(), target, damageSource, f) : f;
     }
 
+    protected void dropLoot(ServerWorld world, DamageSource damageSource, boolean causedByPlayer) {
+        Optional<RegistryKey<LootTable>> optional = this.getLootTableKey();
+        if (!optional.isEmpty()) {
+            LootTable lootTable = world.getServer().getReloadableRegistries().getLootTable(((RegistryKey<LootTable>) (optional.get())));
+            LootWorldContext.Builder builder = new LootWorldContext.Builder(world).add(LootContextParameters.THIS_ENTITY, this).add(LootContextParameters.ORIGIN, this.getPos()).add(LootContextParameters.DAMAGE_SOURCE, damageSource).addOptional(LootContextParameters.ATTACKING_ENTITY, damageSource.getAttacker()).addOptional(LootContextParameters.DIRECT_ATTACKING_ENTITY, damageSource.getSource());
+            murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity playerEntity = this.getAttackingPlayer();
+            LootWorldContext lootWorldContext = builder.build(LootContextTypes.ENTITY);
+        }
+    }
+
     public void takeKnockback(double strength, double x, double z) {
-        strength *= 1.0 - this.getAttributeValue(EntityAttributes.KNOCKBACK_RESISTANCE);
+        strength *= 1.0 - this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.KNOCKBACK_RESISTANCE);
         if (!(strength <= 0.0)) {
-            net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
+            murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
             while (((x * x) + (z * z)) < 1.0E-5F) {
                 x = (Math.random() - Math.random()) * 0.01;
                 z = (Math.random() - Math.random()) * 0.01;
             } 
-            net.minecraft.util.math.Vec3d vec3d2 = new net.minecraft.util.math.Vec3d(x, 0.0, z).normalize().multiply(strength);
+            murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d2 = new murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d(x, 0.0, z).normalize().multiply(strength);
             this.setVelocity((vec3d.x / 2.0) - vec3d2.x, this.isOnGround() ? Math.min(0.4, (vec3d.y / 2.0) + strength) : vec3d.y, (vec3d.z / 2.0) - vec3d2.z);
         }
+    }
+
+    private SoundEvent getFallSound(int distance) {
+        return distance > 4 ? this.getFallSounds().big() : this.getFallSounds().small();
     }
 
     public boolean isExperienceDroppingDisabled() {
@@ -415,11 +485,11 @@ public abstract class LivingEntity extends Entity {
         if (this.isSpectator()) {
             return false;
         } else {
-            net.minecraft.util.math.BlockPos blockPos = this.getBlockPos();
+            murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos blockPos = this.getBlockPos();
             BlockState blockState = this.getBlockStateAtPos();
             if (blockState.isIn(BlockTags.CLIMBABLE)) {
                 return true;
-            } else if ((blockState.getBlock() instanceof net.minecraft.block.TrapdoorBlock) && this.canEnterTrapdoor(blockPos, blockState)) {
+            } else if ((blockState.getBlock() instanceof murat.simv2.simulation.mirror.net.minecraft.block.TrapdoorBlock) && this.canEnterTrapdoor(blockPos, blockState)) {
                 return true;
             } else {
                 return false;
@@ -427,12 +497,12 @@ public abstract class LivingEntity extends Entity {
         }
     }
 
-    private boolean canEnterTrapdoor(net.minecraft.util.math.BlockPos pos, BlockState state) {
-        if (!((Boolean) (state.get(net.minecraft.block.TrapdoorBlock.OPEN)))) {
+    private boolean canEnterTrapdoor(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos pos, BlockState state) {
+        if (!((Boolean) (state.get(murat.simv2.simulation.mirror.net.minecraft.block.TrapdoorBlock.OPEN)))) {
             return false;
         } else {
             BlockState blockState = this.getWorld().getBlockState(pos.down());
-            return blockState.isOf(Blocks.LADDER) && (blockState.get(LadderBlock.FACING) == state.get(net.minecraft.block.TrapdoorBlock.FACING));
+            return blockState.isOf(murat.simv2.simulation.mirror.net.minecraft.block.Blocks.LADDER) && (blockState.get(LadderBlock.FACING) == state.get(murat.simv2.simulation.mirror.net.minecraft.block.TrapdoorBlock.FACING));
         }
     }
 
@@ -440,13 +510,24 @@ public abstract class LivingEntity extends Entity {
         return (!this.isRemoved()) && (this.getHealth() > 0.0F);
     }
 
+    private double getUnsafeFallDistance(double fallDistance) {
+        return (fallDistance + 1.0E-6) - this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.SAFE_FALL_DISTANCE);
+    }
+
     public int getArmor() {
-        return net.minecraft.util.math.MathHelper.floor(this.getAttributeValue(EntityAttributes.ARMOR));
+        return murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.floor(this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.ARMOR));
+    }
+
+    protected void damageEquipment(DamageSource source, float amount, murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot... slots) {
+        if (!(amount <= 0.0F)) {
+            int i = ((int) (Math.max(1.0F, amount / 4.0F)));
+        }
     }
 
     protected float applyArmorToDamage(DamageSource source, float amount) {
         if (!source.isIn(DamageTypeTags.BYPASSES_ARMOR)) {
-            amount = net.minecraft.entity.DamageUtil.getDamageLeft(((net.minecraft.entity.LivingEntity) (this.entityBridge)), amount, source, this.getArmor(), ((float) (this.getAttributeValue(EntityAttributes.ARMOR_TOUGHNESS))));
+            this.damageArmor(source, amount);
+            amount = murat.simv2.simulation.mirror.net.minecraft.entity.DamageUtil.getDamageLeft(this, amount, source, this.getArmor(), ((float) (this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.ARMOR_TOUGHNESS))));
         }
         return amount;
     }
@@ -455,8 +536,8 @@ public abstract class LivingEntity extends Entity {
         if (source.isIn(DamageTypeTags.BYPASSES_EFFECTS)) {
             return amount;
         } else {
-            if (this.hasStatusEffect(StatusEffects.RESISTANCE) && (!source.isIn(DamageTypeTags.BYPASSES_RESISTANCE))) {
-                int i = (this.getStatusEffect(StatusEffects.RESISTANCE).getAmplifier() + 1) * 5;
+            if (this.hasStatusEffect(murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffects.RESISTANCE) && (!source.isIn(DamageTypeTags.BYPASSES_RESISTANCE))) {
+                int i = (this.getStatusEffect(murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffects.RESISTANCE).getAmplifier() + 1) * 5;
                 int j = 25 - i;
                 float f = amount * j;
                 float g = amount;
@@ -470,82 +551,65 @@ public abstract class LivingEntity extends Entity {
             } else {
                 float k = 0.0F;
                 if (k > 0.0F) {
-                    amount = net.minecraft.entity.DamageUtil.getInflictedDamage(amount, k);
+                    amount = murat.simv2.simulation.mirror.net.minecraft.entity.DamageUtil.getInflictedDamage(amount, k);
                 }
                 return amount;
             }
         }
     }
 
-    protected void applyDamage(ServerWorld world, DamageSource source, float amount) {
-        if (!this.isInvulnerableTo(world, source)) {
-            amount = this.applyArmorToDamage(source, amount);
-            amount = this.modifyAppliedDamage(source, amount);
-            float var10 = Math.max(amount - this.getAbsorptionAmount(), 0.0F);
-            this.setAbsorptionAmount(this.getAbsorptionAmount() - (amount - var10));
-            float g = amount - var10;
-            if (((g > 0.0F) && (g < 3.4028235E37F)) && (source.getAttacker() instanceof ServerPlayerEntity serverPlayerEntity)) {
-                serverPlayerEntity.increaseStat(Stats.DAMAGE_DEALT_ABSORBED, Math.round(g * 10.0F));
-            }
-            if (var10 != 0.0F) {
-                this.getDamageTracker().onDamage(source, var10);
-                this.setHealth(this.getHealth() - var10);
-                this.setAbsorptionAmount(this.getAbsorptionAmount() - var10);
-                this.emitGameEvent(GameEvent.ENTITY_DAMAGE);
-            }
-        }
-    }
-
-    public DamageTracker getDamageTracker() {
-        return this.damageTracker;
-    }
-
     @Nullable
-    public net.minecraft.entity.LivingEntity getPrimeAdversary() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity getPrimeAdversary() {
         if (this.attackingPlayer != null) {
-            return ((net.minecraft.entity.LivingEntity) (this.attackingPlayer.resolve(this.getWorld(), net.minecraft.entity.player.PlayerEntity.class)));
+            return ((murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity) (this.attackingPlayer.resolve(this.getWorld(), murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity.class)));
         } else {
-            return this.attackerReference != null ? ((net.minecraft.entity.LivingEntity) (this.attackerReference.resolve(this.getWorld(), net.minecraft.entity.LivingEntity.class))) : null;
+            return this.attackerReference != null ? ((murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity) (this.attackerReference.resolve(this.getWorld(), murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity.class))) : null;
         }
     }
 
     public float getMaxHealth() {
-        return ((float) (this.getAttributeValue(EntityAttributes.MAX_HEALTH)));
+        return ((float) (this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.MAX_HEALTH)));
     }
 
     public float getMaxAbsorption() {
-        return ((float) (this.getAttributeValue(EntityAttributes.MAX_ABSORPTION)));
+        return ((float) (this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.MAX_ABSORPTION)));
     }
 
-    public double getAttributeValue(RegistryEntry<EntityAttribute> attribute) {
+    public double getAttributeValue(RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttribute> attribute) {
         return this.getAttributes().getValue(attribute);
     }
 
-    public AttributeContainer getAttributes() {
-        return this.attributes;
-    }
-
-    public ItemStack getMainHandStack() {
-        return this.getEquippedStack(EquipmentSlot.MAINHAND);
+    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getMainHandStack() {
+        return this.getEquippedStack(murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot.MAINHAND);
     }
 
     @NotNull
-    public ItemStack getWeaponStack() {
+    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getWeaponStack() {
         return this.getMainHandStack();
     }
 
-    public ItemStack getStackInHand(net.minecraft.util.Hand hand) {
-        if (hand == net.minecraft.util.Hand.MAIN_HAND) {
-            return this.getEquippedStack(EquipmentSlot.MAINHAND);
-        } else if (hand == net.minecraft.util.Hand.OFF_HAND) {
-            return this.getEquippedStack(EquipmentSlot.OFFHAND);
+    public void setStackInHand(murat.simv2.simulation.mirror.net.minecraft.util.Hand hand, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack stack) {
+        if (hand == murat.simv2.simulation.mirror.net.minecraft.util.Hand.MAIN_HAND) {
+            this.equipStack(murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot.MAINHAND, stack);
         } else {
-            throw new IllegalArgumentException("Invalid hand " + hand);
+            this.equipStack(murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot.OFFHAND, stack);
         }
     }
 
-    public ItemStack getEquippedStack(EquipmentSlot slot) {
+    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getEquippedStack(murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot slot) {
         return this.equipment.get(slot);
+    }
+
+    public void equipStack(murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot slot, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack stack) {
+        this.onEquipStack(slot, this.equipment.put(slot, stack), stack);
+    }
+
+    protected float getSoundVolume() {
+        return 1.0F;
+    }
+
+    public float getSoundPitch() {
+        return this.isBaby() ? ((this.random.nextFloat() - this.random.nextFloat()) * 0.2F) + 1.5F : ((this.random.nextFloat() - this.random.nextFloat()) * 0.2F) + 1.0F;
     }
 
     protected boolean isImmobile() {
@@ -557,22 +621,22 @@ public abstract class LivingEntity extends Entity {
     }
 
     protected float getJumpVelocity(float strength) {
-        return ((((float) (this.getAttributeValue(EntityAttributes.JUMP_STRENGTH))) * strength) * this.getJumpVelocityMultiplier()) + this.getJumpBoostVelocityModifier();
+        return ((((float) (this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.JUMP_STRENGTH))) * strength) * this.getJumpVelocityMultiplier()) + this.getJumpBoostVelocityModifier();
     }
 
     public float getJumpBoostVelocityModifier() {
-        return this.hasStatusEffect(StatusEffects.JUMP_BOOST) ? 0.1F * (this.getStatusEffect(StatusEffects.JUMP_BOOST).getAmplifier() + 1.0F) : 0.0F;
+        return this.hasStatusEffect(murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffects.JUMP_BOOST) ? 0.1F * (this.getStatusEffect(murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffects.JUMP_BOOST).getAmplifier() + 1.0F) : 0.0F;
     }
 
     @VisibleForTesting
     public void jump() {
         float f = this.getJumpVelocity();
         if (!(f <= 1.0E-5F)) {
-            net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
+            murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
             this.setVelocity(vec3d.x, Math.max(f, vec3d.y), vec3d.z);
             if (this.isSprinting()) {
                 float g = this.getYaw() * ((float) (Math.PI / 180.0));
-                this.addVelocityInternal(new net.minecraft.util.math.Vec3d((-net.minecraft.util.math.MathHelper.sin(g)) * 0.2, 0.0, net.minecraft.util.math.MathHelper.cos(g) * 0.2));
+                this.addVelocityInternal(new murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d((-murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.sin(g)) * 0.2, 0.0, murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.cos(g) * 0.2));
             }
         }
     }
@@ -594,15 +658,15 @@ public abstract class LivingEntity extends Entity {
     }
 
     protected double getGravity() {
-        return this.getAttributeValue(EntityAttributes.GRAVITY);
+        return this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.GRAVITY);
     }
 
     protected double getEffectiveGravity() {
         boolean bl = this.getVelocity().y <= 0.0;
-        return bl && this.hasStatusEffect(StatusEffects.SLOW_FALLING) ? Math.min(this.getFinalGravity(), 0.01) : this.getFinalGravity();
+        return bl && this.hasStatusEffect(murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffects.SLOW_FALLING) ? Math.min(this.getFinalGravity(), 0.01) : this.getFinalGravity();
     }
 
-    public void travel(net.minecraft.util.math.Vec3d movementInput) {
+    public void travel(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d movementInput) {
         FluidState fluidState = this.getWorld().getFluidState(this.getBlockPos());
         if (((this.isTouchingWater() || this.isInLava()) && this.shouldSwimInFluids()) && (!this.canWalkOnFluid(fluidState))) {
             this.travelInFluid(movementInput);
@@ -613,13 +677,13 @@ public abstract class LivingEntity extends Entity {
         }
     }
 
-    private void travelMidAir(net.minecraft.util.math.Vec3d movementInput) {
-        net.minecraft.util.math.BlockPos blockPos = this.getVelocityAffectingPos();
+    private void travelMidAir(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d movementInput) {
+        murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos blockPos = this.getVelocityAffectingPos();
         float f = (this.isOnGround()) ? this.getWorld().getBlockState(blockPos).getBlock().getSlipperiness() : 1.0F;
         float g = f * 0.91F;
-        net.minecraft.util.math.Vec3d vec3d = this.applyMovementInput(movementInput, f);
+        murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = this.applyMovementInput(movementInput, f);
         double d = vec3d.y;
-        StatusEffectInstance statusEffectInstance = this.getStatusEffect(StatusEffects.LEVITATION);
+        StatusEffectInstance statusEffectInstance = this.getStatusEffect(murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffects.LEVITATION);
         if (statusEffectInstance != null) {
             d += ((0.05 * (statusEffectInstance.getAmplifier() + 1)) - vec3d.y) * 0.2;
         } else if ((!this.getWorld().isClient) || this.getWorld().isChunkLoaded(blockPos)) {
@@ -633,14 +697,14 @@ public abstract class LivingEntity extends Entity {
         }
     }
 
-    private void travelInFluid(net.minecraft.util.math.Vec3d movementInput) {
+    private void travelInFluid(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d movementInput) {
         boolean bl = this.getVelocity().y <= 0.0;
         double d = this.getY();
         double e = this.getEffectiveGravity();
         if (this.isTouchingWater()) {
             float f = (this.isSprinting()) ? 0.9F : this.getBaseWaterMovementSpeedMultiplier();
             float g = 0.02F;
-            float h = ((float) (this.getAttributeValue(EntityAttributes.WATER_MOVEMENT_EFFICIENCY)));
+            float h = ((float) (this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.WATER_MOVEMENT_EFFICIENCY)));
             if (!this.isOnGround()) {
                 h *= 0.5F;
             }
@@ -649,19 +713,19 @@ public abstract class LivingEntity extends Entity {
                 g += (this.getMovementSpeed() - g) * h;
             }
             this.updateVelocity(g, movementInput);
-            this.move(net.minecraft.entity.MovementType.SELF, this.getVelocity());
-            net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
+            this.move(murat.simv2.simulation.mirror.net.minecraft.entity.MovementType.SELF, this.getVelocity());
+            murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
             if (this.horizontalCollision && this.isClimbing()) {
-                vec3d = new net.minecraft.util.math.Vec3d(vec3d.x, 0.2, vec3d.z);
+                vec3d = new murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d(vec3d.x, 0.2, vec3d.z);
             }
             vec3d = vec3d.multiply(f, 0.8F, f);
             this.setVelocity(this.applyFluidMovingSpeed(e, bl, vec3d));
         } else {
             this.updateVelocity(0.02F, movementInput);
-            this.move(net.minecraft.entity.MovementType.SELF, this.getVelocity());
+            this.move(murat.simv2.simulation.mirror.net.minecraft.entity.MovementType.SELF, this.getVelocity());
             if (this.getFluidHeight(FluidTags.LAVA) <= this.getSwimHeight()) {
                 this.setVelocity(this.getVelocity().multiply(0.5, 0.8F, 0.5));
-                net.minecraft.util.math.Vec3d vec3d2 = this.applyFluidMovingSpeed(e, bl, this.getVelocity());
+                murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d2 = this.applyFluidMovingSpeed(e, bl, this.getVelocity());
                 this.setVelocity(vec3d2);
             } else {
                 this.setVelocity(this.getVelocity().multiply(0.5));
@@ -670,20 +734,20 @@ public abstract class LivingEntity extends Entity {
                 this.setVelocity(this.getVelocity().add(0.0, (-e) / 4.0, 0.0));
             }
         }
-        net.minecraft.util.math.Vec3d vec3d2 = this.getVelocity();
+        murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d2 = this.getVelocity();
         if (this.horizontalCollision && this.doesNotCollide(vec3d2.x, ((vec3d2.y + 0.6F) - this.getY()) + d, vec3d2.z)) {
             this.setVelocity(vec3d2.x, 0.3F, vec3d2.z);
         }
     }
 
-    private void travelGliding(net.minecraft.util.math.Vec3d movementInput) {
+    private void travelGliding(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d movementInput) {
         if (this.isClimbing()) {
             this.travelMidAir(movementInput);
         } else {
-            net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
+            murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
             double d = vec3d.horizontalLength();
             this.setVelocity(this.calcGlidingVelocity(vec3d));
-            this.move(net.minecraft.entity.MovementType.SELF, this.getVelocity());
+            this.move(murat.simv2.simulation.mirror.net.minecraft.entity.MovementType.SELF, this.getVelocity());
             if (!this.getWorld().isClient) {
                 double e = this.getVelocity().horizontalLength();
                 this.checkGlidingCollision(d, e);
@@ -691,20 +755,20 @@ public abstract class LivingEntity extends Entity {
         }
     }
 
-    private net.minecraft.util.math.Vec3d calcGlidingVelocity(net.minecraft.util.math.Vec3d oldVelocity) {
-        net.minecraft.util.math.Vec3d vec3d = this.getRotationVector();
+    private murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d calcGlidingVelocity(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d oldVelocity) {
+        murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = this.getRotationVector();
         float f = this.getPitch() * ((float) (Math.PI / 180.0));
         double d = Math.sqrt((vec3d.x * vec3d.x) + (vec3d.z * vec3d.z));
         double e = oldVelocity.horizontalLength();
         double g = this.getEffectiveGravity();
-        double h = net.minecraft.util.math.MathHelper.square(Math.cos(f));
+        double h = murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.square(Math.cos(f));
         oldVelocity = oldVelocity.add(0.0, g * ((-1.0) + (h * 0.75)), 0.0);
         if ((oldVelocity.y < 0.0) && (d > 0.0)) {
             double i = (oldVelocity.y * (-0.1)) * h;
             oldVelocity = oldVelocity.add((vec3d.x * i) / d, i, (vec3d.z * i) / d);
         }
         if ((f < 0.0F) && (d > 0.0)) {
-            double i = (e * (-net.minecraft.util.math.MathHelper.sin(f))) * 0.04;
+            double i = (e * (-murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.sin(f))) * 0.04;
             oldVelocity = oldVelocity.add(((-vec3d.x) * i) / d, i * 3.2, ((-vec3d.z) * i) / d);
         }
         if (d > 0.0) {
@@ -718,69 +782,71 @@ public abstract class LivingEntity extends Entity {
             double d = oldSpeed - newSpeed;
             float f = ((float) ((d * 10.0) - 3.0));
             if (f > 0.0F) {
+                this.playSound(this.getFallSound(((int) (f))), 1.0F, 1.0F);
                 this.serverDamage(this.getDamageSources().flyIntoWall(), f);
             }
         }
     }
 
-    private void travelControlled(net.minecraft.entity.player.PlayerEntity controllingPlayer, net.minecraft.util.math.Vec3d movementInput) {
-        net.minecraft.util.math.Vec3d vec3d = this.getControlledMovementInput(controllingPlayer, movementInput);
+    private void travelControlled(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity controllingPlayer, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d movementInput) {
+        murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = this.getControlledMovementInput(controllingPlayer, movementInput);
         if (this.canMoveVoluntarily()) {
+            this.setMovementSpeed(this.getSaddledSpeed(controllingPlayer));
             this.travel(vec3d);
         } else {
-            this.setVelocity(net.minecraft.util.math.Vec3d.ZERO);
+            this.setVelocity(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d.ZERO);
         }
     }
 
-    protected net.minecraft.util.math.Vec3d getControlledMovementInput(net.minecraft.entity.player.PlayerEntity controllingPlayer, net.minecraft.util.math.Vec3d movementInput) {
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getControlledMovementInput(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity controllingPlayer, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d movementInput) {
         return movementInput;
     }
 
-    private net.minecraft.util.math.Vec3d applyMovementInput(net.minecraft.util.math.Vec3d movementInput, float slipperiness) {
+    protected float getSaddledSpeed(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity controllingPlayer) {
+        return this.getMovementSpeed();
+    }
+
+    public void updateLimbs(boolean flutter) {
+        float f = ((float) (murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.magnitude(this.getX() - this.lastX, flutter ? this.getY() - this.lastY : 0.0, this.getZ() - this.lastZ)));
+    }
+
+    private murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d applyMovementInput(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d movementInput, float slipperiness) {
         this.updateVelocity(this.getMovementSpeed(slipperiness), movementInput);
         this.setVelocity(this.applyClimbingSpeed(this.getVelocity()));
-        this.move(net.minecraft.entity.MovementType.SELF, this.getVelocity());
-        net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
-        if ((this.horizontalCollision || this.jumping) && (this.isClimbing() || (this.wasInPowderSnow && net.minecraft.block.PowderSnowBlock.canWalkOnPowderSnow(((net.minecraft.entity.LivingEntity) (this.entityBridge)))))) {
-            vec3d = new net.minecraft.util.math.Vec3d(vec3d.x, 0.2, vec3d.z);
+        this.move(murat.simv2.simulation.mirror.net.minecraft.entity.MovementType.SELF, this.getVelocity());
+        murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
+        if ((this.horizontalCollision || this.jumping) && (this.isClimbing() || (this.wasInPowderSnow && murat.simv2.simulation.mirror.net.minecraft.block.PowderSnowBlock.canWalkOnPowderSnow(this)))) {
+            vec3d = new murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d(vec3d.x, 0.2, vec3d.z);
         }
         return vec3d;
     }
 
-    public net.minecraft.util.math.Vec3d applyFluidMovingSpeed(double gravity, boolean falling, net.minecraft.util.math.Vec3d motion) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d applyFluidMovingSpeed(double gravity, boolean falling, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d motion) {
         if ((gravity != 0.0) && (!this.isSprinting())) {
             double d = 0.0;
             if ((falling && (Math.abs(motion.y - 0.005) >= 0.003)) && (Math.abs(motion.y - (gravity / 16.0)) < 0.003)) {
             } else {
                 d = motion.y - (gravity / 16.0);
             }
-            return new net.minecraft.util.math.Vec3d(motion.x, d, motion.z);
+            return new murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d(motion.x, d, motion.z);
         } else {
             return motion;
         }
     }
 
-    private net.minecraft.util.math.Vec3d applyClimbingSpeed(net.minecraft.util.math.Vec3d motion) {
+    private murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d applyClimbingSpeed(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d motion) {
         if (this.isClimbing()) {
             this.onLanding();
-            double d = net.minecraft.util.math.MathHelper.clamp(motion.x, -0.15F, 0.15F);
-            double e = net.minecraft.util.math.MathHelper.clamp(motion.z, -0.15F, 0.15F);
+            double d = murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.clamp(motion.x, -0.15F, 0.15F);
+            double e = murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.clamp(motion.z, -0.15F, 0.15F);
             double g = Math.max(motion.y, -0.15F);
-            motion = new net.minecraft.util.math.Vec3d(d, g, e);
+            motion = new murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d(d, g, e);
         }
         return motion;
     }
 
     private float getMovementSpeed(float slipperiness) {
         return this.isOnGround() ? this.getMovementSpeed() * (0.21600002F / ((slipperiness * slipperiness) * slipperiness)) : this.getOffGroundSpeed();
-    }
-
-    protected float getOffGroundSpeed() {
-        return this.getControllingPassenger() instanceof net.minecraft.entity.player.PlayerEntity ? this.getMovementSpeed() * 0.1F : 0.02F;
-    }
-
-    public float getMovementSpeed() {
-        return this.movementSpeed;
     }
 
     public void tickMovement() {
@@ -794,7 +860,7 @@ public abstract class LivingEntity extends Entity {
         if (this.headTrackingIncrements > 0) {
             this.lerpHeadYaw(this.headTrackingIncrements, this.serverHeadYaw);
         }
-        net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
+        murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
         double d = vec3d.x;
         double e = vec3d.y;
         double f = vec3d.z;
@@ -830,12 +896,12 @@ public abstract class LivingEntity extends Entity {
         if (this.isGliding()) {
             this.tickGliding();
         }
-        Box box = this.getBoundingBox();
-        net.minecraft.util.math.Vec3d vec3d2 = new net.minecraft.util.math.Vec3d(this.sidewaysSpeed, this.upwardSpeed, this.forwardSpeed);
-        if (this.hasStatusEffect(StatusEffects.SLOW_FALLING) || this.hasStatusEffect(StatusEffects.LEVITATION)) {
+        murat.simv2.simulation.mirror.net.minecraft.util.math.Box box = this.getBoundingBox();
+        murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d2 = new murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d(this.sidewaysSpeed, this.upwardSpeed, this.forwardSpeed);
+        if (this.hasStatusEffect(murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffects.SLOW_FALLING) || this.hasStatusEffect(murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffects.LEVITATION)) {
             this.onLanding();
         }
-        if ((this.getControllingPassenger() instanceof net.minecraft.entity.player.PlayerEntity playerEntity) && this.isAlive()) {
+        if ((this.getControllingPassenger() instanceof murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity playerEntity) && this.isAlive()) {
             this.travelControlled(playerEntity, vec3d2);
         } else if (this.canMoveVoluntarily()) {
             this.travel(vec3d2);
@@ -843,7 +909,11 @@ public abstract class LivingEntity extends Entity {
         if ((!this.getWorld().isClient()) || this.isLogicalSideForUpdatingMovement()) {
             this.tickBlockCollision();
         }
+        if (this.getWorld().isClient()) {
+            this.updateLimbs(this instanceof Flutterer);
+        }
         if (this.getWorld() instanceof ServerWorld serverWorld) {
+            this.addPowderSnowSlowIfNeeded();
             if ((((this.age % 40) == 0) && this.isFrozen()) && this.canFreeze()) {
                 this.damage(serverWorld, this.getDamageSources().freeze(), 1.0F);
             }
@@ -871,13 +941,13 @@ public abstract class LivingEntity extends Entity {
     }
 
     protected void tickCramming() {
-        List<net.minecraft.entity.Entity> list = this.getWorld().getCrammedEntities(((net.minecraft.entity.LivingEntity) (this.entityBridge)), this.getBoundingBox());
+        List<murat.simv2.simulation.mirror.net.minecraft.entity.Entity> list = this.getWorld().getCrammedEntities(this, this.getBoundingBox());
         if (!list.isEmpty()) {
             if (this.getWorld() instanceof ServerWorld serverWorld) {
                 int i = serverWorld.getGameRules().getInt(GameRules.MAX_ENTITY_CRAMMING);
                 if (((i > 0) && (list.size() > (i - 1))) && (this.random.nextInt(4) == 0)) {
                     int j = 0;
-                    for (net.minecraft.entity.Entity entity : list) {
+                    for (murat.simv2.simulation.mirror.net.minecraft.entity.Entity entity : list) {
                         if (!entity.hasVehicle()) {
                             j++;
                         }
@@ -890,20 +960,17 @@ public abstract class LivingEntity extends Entity {
         }
     }
 
-    protected void tickRiptide(Box a, Box b) {
-        Box box = a.union(b);
-        List<net.minecraft.entity.Entity> list = this.getWorld().getOtherEntities(((net.minecraft.entity.LivingEntity) (this.entityBridge)), box);
+    protected void tickRiptide(murat.simv2.simulation.mirror.net.minecraft.util.math.Box a, murat.simv2.simulation.mirror.net.minecraft.util.math.Box b) {
+        murat.simv2.simulation.mirror.net.minecraft.util.math.Box box = a.union(b);
+        List<murat.simv2.simulation.mirror.net.minecraft.entity.Entity> list = this.getWorld().getOtherEntities(this, box);
         if (!list.isEmpty()) {
-            for (net.minecraft.entity.Entity entity : list) {
-                if (entity instanceof net.minecraft.entity.LivingEntity) {
-                    this.attackLivingEntity(((net.minecraft.entity.LivingEntity) (entity)));
+            for (murat.simv2.simulation.mirror.net.minecraft.entity.Entity entity : list) {
+                if (entity instanceof murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity) {
+                    this.attackLivingEntity(((murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity) (entity)));
                     this.setVelocity(this.getVelocity().multiply(-0.2));
                 }
             }
         }
-    }
-
-    protected void attackLivingEntity(net.minecraft.entity.LivingEntity target) {
     }
 
     public boolean isUsingRiptide() {
@@ -918,34 +985,18 @@ public abstract class LivingEntity extends Entity {
         return this.headYaw;
     }
 
-    public float getAbsorptionAmount() {
-        return this.absorptionAmount;
-    }
-
     public void setAbsorptionAmount(float absorptionAmount) {
-        this.setAbsorptionAmountUnclamped(net.minecraft.util.math.MathHelper.clamp(absorptionAmount, 0.0F, this.getMaxAbsorption()));
-    }
-
-    protected void setAbsorptionAmountUnclamped(float absorptionAmount) {
-        this.absorptionAmount = absorptionAmount;
-    }
-
-    public boolean isUsingItem() {
-        return (this.dataTracker.get(LivingEntity.LIVING_FLAGS) & 1) > 0;
-    }
-
-    public ItemStack getActiveItem() {
-        return this.activeItemStack;
+        this.setAbsorptionAmountUnclamped(murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.clamp(absorptionAmount, 0.0F, this.getMaxAbsorption()));
     }
 
     @Nullable
-    public ItemStack getBlockingItem() {
+    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getBlockingItem() {
         if (!this.isUsingItem()) {
             return null;
         } else {
             BlocksAttacksComponent blocksAttacksComponent = this.activeItemStack.get(DataComponentTypes.BLOCKS_ATTACKS);
             if (blocksAttacksComponent != null) {
-                int i = this.activeItemStack.getItem().getMaxUseTime(this.activeItemStack, ((net.minecraft.entity.LivingEntity) (this.entityBridge))) - this.itemUseTimeLeft;
+                int i = this.activeItemStack.getItem().getMaxUseTime(this.activeItemStack, this) - this.itemUseTimeLeft;
                 if (i >= blocksAttacksComponent.getBlockDelayTicks()) {
                     return this.activeItemStack;
                 }
@@ -962,8 +1013,12 @@ public abstract class LivingEntity extends Entity {
         return this.getFlag(LivingEntity.GLIDING_FLAG_INDEX);
     }
 
-    public Optional<net.minecraft.util.math.BlockPos> getSleepingPosition() {
-        return this.dataTracker.get(LivingEntity.SLEEPING_POSITION);
+    public boolean isInSwimmingPose() {
+        return super.isInSwimmingPose() || ((!this.isGliding()) && this.isInPose(EntityPose.GLIDING));
+    }
+
+    public murat.simv2.simulation.mirror.net.minecraft.entity.EntityDimensions getDimensions(EntityPose pose) {
+        return pose == EntityPose.SLEEPING ? LivingEntity.SLEEPING_DIMENSIONS : this.getBaseDimensions(pose).scaled(this.getScale());
     }
 
     public boolean isSleeping() {
@@ -971,7 +1026,7 @@ public abstract class LivingEntity extends Entity {
     }
 
     public void wakeUp() {
-        net.minecraft.util.math.Vec3d vec3d = this.getPos();
+        murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = this.getPos();
         this.setPosition(vec3d.x, vec3d.y, vec3d.z);
     }
 
@@ -979,7 +1034,7 @@ public abstract class LivingEntity extends Entity {
         if (this.isSpectator()) {
             return false;
         } else {
-            for (EquipmentSlot equipmentSlot : AttributeModifierSlot.ARMOR) {
+            for (murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot equipmentSlot : AttributeModifierSlot.ARMOR) {
                 if (this.getEquippedStack(equipmentSlot).isIn(ItemTags.FREEZE_IMMUNE_WEARABLES)) {
                     return false;
                 }
@@ -989,20 +1044,19 @@ public abstract class LivingEntity extends Entity {
     }
 
     public float getStepHeight() {
-        float f = ((float) (this.getAttributeValue(EntityAttributes.STEP_HEIGHT)));
-        return this.getControllingPassenger() instanceof net.minecraft.entity.player.PlayerEntity ? Math.max(f, 1.0F) : f;
+        float f = ((float) (this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.STEP_HEIGHT)));
+        return this.getControllingPassenger() instanceof murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity ? Math.max(f, 1.0F) : f;
     }
 
     protected void lerpHeadYaw(int headTrackingIncrements, double serverHeadYaw) {
-        this.headYaw = ((float) (net.minecraft.util.math.MathHelper.lerpAngleDegrees(1.0 / headTrackingIncrements, ((double) (this.headYaw)), serverHeadYaw)));
+        this.headYaw = ((float) (murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.lerpAngleDegrees(1.0 / headTrackingIncrements, ((double) (this.headYaw)), serverHeadYaw)));
     }
 
     public boolean isInvulnerableTo(ServerWorld world, DamageSource source) {
-        return this.isAlwaysInvulnerableTo(source) || EnchantmentHelper.isInvulnerableTo(world, ((net.minecraft.entity.LivingEntity) (this.entityBridge)), source);
+        return this.isAlwaysInvulnerableTo(source) || EnchantmentHelper.isInvulnerableTo(world, this, source);
     }
 
-    public abstract void setVelocity(double x, double y, double z);
+    public LivingEntity() {
+    }
 
-    public abstract void emitGameEvent(RegistryEntry<GameEvent> event);
 }
-

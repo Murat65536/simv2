@@ -124,8 +124,13 @@ public class ModRefClassifier {
             deduped.merge(r.key(), r, (existing, incoming) -> {
                 if (existing.category() == FieldResult.FieldCategory.MOD_REF) return existing;
                 if (incoming.category() == FieldResult.FieldCategory.MOD_REF) return incoming;
-                if (existing.category() == FieldResult.FieldCategory.REF) return existing;
-                return incoming;
+                if (existing.category() == incoming.category()) return existing;
+                return new FieldResult(
+                    existing.declaringClass(),
+                    existing.fieldName(),
+                    existing.typeDescriptor(),
+                    FieldResult.FieldCategory.MOD_REF
+                );
             });
         }
 

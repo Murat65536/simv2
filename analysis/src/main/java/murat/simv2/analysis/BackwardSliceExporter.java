@@ -11,6 +11,7 @@ import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.modref.ModRef;
 import com.ibm.wala.ipa.slicer.HeapExclusions;
 import com.ibm.wala.ipa.slicer.NormalStatement;
+import com.ibm.wala.ipa.slicer.ParamCaller;
 import com.ibm.wala.ipa.slicer.SDG;
 import com.ibm.wala.ipa.slicer.Slicer;
 import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
@@ -38,7 +39,6 @@ import java.util.*;
  * the slice as source line numbers per class/method.
  */
 public class BackwardSliceExporter {
-
     private final CallGraph cg;
     private final PointerAnalysis<InstanceKey> pa;
     private final IClassHierarchy cha;
@@ -109,17 +109,13 @@ public class BackwardSliceExporter {
         System.out.println("SDG built in " + (sdgTime / 1000) + "s (" + ctrlSDG.getNumberOfNodes() + " nodes)");
 
         int phase2Count = 0;
-        for (int i = 0; i < seeds.size(); i++) {
-            try {
-                Collection<Statement> slice = Slicer.computeBackwardSlice(ctrlSDG, seeds.get(i));
-                int before = allSliced.size();
-                allSliced.addAll(slice);
-                phase2Count += allSliced.size() - before;
-                System.out.println("  Seed " + (i + 1) + "/" + seeds.size()
-                    + ": +" + (allSliced.size() - before) + " new stmts");
-            } catch (OutOfMemoryError | Exception e) {
-                // Control dep slice is optional — continue if it fails
-            }
+        try {
+            Collection<Statement> controlSlice = Slicer.computeBackwardSlice(ctrlSDG, allSliced);
+            int before = allSliced.size();
+            allSliced.addAll(controlSlice);
+            phase2Count = allSliced.size() - before;
+        } catch (OutOfMemoryError | Exception e) {
+            // Control dep slice is optional — continue if it fails
         }
         System.out.println("Phase 2 added " + phase2Count + " control-dependent statements (total: " + allSliced.size() + ")");
 
@@ -156,6 +152,9 @@ public class BackwardSliceExporter {
                     String declClass = invoke.getDeclaredTarget().getDeclaringClass().getName().toString();
                     if (isTargetClass(declClass) && AnalysisConfig.SEED_METHODS.contains(methodName)) {
                         seeds.add(new NormalStatement(node, i));
+                        for (int use = 0; use < invoke.getNumberOfUses(); use++) {
+                            seeds.add(new ParamCaller(node, i, invoke.getUse(use)));
+                        }
                     }
                 }
             }
@@ -251,13 +250,9 @@ public class BackwardSliceExporter {
             "java/lang/Thread",
             "java/lang/Module.*",
             "java/lang/SecurityManager",
-            "java/util/.*",
             // MC types with massive <clinit>s irrelevant to movement
-            "net/minecraft/item/.*",
             "net/minecraft/block/.*",
             "net/minecraft/state/.*",
-            "net/minecraft/entity/EntityType",
-            "net/minecraft/entity/EntityType\\$.*",
             "net/minecraft/entity/damage/.*",
             "net/minecraft/entity/attribute/.*",
             "net/minecraft/entity/effect/StatusEffects",
@@ -300,4 +295,13 @@ public class BackwardSliceExporter {
         return className != null
             && (className.startsWith("Lnet/minecraft/") || className.startsWith("net/minecraft/"));
     }
+
+    private String toDotClassName(String className) {
+        String normalized = className.startsWith("L") ? className.substring(1) : className;
+        if (normalized.endsWith(";")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized.replace('/', '.');
+    }
+
 }

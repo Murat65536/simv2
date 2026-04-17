@@ -33,6 +33,12 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 final class WalaPipelineRunner {
+    private static final List<String> REQUIRED_PRIMORDIAL_TYPES = List.of(
+        "Ljava/lang/Object",
+        "Ljava/lang/Throwable",
+        "Ljava/lang/RuntimeException"
+    );
+
     WalaPipelineResult run(AnalysisRunConfig config) throws Exception {
         System.out.println("=== WALA Movement Field Analysis ===");
         System.out.println("Minecraft JAR: " + config.minecraftJar());
@@ -89,10 +95,14 @@ final class WalaPipelineRunner {
         System.out.println("\nBuilding analysis scope...");
         AnalysisScope scope = AnalysisScopeReader.instance.makeJavaBinaryAnalysisScope(
             minecraftJar, exclusionsFile);
+        boolean javaBaseVisible = scope.getModules(ClassLoaderReference.Primordial)
+            .stream()
+            .anyMatch(module -> String.valueOf(module).contains("java.base"));
         System.out.println("Application loader modules: "
             + scope.getModules(ClassLoaderReference.Application));
         System.out.println("Primordial loader modules: "
             + scope.getModules(ClassLoaderReference.Primordial).size() + " modules");
+        System.out.println("Primordial java.base visible: " + javaBaseVisible);
         return scope;
     }
 
@@ -100,13 +110,31 @@ final class WalaPipelineRunner {
         System.out.println("Building class hierarchy...");
         IClassHierarchy cha = ClassHierarchyFactory.make(scope);
         System.out.println("Class hierarchy: " + cha.getNumberOfClasses() + " classes");
+        verifyPrimordialTypesPresent(cha);
         for (String targetClass : AnalysisConfig.TARGET_CLASSES) {
             TypeReference tr = TypeReference.findOrCreate(ClassLoaderReference.Application, targetClass);
             IClass c = cha.lookupClass(tr);
             System.out.println("  " + targetClass + " -> "
                 + (c != null ? c.getAllMethods().size() + " methods" : "NOT FOUND"));
+            if (c == null) {
+                throw new IllegalStateException(
+                    "Target class missing from class hierarchy: " + targetClass
+                        + ". Check analysis scope/classpath exclusions.");
+            }
         }
         return cha;
+    }
+
+    private void verifyPrimordialTypesPresent(IClassHierarchy cha) {
+        for (String typeName : REQUIRED_PRIMORDIAL_TYPES) {
+            TypeReference tr = TypeReference.findOrCreate(ClassLoaderReference.Primordial, typeName);
+            IClass klass = cha.lookupClass(tr);
+            if (klass == null) {
+                throw new IllegalStateException(
+                    "Required primordial type not found: " + typeName
+                        + ". JDK base classes are missing from WALA scope.");
+            }
+        }
     }
 
     private CallGraphState buildCallGraph(AnalysisScope scope,
