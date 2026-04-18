@@ -2,7 +2,6 @@ package murat.simv2.analysis;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,7 +48,6 @@ public final class MovementFieldAnalyzer {
                                       Map<String, Map<String, Set<Integer>>> sliceLines,
                                       MirrorClosure mirrorClosure) throws Exception {
         Path sourcesJarPath = requireSourcesJarForSpoon(config, config.mode());
-        Path slicedOutputDir = config.outputDir().resolve("java/murat/simv2/simulation/sliced");
 
         System.out.println("\nRunning Spoon source pruning...");
         SpoonSlicePruner pruner = new SpoonSlicePruner(
@@ -58,17 +56,15 @@ public final class MovementFieldAnalyzer {
             config.extraSpoonClasspath(),
             sliceLines
         );
-        pruner.pruneAndWrite(slicedOutputDir);
+        Map<String, String> slicedPrimarySources = pruner.pruneAndCollect(
+            config.outputDir().resolve("java/murat/simv2/simulation/sliced")
+        );
 
-        try {
-            MirrorClassEmitter mirrorEmitter = new MirrorClassEmitter(
-                config.outputDir(),
-                Path.of(config.minecraftJar())
-            );
-            mirrorEmitter.emit(mirrorClosure);
-        } finally {
-            deleteDirectoryIfExists(slicedOutputDir);
-        }
+        MirrorClassEmitter mirrorEmitter = new MirrorClassEmitter(
+            config.outputDir(),
+            Path.of(config.minecraftJar())
+        );
+        mirrorEmitter.emit(mirrorClosure, slicedPrimarySources);
     }
 
     private static Path requireSourcesJarForSpoon(AnalysisRunConfig config, AnalysisMode mode) {
@@ -88,27 +84,6 @@ public final class MovementFieldAnalyzer {
                 + sourcesJarPath + ". Pass -PsourcesJar=<path-to-sources.jar>.");
         }
         return sourcesJarPath;
-    }
-
-    private static void deleteDirectoryIfExists(Path dir) throws Exception {
-        if (dir == null || !Files.exists(dir)) {
-            return;
-        }
-        try (var walk = Files.walk(dir)) {
-            walk.sorted(Comparator.reverseOrder())
-                .forEach(path -> {
-                    try {
-                        Files.deleteIfExists(path);
-                    } catch (Exception ex) {
-                        throw new RuntimeException("Failed to delete path: " + path, ex);
-                    }
-                });
-        } catch (RuntimeException ex) {
-            if (ex.getCause() instanceof Exception cause) {
-                throw cause;
-            }
-            throw ex;
-        }
     }
 
 }

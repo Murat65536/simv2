@@ -59,14 +59,14 @@ final class MirrorClassEmitter {
         this.primaryClassesBySimpleName = buildPrimaryClassMap();
     }
 
-    void emit(MirrorClosure mirrorClosure) throws IOException {
-        Path slicedDir = outputDir.resolve("java/murat/simv2/simulation/sliced");
+    void emit(MirrorClosure mirrorClosure, Map<String, String> slicedPrimarySources) throws IOException {
+        Map<String, String> primarySources = slicedPrimarySources == null ? Map.of() : slicedPrimarySources;
         Path mirrorRootDir = outputDir.resolve("java/murat/simv2/simulation/mirror");
         deleteDirectoryIfExists(mirrorRootDir);
         Files.createDirectories(mirrorRootDir);
 
         minecraftClassIndex = loadMinecraftClassIndex();
-        Set<String> closureClasses = buildClosureClasses(mirrorClosure, slicedDir);
+        Set<String> closureClasses = buildClosureClasses(mirrorClosure, primarySources);
         System.out.println("Mirror closure classes from artifacts: " + closureClasses.size());
         closureRewriteMap = buildClosureRewriteMap(closureClasses);
         closureRewriteRules = buildClosureRewriteRules(closureRewriteMap);
@@ -74,7 +74,7 @@ final class MirrorClassEmitter {
         Map<String, Set<FieldStub>> closureFields = buildClosureFields(closureClasses);
         populateBytecodeMethodSelectors(closureClasses, closureMethodSelectors);
         populateBytecodeFieldStubs(closureClasses, closureFields);
-        emitPrimaryMirrorClasses(slicedDir, mirrorRootDir);
+        emitPrimaryMirrorClasses(primarySources, mirrorRootDir);
         emitClosureStubs(closureClasses, closureMethodSelectors, closureFields, mirrorRootDir);
     }
 
@@ -110,16 +110,13 @@ final class MirrorClassEmitter {
         return Map.copyOf(map);
     }
 
-    private void emitPrimaryMirrorClasses(Path slicedDir, Path mirrorRootDir) throws IOException {
+    private void emitPrimaryMirrorClasses(Map<String, String> slicedPrimarySources, Path mirrorRootDir) throws IOException {
         for (Map.Entry<String, String> entry : primaryClassesBySimpleName.entrySet()) {
-            String simpleName = entry.getKey();
             String fqcn = entry.getValue();
-            Path slicedFile = slicedDir.resolve("Sliced" + simpleName + ".java");
-            if (!Files.exists(slicedFile)) {
+            String source = slicedPrimarySources.get(fqcn);
+            if (source == null || source.isBlank()) {
                 continue;
             }
-
-            String source = Files.readString(slicedFile);
             String transformed = transformPrimaryClassSource(source, fqcn);
 
             Path outputFile = mirrorRootDir.resolve(fqcn.replace('.', '/') + ".java");
@@ -345,7 +342,7 @@ final class MirrorClassEmitter {
         return typeName;
     }
 
-    private Set<String> buildClosureClasses(MirrorClosure mirrorClosure, Path slicedDir) throws IOException {
+    private Set<String> buildClosureClasses(MirrorClosure mirrorClosure, Map<String, String> slicedPrimarySources) {
         TreeSet<String> closureClasses = new TreeSet<>(primaryClassesBySimpleName.values());
         if (mirrorClosure != null && mirrorClosure.classes() != null) {
             for (String className : mirrorClosure.classes()) {
@@ -365,12 +362,11 @@ final class MirrorClassEmitter {
                 }
             }
         }
-        for (Map.Entry<String, String> entry : primaryClassesBySimpleName.entrySet()) {
-            Path slicedFile = slicedDir.resolve("Sliced" + entry.getKey() + ".java");
-            if (!Files.exists(slicedFile)) {
+        for (String fqcn : primaryClassesBySimpleName.values()) {
+            String source = slicedPrimarySources.get(fqcn);
+            if (source == null || source.isBlank()) {
                 continue;
             }
-            String source = Files.readString(slicedFile);
             for (String className : extractVanillaClassesFromSource(source)) {
                 addClosureClass(closureClasses, className);
             }

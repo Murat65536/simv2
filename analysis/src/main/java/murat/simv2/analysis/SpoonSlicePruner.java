@@ -62,7 +62,7 @@ public class SpoonSlicePruner {
         this.sliceLines = Objects.requireNonNull(sliceLines, "sliceLines");
     }
 
-    public void pruneAndWrite(Path outputDir) throws IOException {
+    public Map<String, String> pruneAndCollect(Path outputDir) throws IOException {
         Path tempDir = Files.createTempDirectory("mc-sources-");
         try {
             extractTargetSources(tempDir);
@@ -90,6 +90,7 @@ public class SpoonSlicePruner {
             Set<String> emittedSimpleNames = new LinkedHashSet<>();
             Set<String> hierarchyDefinedMethods = new LinkedHashSet<>();
             Set<String> hierarchyDefinedFields = new LinkedHashSet<>();
+            Map<String, String> slicedSourcesByClass = new LinkedHashMap<>();
             // Collect access widener entries needed for private members
             Set<String> awEntries = new TreeSet<>();
             for (String className : AnalysisConfig.TARGET_CLASSES_DOT) {
@@ -105,8 +106,11 @@ public class SpoonSlicePruner {
                     continue;
                 }
 
-                buildSlicedClass(type, methodLines, outputDir, factory,
+                String slicedSource = buildSlicedClass(type, methodLines, factory,
                     emittedSimpleNames, typeIndex, hierarchyDefinedMethods, hierarchyDefinedFields, awEntries);
+                if (slicedSource != null) {
+                    slicedSourcesByClass.put(className, slicedSource);
+                }
                 emittedSimpleNames.add(type.getSimpleName());
             }
 
@@ -139,6 +143,7 @@ public class SpoonSlicePruner {
                     }
                 }
             }
+            return Map.copyOf(slicedSourcesByClass);
         } finally {
             try (var walk = Files.walk(tempDir)) {
                 walk.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(java.io.File::delete);
@@ -311,12 +316,12 @@ public class SpoonSlicePruner {
         }
     }
 
-    private void buildSlicedClass(CtType<?> type, Map<String, Set<Integer>> methodLines,
-                                   Path outputDir, Factory factory,
-                                   Set<String> emittedSimpleNames,
-                                   Map<String, CtType<?>> typeIndex,
-                                   Set<String> hierarchyDefinedMethods,
-                                   Set<String> hierarchyDefinedFields,
+    private String buildSlicedClass(CtType<?> type, Map<String, Set<Integer>> methodLines,
+                                    Factory factory,
+                                    Set<String> emittedSimpleNames,
+                                    Map<String, CtType<?>> typeIndex,
+                                    Set<String> hierarchyDefinedMethods,
+                                    Set<String> hierarchyDefinedFields,
                                     Set<String> awEntries) throws IOException {
         String simpleName = type.getSimpleName();
         String slicedName = "Sliced" + simpleName;
@@ -378,7 +383,7 @@ public class SpoonSlicePruner {
 
         if (clonedMethods.isEmpty()) {
             System.out.println("  No methods resolved for " + simpleName + " — skipping");
-            return;
+            return null;
         }
 
         // ── Phase 2: Transitive method closure (fixpoint) ──
@@ -456,11 +461,9 @@ public class SpoonSlicePruner {
         // Collect access widener entries for non-public static fields/methods
         collectAccessWidenerEntries(type, allMethods, fieldDecls, typeIndex, awEntries);
 
-        Path outFile = outputDir.resolve(slicedName + ".java");
-        Files.createDirectories(outFile.getParent());
-        writeSlicedCompilationUnit(outFile, type, slicedName, extendsRef, fieldDecls,
+        String source = renderSlicedCompilationUnit(type, slicedName, extendsRef, fieldDecls,
             abstractStubMethods, emittedMethods, emittedSimpleNames, factory);
-        System.out.println("  Wrote " + outFile.getFileName());
+        System.out.println("  Prepared " + slicedName + ".java");
 
         // Update hierarchy tracking
         hierarchyDefinedMethods.addAll(definedSigs);
@@ -468,6 +471,7 @@ public class SpoonSlicePruner {
         for (CtField<?> fieldDecl : fieldDecls) {
             hierarchyDefinedFields.add(fieldDecl.getSimpleName());
         }
+        return source;
     }
 
     // ── Method resolution helpers ──
@@ -1090,15 +1094,14 @@ public class SpoonSlicePruner {
         fieldPlanner.rewriteTrackedDataFieldInitializers(fieldDecls, sourceSimpleName, factory);
     }
 
-    private void writeSlicedCompilationUnit(Path outFile,
-                                            CtType<?> sourceType,
-                                            String slicedName,
-                                            CtTypeReference<?> extendsRef,
-                                            List<CtField<?>> fieldDecls,
-                                            List<CtMethod<?>> abstractStubMethods,
-                                            List<CtMethod<?>> emittedMethods,
-                                            Set<String> emittedSimpleNames,
-                                            Factory factory) throws IOException {
+    private String renderSlicedCompilationUnit(CtType<?> sourceType,
+                                               String slicedName,
+                                               CtTypeReference<?> extendsRef,
+                                               List<CtField<?>> fieldDecls,
+                                               List<CtMethod<?>> abstractStubMethods,
+                                               List<CtMethod<?>> emittedMethods,
+                                               Set<String> emittedSimpleNames,
+                                               Factory factory) {
         CtPackage outputPackage = factory.Package().getOrCreate("murat.simv2.simulation.sliced");
         CtType<?> existingType = outputPackage.getType(slicedName);
         if (existingType != null) {
@@ -1143,7 +1146,7 @@ public class SpoonSlicePruner {
             }
 
             CompilationUnit compilationUnit = factory.Core().createCompilationUnit();
-            compilationUnit.setFile(outFile.toFile());
+            compilationUnit.setFile(Path.of(slicedName + ".java").toFile());
             compilationUnit.setDeclaredPackage(outputPackage);
             compilationUnit.addDeclaredType(slicedClass);
             compilationUnit.setImports(createSlicedCompilationUnitImports(factory, fieldDecls,
@@ -1152,8 +1155,7 @@ public class SpoonSlicePruner {
             removeJavadocsFromGeneratedClass(slicedClass);
 
             PrettyPrinter printer = createImportCleanerPrettyPrinter(factory);
-            String source = printer.printCompilationUnit(compilationUnit);
-            Files.writeString(outFile, source);
+            return printer.printCompilationUnit(compilationUnit);
         } finally {
             outputPackage.removeType(slicedClass);
             for (CtType<?> placeholderType : placeholderTypes) {
