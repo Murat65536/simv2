@@ -511,9 +511,7 @@ public class EntityType<T> {
     }
 
     public static interface EntityFactory<T> {
-        public default murat.simv2.simulation.mirror.net.minecraft.entity.Entity create(murat.simv2.simulation.mirror.net.minecraft.entity.EntityType p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1) {
-            return null;
-        }
+        public murat.simv2.simulation.mirror.net.minecraft.entity.Entity create(murat.simv2.simulation.mirror.net.minecraft.entity.EntityType p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1);
 
     }
 

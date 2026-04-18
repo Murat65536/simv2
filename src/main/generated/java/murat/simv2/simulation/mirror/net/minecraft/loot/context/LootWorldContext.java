@@ -77,8 +77,7 @@ public class LootWorldContext {
     }
 
     public static interface DynamicDrop {
-        public default void add(java.util.function.Consumer p0) {
-        }
+        public void add(java.util.function.Consumer p0);
 
     }
 

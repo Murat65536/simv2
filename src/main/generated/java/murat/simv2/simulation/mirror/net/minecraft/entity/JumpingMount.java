@@ -4,22 +4,15 @@ package murat.simv2.simulation.mirror.net.minecraft.entity;
 public interface JumpingMount {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public default boolean canJump() {
-        return false;
-    }
+    public boolean canJump();
 
-    public default int getJumpCooldown() {
-        return 0;
-    }
+    public int getJumpCooldown();
 
-    public default void setJumpStrength(int p0) {
-    }
+    public void setJumpStrength(int p0);
 
-    public default void startJumping(int p0) {
-    }
+    public void startJumping(int p0);
 
-    public default void stopJumping() {
-    }
+    public void stopJumping();
 
     // END GENERATED MIRROR NESTED STUBS
 }

@@ -32,6 +32,8 @@ final class MirrorClassEmitter {
     private static final String NESTED_STUBS_END = "// END GENERATED MIRROR NESTED STUBS";
     private static final String ENTITY_COMPAT_BEGIN = "// BEGIN GENERATED ENTITY COMPAT STUBS";
     private static final String ENTITY_COMPAT_END = "// END GENERATED ENTITY COMPAT STUBS";
+    private static final String PRIMARY_CONTRACT_BEGIN = "// BEGIN GENERATED PRIMARY CONTRACT STUBS";
+    private static final String PRIMARY_CONTRACT_END = "// END GENERATED PRIMARY CONTRACT STUBS";
     private static final int ACC_PUBLIC = 0x0001;
     private static final int ACC_PRIVATE = 0x0002;
     private static final int ACC_INTERFACE = 0x0200;
@@ -167,9 +169,13 @@ final class MirrorClassEmitter {
         );
         if ("net.minecraft.entity.Entity".equals(fqcn)) {
             transformed = normalizeEntityPrimarySignatures(transformed);
+            transformed = upsertEntityCompatBlock(transformed);
         }
         if ("net.minecraft.entity.LivingEntity".equals(fqcn)) {
             transformed = normalizeLivingEntityPrimarySignatures(transformed);
+        }
+        if ("net.minecraft.entity.Entity".equals(fqcn)) {
+            transformed = upsertPrimaryContractBlock(transformed, fqcn);
         }
         transformed = injectPrimaryNoArgConstructor(transformed, fqcn);
         transformed = addRequiredPrimaryImports(transformed, fqcn);
@@ -670,6 +676,7 @@ final class MirrorClassEmitter {
                 }
             }
         }
+        applyManualMethodSelectors(methodsByClass);
         return methodsByClass;
     }
 
@@ -752,6 +759,7 @@ final class MirrorClassEmitter {
         for (String className : closureClasses) {
             fieldsByClass.put(className, new TreeSet<>(FIELD_STUB_COMPARATOR));
         }
+        applyManualFieldStubs(fieldsByClass);
         return fieldsByClass;
     }
 
@@ -1588,6 +1596,16 @@ final class MirrorClassEmitter {
                                      Set<String> methodSelectors,
                                      int depth,
                                      boolean ownerIsInterface) {
+        return renderMethodStubs(ownerSimpleName, ownerBinaryName, methodSelectors, depth, ownerIsInterface, false, true);
+    }
+
+    private String renderMethodStubs(String ownerSimpleName,
+                                     String ownerBinaryName,
+                                     Set<String> methodSelectors,
+                                     int depth,
+                                     boolean ownerIsInterface,
+                                     boolean preserveMirrorTypes,
+                                     boolean includeImplicitNoArgConstructor) {
         if (methodSelectors == null || methodSelectors.isEmpty()) {
             return "";
         }
@@ -1595,7 +1613,7 @@ final class MirrorClassEmitter {
         StringBuilder sb = new StringBuilder();
         Map<String, MethodStub> methodsBySignature = new TreeMap<>();
         for (String selector : new TreeSet<>(methodSelectors)) {
-            MethodStub methodStub = parseMethodSelector(selector, ownerBinaryName);
+            MethodStub methodStub = parseMethodSelector(selector, ownerBinaryName, preserveMirrorTypes);
             if (methodStub == null || methodStub.isClassInitializer()) {
                 continue;
             }
@@ -1629,13 +1647,10 @@ final class MirrorClassEmitter {
             if (methodStub.isStatic()) {
                 sb.append("static ");
             } else if (ownerIsInterface) {
-                if (isObjectMethodSignature(methodStub)) {
-                    sb.append(methodStub.returnType())
-                        .append(" ").append(methodStub.methodName())
-                        .append("(").append(renderParams(methodStub.parameterTypes())).append(");\n\n");
-                    continue;
-                }
-                sb.append("default ");
+                sb.append(methodStub.returnType())
+                    .append(" ").append(methodStub.methodName())
+                    .append("(").append(renderParams(methodStub.parameterTypes())).append(");\n\n");
+                continue;
             }
             sb.append(methodStub.returnType())
                 .append(" ").append(methodStub.methodName())
@@ -1646,7 +1661,7 @@ final class MirrorClassEmitter {
             }
             sb.append(indent).append("}\n\n");
         }
-        if (!ownerIsInterface && !hasNoArgConstructor) {
+        if (includeImplicitNoArgConstructor && !ownerIsInterface && !hasNoArgConstructor) {
             sb.append(indent).append("public ").append(ownerSimpleName).append("() {\n");
             sb.append(indent).append("}\n\n");
         }
@@ -1740,18 +1755,18 @@ final class MirrorClassEmitter {
             }
             if ("resolve".equals(methodStub.methodName()) && methodStub.parameterTypes().size() == 2) {
                 return """
-                    %spublic murat.simv2.simulation.mirror.net.minecraft.world.entity.UniquelyIdentifiable resolve(java.lang.Object p0, java.lang.Class p1) {
+                    %spublic java.lang.Object resolve(java.lang.Object p0, java.lang.Class p1) {
                     %s    return null;
                     %s}
-                    
+                     
                     """.formatted(indent, indent, indent);
             }
             if ("resolve".equals(methodStub.methodName()) && methodStub.parameterTypes().size() == 3 && methodStub.isStatic()) {
                 return """
-                    %spublic static murat.simv2.simulation.mirror.net.minecraft.world.entity.UniquelyIdentifiable resolve(murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference p0, java.lang.Object p1, java.lang.Class p2) {
+                    %spublic static java.lang.Object resolve(murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference p0, java.lang.Object p1, java.lang.Class p2) {
                     %s    return null;
                     %s}
-                    
+                     
                     """.formatted(indent, indent, indent);
             }
         }
@@ -1906,6 +1921,10 @@ final class MirrorClassEmitter {
     }
 
     private MethodStub parseMethodSelector(String selector, String ownerBinaryName) {
+        return parseMethodSelector(selector, ownerBinaryName, false);
+    }
+
+    private MethodStub parseMethodSelector(String selector, String ownerBinaryName, boolean preserveMirrorTypes) {
         if (selector == null || selector.isBlank()) {
             return null;
         }
@@ -1928,14 +1947,14 @@ final class MirrorClassEmitter {
             return null;
         }
 
-        List<String> parameterTypes = parseParameterTypes(paramsDescriptor);
+        List<String> parameterTypes = parseParameterTypes(paramsDescriptor, preserveMirrorTypes);
         if (parameterTypes == null) {
             return null;
         }
 
         String returnType = "void";
         if (!"<init>".equals(methodName) && !"<clinit>".equals(methodName)) {
-            TypeDescriptor parsedReturn = parseTypeDescriptor(returnDescriptor, 0);
+            TypeDescriptor parsedReturn = parseTypeDescriptor(returnDescriptor, 0, preserveMirrorTypes);
             if (parsedReturn == null || parsedReturn.nextIndex() != returnDescriptor.length()) {
                 return null;
             }
@@ -1969,10 +1988,14 @@ final class MirrorClassEmitter {
     }
 
     private List<String> parseParameterTypes(String descriptor) {
+        return parseParameterTypes(descriptor, false);
+    }
+
+    private List<String> parseParameterTypes(String descriptor, boolean preserveMirrorTypes) {
         List<String> params = new ArrayList<>();
         int index = 0;
         while (index < descriptor.length()) {
-            TypeDescriptor parsed = parseTypeDescriptor(descriptor, index);
+            TypeDescriptor parsed = parseTypeDescriptor(descriptor, index, preserveMirrorTypes);
             if (parsed == null) {
                 return null;
             }
@@ -1983,6 +2006,10 @@ final class MirrorClassEmitter {
     }
 
     private TypeDescriptor parseTypeDescriptor(String descriptor, int startIndex) {
+        return parseTypeDescriptor(descriptor, startIndex, false);
+    }
+
+    private TypeDescriptor parseTypeDescriptor(String descriptor, int startIndex, boolean preserveMirrorTypes) {
         if (descriptor == null || startIndex >= descriptor.length()) {
             return null;
         }
@@ -2041,7 +2068,8 @@ final class MirrorClassEmitter {
                 if (end < 0) {
                     return null;
                 }
-                baseType = normalizeStubType(rewriteTypeReference(toSourceTypeName(descriptor.substring(index + 1, end))));
+                String rewritten = rewriteTypeReference(toSourceTypeName(descriptor.substring(index + 1, end)));
+                baseType = preserveMirrorTypes ? normalizePrimaryStubType(rewritten) : normalizeStubType(rewritten);
                 consumedIndex = end + 1;
             }
             default -> {
@@ -2085,6 +2113,235 @@ final class MirrorClassEmitter {
             result += "[]";
         }
         return result;
+    }
+
+    private String normalizePrimaryStubType(String typeName) {
+        if (typeName == null || typeName.isBlank()) {
+            return "java.lang.Object";
+        }
+        String normalized = typeName;
+        int dims = 0;
+        while (normalized.endsWith("[]")) {
+            normalized = normalized.substring(0, normalized.length() - 2);
+            dims++;
+        }
+        if (normalized.startsWith("net.minecraft.")) {
+            normalized = rewriteTypeReference(normalized);
+            if (normalized.startsWith("net.minecraft.")) {
+                normalized = "java.lang.Object";
+            }
+        }
+        String result = normalized;
+        for (int i = 0; i < dims; i++) {
+            result += "[]";
+        }
+        return result;
+    }
+
+    private String upsertPrimaryContractBlock(String source, String fqcn) {
+        String normalized = removePrimaryContractBlock(source);
+        if (fqcn == null || fqcn.isBlank() || minecraftClassIndex.isEmpty() || !minecraftClassIndex.containsKey(fqcn)) {
+            return normalized;
+        }
+
+        String simpleName = simpleNameOf(fqcn);
+        Set<String> existingMethodKeys = extractExistingMethodKeys(normalized, simpleName);
+        Set<String> existingFieldNames = extractExistingFieldNames(normalized);
+
+        Set<String> methodSelectors = new TreeSet<>();
+        addMethodSelectorsForHierarchy(fqcn, methodSelectors, new TreeSet<>(), false);
+        BytecodeClass classInfo = minecraftClassIndex.get(fqcn);
+        if (classInfo != null) {
+            for (BytecodeMember method : classInfo.methods()) {
+                if (method == null || "<clinit>".equals(method.name())) {
+                    continue;
+                }
+                if ("<init>".equals(method.name()) || !isJavaIdentifierOrDollar(method.name())) {
+                    continue;
+                }
+                String prefix = (method.access() & ACC_STATIC) != 0 ? "static " : "";
+                methodSelectors.add(prefix + method.name() + method.descriptor());
+            }
+        }
+        Set<String> missingMethodSelectors = new TreeSet<>();
+        for (String selector : methodSelectors) {
+            MethodStub methodStub = parseMethodSelector(selector, fqcn, true);
+            if (methodStub == null || methodStub.isClassInitializer() || methodStub.isConstructor()) {
+                continue;
+            }
+            if (existingMethodKeys.contains(methodStub.signatureKey())) {
+                continue;
+            }
+            missingMethodSelectors.add(selector);
+        }
+
+        Set<FieldStub> hierarchyFields = new TreeSet<>(FIELD_STUB_COMPARATOR);
+        addFieldStubsForHierarchy(fqcn, hierarchyFields, new TreeSet<>(), true);
+        Set<FieldStub> missingFields = new TreeSet<>(FIELD_STUB_COMPARATOR);
+        for (FieldStub fieldStub : hierarchyFields) {
+            if (existingFieldNames.contains(fieldStub.fieldName())) {
+                continue;
+            }
+            missingFields.add(fieldStub);
+        }
+
+        if (missingMethodSelectors.isEmpty() && missingFields.isEmpty()) {
+            return normalized;
+        }
+
+        String fieldStubs = renderFieldStubs(missingFields, 1, false);
+        String methodStubs = renderPrimaryContractMethodStubs(
+            simpleName,
+            fqcn,
+            missingMethodSelectors,
+            1
+        );
+        String declarations = fieldStubs + methodStubs;
+        if (declarations.isBlank()) {
+            return normalized;
+        }
+
+        String lineSeparator = normalized.contains("\r\n") ? "\r\n" : "\n";
+        String block = buildPrimaryContractBlock(declarations, lineSeparator);
+        int lastBrace = normalized.lastIndexOf('}');
+        if (lastBrace < 0) {
+            return normalized;
+        }
+        String prefix = normalized.substring(0, lastBrace);
+        if (!prefix.endsWith(lineSeparator)) {
+            prefix = prefix + lineSeparator;
+        }
+        if (!prefix.endsWith(lineSeparator + lineSeparator)) {
+            prefix = prefix + lineSeparator;
+        }
+        return prefix + block + normalized.substring(lastBrace);
+    }
+
+    private String buildPrimaryContractBlock(String declarations, String lineSeparator) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("    ").append(PRIMARY_CONTRACT_BEGIN).append(lineSeparator);
+        sb.append(declarations.replace("\n", lineSeparator));
+        if (!declarations.endsWith("\n")) {
+            sb.append(lineSeparator);
+        }
+        sb.append("    ").append(PRIMARY_CONTRACT_END).append(lineSeparator);
+        return sb.toString();
+    }
+
+    private String removePrimaryContractBlock(String source) {
+        int begin = source.indexOf(PRIMARY_CONTRACT_BEGIN);
+        if (begin < 0) {
+            return source;
+        }
+        int endMarker = source.indexOf(PRIMARY_CONTRACT_END, begin);
+        if (endMarker < 0) {
+            return source;
+        }
+        int endLine = source.indexOf('\n', endMarker);
+        if (endLine < 0) {
+            endLine = source.length();
+        } else {
+            endLine += 1;
+        }
+        return source.substring(0, begin) + source.substring(endLine);
+    }
+
+    private Set<String> extractExistingMethodKeys(String source, String ownerSimpleName) {
+        Set<String> keys = new TreeSet<>();
+        Pattern methodPattern = Pattern.compile(
+            "\\b(?:public|protected|private)\\s+(?:static\\s+)?(?:[\\w.$<>\\[\\], ?]+\\s+)?([A-Za-z_$][\\w$]*)\\s*\\(([^)]*)\\)\\s*(?:\\{|;)"
+        );
+        Matcher matcher = methodPattern.matcher(source);
+        while (matcher.find()) {
+            String methodName = matcher.group(1);
+            String params = matcher.group(2);
+            List<String> parameterTypes = parseSourceParameterTypes(params);
+            if (parameterTypes == null) {
+                continue;
+            }
+            String normalizedName = ownerSimpleName.equals(methodName) ? "<init>" : methodName;
+            keys.add(normalizedName + "|" + String.join(",", parameterTypes));
+        }
+        return keys;
+    }
+
+    private Set<String> extractExistingFieldNames(String source) {
+        Set<String> names = new TreeSet<>();
+        Pattern fieldPattern = Pattern.compile(
+            "\\b(?:public|protected|private)\\s+(?:static\\s+)?(?:final\\s+)?[\\w.$<>\\[\\], ?]+\\s+([A-Za-z_$][\\w$]*)\\s*(?:=|;)"
+        );
+        Matcher matcher = fieldPattern.matcher(source);
+        while (matcher.find()) {
+            names.add(matcher.group(1));
+        }
+        return names;
+    }
+
+    private List<String> parseSourceParameterTypes(String params) {
+        if (params == null || params.isBlank()) {
+            return List.of();
+        }
+        List<String> result = new ArrayList<>();
+        for (String rawParam : params.split(",")) {
+            String param = rawParam.trim();
+            if (param.isBlank()) {
+                continue;
+            }
+            int lastSpace = param.lastIndexOf(' ');
+            String type = lastSpace > 0 ? param.substring(0, lastSpace).trim() : param;
+            while (type.startsWith("@")) {
+                int idx = type.indexOf(' ');
+                if (idx < 0) {
+                    break;
+                }
+                type = type.substring(idx + 1).trim();
+            }
+            type = type.replaceAll("<[^>]*>", "");
+            type = type.replace("...", "[]");
+            type = type.replaceAll("\\s+", " ");
+            result.add(type);
+        }
+        return result;
+    }
+
+    private String renderPrimaryContractMethodStubs(String ownerSimpleName,
+                                                    String ownerBinaryName,
+                                                    Set<String> methodSelectors,
+                                                    int depth) {
+        if (methodSelectors == null || methodSelectors.isEmpty()) {
+            return "";
+        }
+        String indent = "    ".repeat(depth);
+        StringBuilder sb = new StringBuilder();
+        Map<String, MethodStub> methodsBySignature = new TreeMap<>();
+        for (String selector : new TreeSet<>(methodSelectors)) {
+            MethodStub methodStub = parseMethodSelector(selector, ownerBinaryName, true);
+            if (methodStub == null || methodStub.isClassInitializer() || methodStub.isConstructor()) {
+                continue;
+            }
+            String signatureKey = methodStub.signatureKey();
+            MethodStub existing = methodsBySignature.get(signatureKey);
+            if (existing == null || (!existing.isStatic() && methodStub.isStatic())) {
+                methodsBySignature.put(signatureKey, methodStub);
+            }
+        }
+        for (MethodStub methodStub : methodsBySignature.values()) {
+            sb.append(indent);
+            if (methodStub.isStatic()) {
+                sb.append("public static ");
+            } else {
+                sb.append("protected ");
+            }
+            sb.append(methodStub.returnType())
+                .append(" ").append(methodStub.methodName())
+                .append("(").append(renderParams(methodStub.parameterTypes())).append(") {\n");
+            String defaultReturn = defaultReturnStatement(methodStub.returnType());
+            if (!defaultReturn.isBlank()) {
+                sb.append(indent).append("    ").append(defaultReturn).append("\n");
+            }
+            sb.append(indent).append("}\n\n");
+        }
+        return sb.toString();
     }
 
     private String toSourceSimpleTypeName(String simpleName) {

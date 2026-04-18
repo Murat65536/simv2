@@ -4,9 +4,7 @@ package murat.simv2.simulation.mirror.net.minecraft.entity;
 public interface Flutterer {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public default boolean isInAir() {
-        return false;
-    }
+    public boolean isInAir();
 
     // END GENERATED MIRROR NESTED STUBS
 }

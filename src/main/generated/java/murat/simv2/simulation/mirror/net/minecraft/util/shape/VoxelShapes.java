@@ -139,8 +139,7 @@ public class VoxelShapes {
     }
 
     public static interface BoxConsumer {
-        public default void consume(double p0, double p1, double p2, double p3, double p4, double p5) {
-        }
+        public void consume(double p0, double p1, double p2, double p3, double p4, double p5);
 
     }
 

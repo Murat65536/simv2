@@ -218,14 +218,12 @@ public class EnchantmentHelper {
     }
 
     public static interface Consumer {
-        public default void accept(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0, int p1) {
-        }
+        public void accept(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0, int p1);
 
     }
 
     public static interface ContextAwareConsumer {
-        public default void accept(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0, int p1, java.lang.Object p2) {
-        }
+        public void accept(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0, int p1, java.lang.Object p2);
 
     }
 

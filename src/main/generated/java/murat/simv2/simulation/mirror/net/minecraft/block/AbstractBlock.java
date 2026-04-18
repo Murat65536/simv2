@@ -759,9 +759,7 @@ public class AbstractBlock {
     }
 
     public static interface ContextPredicate {
-        public default boolean test(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
-            return false;
-        }
+        public boolean test(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2);
 
     }
 
@@ -792,9 +790,7 @@ public class AbstractBlock {
     }
 
     public static interface Offsetter {
-        public default murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d evaluate(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
-            return null;
-        }
+        public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d evaluate(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1);
 
     }
 
@@ -1016,9 +1012,7 @@ public class AbstractBlock {
     }
 
     public static interface TypedContextPredicate<A> {
-        public default boolean test(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, java.lang.Object p3) {
-            return false;
-        }
+        public boolean test(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, java.lang.Object p3);
 
     }
 

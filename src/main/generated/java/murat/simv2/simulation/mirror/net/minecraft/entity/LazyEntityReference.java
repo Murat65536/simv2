@@ -38,11 +38,11 @@ public class LazyEntityReference<StoredEntityType> {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.world.entity.UniquelyIdentifiable resolve(java.lang.Object p0, java.lang.Class p1) {
+    public java.lang.Object resolve(java.lang.Object p0, java.lang.Class p1) {
         return null;
     }
 
-    public static murat.simv2.simulation.mirror.net.minecraft.world.entity.UniquelyIdentifiable resolve(murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference p0, java.lang.Object p1, java.lang.Class p2) {
+    public static java.lang.Object resolve(murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference p0, java.lang.Object p1, java.lang.Class p2) {
         return null;
     }
 

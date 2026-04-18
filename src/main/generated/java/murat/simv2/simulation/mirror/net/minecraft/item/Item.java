@@ -375,17 +375,11 @@ public class Item {
             return null;
         }
 
-        public default java.lang.Object getMapState(java.lang.Object p0) {
-            return null;
-        }
+        public java.lang.Object getMapState(java.lang.Object p0);
 
-        public default java.lang.Object getRegistryLookup() {
-            return null;
-        }
+        public java.lang.Object getRegistryLookup();
 
-        public default float getUpdateTickRate() {
-            return 0.0F;
-        }
+        public float getUpdateTickRate();
 
     }
 

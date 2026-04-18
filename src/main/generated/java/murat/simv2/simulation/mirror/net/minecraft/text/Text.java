@@ -4,13 +4,9 @@ package murat.simv2.simulation.mirror.net.minecraft.text;
 public interface Text {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public default java.lang.Object asOrderedText() {
-        return null;
-    }
+    public java.lang.Object asOrderedText();
 
-    public default java.lang.String asTruncatedString(int p0) {
-        return null;
-    }
+    public java.lang.String asTruncatedString(int p0);
 
     public static java.lang.Object concat(java.lang.Object[] p0) {
         return null;
@@ -20,45 +16,27 @@ public interface Text {
         return null;
     }
 
-    public default boolean contains(murat.simv2.simulation.mirror.net.minecraft.text.Text p0) {
-        return false;
-    }
+    public boolean contains(murat.simv2.simulation.mirror.net.minecraft.text.Text p0);
 
-    public default java.lang.Object copyContentOnly() {
-        return null;
-    }
+    public java.lang.Object copyContentOnly();
 
-    public default java.lang.Object copy() {
-        return null;
-    }
+    public java.lang.Object copy();
 
     public static java.lang.Object empty() {
         return null;
     }
 
-    public default java.lang.Object getContent() {
-        return null;
-    }
+    public java.lang.Object getContent();
 
-    public default java.lang.String getLiteralString() {
-        return null;
-    }
+    public java.lang.String getLiteralString();
 
-    public default java.util.List getSiblings() {
-        return null;
-    }
+    public java.util.List getSiblings();
 
-    public default java.lang.String getString() {
-        return null;
-    }
+    public java.lang.String getString();
 
-    public default java.lang.Object getStyle() {
-        return null;
-    }
+    public java.lang.Object getStyle();
 
-    public default java.util.List getWithStyle(java.lang.Object p0) {
-        return null;
-    }
+    public java.util.List getWithStyle(java.lang.Object p0);
 
     public static java.lang.Object keybind(java.lang.String p0) {
         return null;
@@ -140,17 +118,11 @@ public interface Text {
         return null;
     }
 
-    public default java.util.Optional visit(java.lang.Object p0) {
-        return null;
-    }
+    public java.util.Optional visit(java.lang.Object p0);
 
-    public default java.util.Optional visit(java.lang.Object p0, java.lang.Object p1) {
-        return null;
-    }
+    public java.util.Optional visit(java.lang.Object p0, java.lang.Object p1);
 
-    public default java.util.List withoutStyle() {
-        return null;
-    }
+    public java.util.List withoutStyle();
 
     public static class Serialization {
         public static com.google.gson.Gson GSON;

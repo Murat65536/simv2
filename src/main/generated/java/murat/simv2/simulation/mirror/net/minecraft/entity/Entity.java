@@ -1121,8 +1121,1434 @@ public abstract class Entity {
         return (this.getControllingPassenger() instanceof murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity playerEntity) && this.isAlive() ? playerEntity.getMovement() : this.getVelocity();
     }
 
+    // BEGIN GENERATED ENTITY COMPAT STUBS
+    public boolean velocityModified;
+
     public Entity() {
     }
+
+    public boolean isAttackable() {
+        return false;
+    }
+
+    public boolean handleAttack(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0) {
+        return false;
+    }
+
+    public boolean sidedDamage(murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p0, float p1) {
+        return false;
+    }
+
+    public boolean onKilledOther(
+        murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0,
+        murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1
+    ) {
+        return false;
+    }
+    // END GENERATED ENTITY COMPAT STUBS
+
+    // BEGIN GENERATED PRIMARY CONTRACT STUBS
+    public static java.util.concurrent.atomic.AtomicInteger CURRENT_ID;
+    public static java.lang.String CUSTOM_DATA_NBT_KEY;
+    public static float DEFAULT_FRICTION;
+    public static int DEFAULT_MIN_FREEZE_DAMAGE_TICKS;
+    public static int DEFAULT_PORTAL_COOLDOWN;
+    public static int FREEZING_DAMAGE_INTERVAL;
+    public static int GLIDING_FLAG_INDEX;
+    public static int GLOWING_FLAG_INDEX;
+    public static java.lang.String ID_KEY;
+    public static int INVISIBLE_FLAG_INDEX;
+    public static int MAX_COMMAND_TAGS;
+    public static int MAX_RIDING_COOLDOWN;
+    public static float MIN_RISING_BUBBLE_COLUMN_SPEED;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.math.Box NULL_BOX;
+    public static java.lang.String PASSENGERS_KEY;
+    public static int SNEAKING_FLAG_INDEX;
+    public static double SPEED_IN_LAVA;
+    public static double SPEED_IN_LAVA_IN_NETHER;
+    public static double SPEED_IN_WATER;
+    public static com.mojang.serialization.Codec TAG_LIST_CODEC;
+    public static java.lang.String UUID_KEY;
+    public java.lang.Object changeListener;
+    public java.util.Set commandTags;
+    public java.lang.Object customData;
+    public static float field_44870;
+    public static double field_44871;
+    public static double field_44872;
+    public static int field_49073;
+    public static int field_49791;
+    public boolean glowing;
+    public boolean hasVisualFire;
+    public int id;
+    public boolean inPowderSnow;
+    public boolean intersectionChecked;
+    public float lastPitch;
+    public double lastX;
+    public double lastY;
+    public float lastYaw;
+    public double lastZ;
+    public com.google.common.collect.ImmutableList passengerList;
+    public long pistonMovementTick;
+    public int portalCooldown;
+    public java.lang.Object portalManager;
+    public java.util.List queuedCollisionChecks;
+    public static double renderDistanceMultiplier;
+    public int ridingCooldown;
+    public float speed;
+    public boolean submergedInWater;
+    public int timeUntilRegen;
+    public java.lang.Object trackedPosition;
+    public java.util.UUID uuid;
+    public java.lang.String uuidString;
+    public boolean velocityDirty;
+    public boolean wasInPowderSnow;
+
+    protected void addAirTravelEffects() {
+    }
+
+    protected boolean addCommandTag(java.lang.String p0) {
+        return false;
+    }
+
+    protected void addFlapEffects() {
+    }
+
+    protected void addPassenger(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+    }
+
+    protected void addPortalChunkTicketAt(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
+    }
+
+    protected void addVelocity(double p0, double p1, double p2) {
+    }
+
+    protected void addVelocity(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
+    }
+
+    public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d adjustMovementForCollisions(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p2, murat.simv2.simulation.mirror.net.minecraft.world.World p3, java.util.List p4) {
+        return null;
+    }
+
+    public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d adjustMovementForCollisions(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p1, java.util.List p2) {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d adjustMovementForSneaking(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, murat.simv2.simulation.mirror.net.minecraft.entity.MovementType p1) {
+        return null;
+    }
+
+    protected void animateDamage(float p0) {
+    }
+
+    public static void applyBubbleColumnEffects(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, boolean p1) {
+    }
+
+    public static void applyBubbleColumnSurfaceEffects(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, boolean p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
+    }
+
+    protected void applyGravity() {
+    }
+
+    protected float applyMirror(java.lang.Object p0) {
+        return 0.0F;
+    }
+
+    protected float applyRotation(java.lang.Object p0) {
+        return 0.0F;
+    }
+
+    protected void attemptTickInVoid() {
+    }
+
+    protected void baseTick() {
+    }
+
+    protected boolean bypassesLandingEffects() {
+        return false;
+    }
+
+    protected boolean bypassesSteppingEffects() {
+        return false;
+    }
+
+    protected float calculateNextStepSoundDistance() {
+        return 0.0F;
+    }
+
+    protected boolean canActVoluntarily() {
+        return false;
+    }
+
+    protected boolean canAddPassenger(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+        return false;
+    }
+
+    protected boolean canAvoidTraps() {
+        return false;
+    }
+
+    protected boolean canBeHitByProjectile() {
+        return false;
+    }
+
+    protected boolean canBeSpectated(murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity p0) {
+        return false;
+    }
+
+    protected boolean canExplosionDestroyBlock(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, float p4) {
+        return false;
+    }
+
+    protected boolean canHit() {
+        return false;
+    }
+
+    protected boolean canModifyAt(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
+        return false;
+    }
+
+    protected boolean canMoveVoluntarily() {
+        return false;
+    }
+
+    protected boolean canSprintAsVehicle() {
+        return false;
+    }
+
+    protected boolean canStartRiding(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+        return false;
+    }
+
+    protected boolean canTeleportBetween(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1) {
+        return false;
+    }
+
+    protected boolean canUsePortals(boolean p0) {
+        return false;
+    }
+
+    public static java.lang.Object castComponentValue(java.lang.Object p0, java.lang.Object p1) {
+        return null;
+    }
+
+    protected void changeLookDirection(double p0, double p1) {
+    }
+
+    protected void checkBlockCollision(java.util.List p0, murat.simv2.simulation.mirror.net.minecraft.entity.EntityCollisionHandler.Impl p1) {
+    }
+
+    protected void checkDespawn() {
+    }
+
+    protected void checkWaterState() {
+    }
+
+    protected boolean clientDamage(murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p0) {
+        return false;
+    }
+
+    public static float[] collectStepHeights(murat.simv2.simulation.mirror.net.minecraft.util.math.Box p0, java.util.List p1, float p2, float p3) {
+        return null;
+    }
+
+    protected boolean collidesWithFluid(murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p2, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p3) {
+        return false;
+    }
+
+    protected boolean collidesWithStateAtPos(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1) {
+        return false;
+    }
+
+    protected boolean collidesWith(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+        return false;
+    }
+
+    protected boolean collides(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1, java.util.List p2) {
+        return false;
+    }
+
+    protected boolean copyComponentFrom(java.lang.Object p0, java.lang.Object p1) {
+        return false;
+    }
+
+    protected void copyComponentsFrom(java.lang.Object p0) {
+    }
+
+    protected void copyComponentsFrom(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0) {
+    }
+
+    protected void copyFrom(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+    }
+
+    protected void copyPositionAndRotation(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+    }
+
+    protected boolean couldAcceptPassenger() {
+        return false;
+    }
+
+    protected java.lang.Object createSpawnPacket(java.lang.Object p0) {
+        return null;
+    }
+
+    protected boolean damage(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p1, float p2) {
+        return false;
+    }
+
+    protected void defrost() {
+    }
+
+    protected void detach() {
+    }
+
+    protected void discard() {
+    }
+
+    protected void dismountVehicle() {
+    }
+
+    protected float distanceTo(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+        return 0.0F;
+    }
+
+    protected boolean doesRenderOnFire() {
+        return false;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity dropItem(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, java.lang.Object p1) {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity dropItem(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, java.lang.Object p1, int p2) {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity dropStack(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p1) {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity dropStack(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p1, float p2) {
+        return null;
+    }
+
+    protected void emitGameEvent(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0) {
+    }
+
+    protected void emitGameEvent(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p1) {
+    }
+
+    protected boolean equals(java.lang.Object p0) {
+        return false;
+    }
+
+    protected void extinguishWithSound() {
+    }
+
+    public static java.util.List findCollisionsForMovement(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, java.util.List p2, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p3) {
+        return null;
+    }
+
+    public static java.lang.Object fromName(java.lang.String p0) {
+        return null;
+    }
+
+    public static java.lang.Object fromProfile(com.mojang.authlib.GameProfile p0) {
+        return null;
+    }
+
+    protected int getAir() {
+        return 0;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.EntityAttachments getAttachments() {
+        return null;
+    }
+
+    protected int getBlockX() {
+        return 0;
+    }
+
+    protected int getBlockY() {
+        return 0;
+    }
+
+    protected int getBlockZ() {
+        return 0;
+    }
+
+    protected double getBodyX(double p0) {
+        return 0.0D;
+    }
+
+    protected float getBodyYaw() {
+        return 0.0F;
+    }
+
+    protected double getBodyZ(double p0) {
+        return 0.0D;
+    }
+
+    protected float getBrightnessAtEyes() {
+        return 0.0F;
+    }
+
+    protected int getBurningDuration() {
+        return 0;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getCameraPosVec(float p0) {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.ChunkPos getChunkPos() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getClientCameraPosVec(float p0) {
+        return null;
+    }
+
+    protected java.lang.Object getCommandSource(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0) {
+        return null;
+    }
+
+    protected java.util.Set getCommandTags() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.Entity getControllingVehicle() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.text.Text getCustomName() {
+        return null;
+    }
+
+    protected java.lang.Object getDamageSources() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.text.Text getDefaultName() {
+        return null;
+    }
+
+    protected int getDefaultPortalCooldown() {
+        return 0;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.text.Text getDisplayName() {
+        return null;
+    }
+
+    protected float getEffectiveExplosionResistance(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState p4, float p5) {
+        return 0.0F;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.world.World getEntityWorld() {
+        return null;
+    }
+
+    protected float getEyeHeight(murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose p0) {
+        return 0.0F;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getEyePos() {
+        return null;
+    }
+
+    protected double getEyeY() {
+        return 0.0D;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Direction getFacing() {
+        return null;
+    }
+
+    protected int getFireTicks() {
+        return 0;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.Entity getFirstPassenger() {
+        return null;
+    }
+
+    protected float getFreezingScale() {
+        return 0.0F;
+    }
+
+    protected double getGravity() {
+        return 0.0D;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getHandPosOffset(murat.simv2.simulation.mirror.net.minecraft.item.Item p0) {
+        return null;
+    }
+
+    protected float getHeadYaw() {
+        return 0.0F;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent getHighSpeedSplashSound() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Direction getHorizontalFacing() {
+        return null;
+    }
+
+    protected java.lang.Object getHoverEvent() {
+        return null;
+    }
+
+    protected int getId() {
+        return 0;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.PositionInterpolator getInterpolator() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getLeashOffset() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getLeashOffset(float p0) {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getLeashPos(float p0) {
+        return null;
+    }
+
+    protected float getLerpedPitch(float p0) {
+        return 0.0F;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getLerpedPos(float p0) {
+        return null;
+    }
+
+    protected float getLerpedYaw(float p0) {
+        return 0.0F;
+    }
+
+    protected java.util.Optional getLootTableKey() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.Entity.MoveEffect getMoveEffect() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Direction getMovementDirection() {
+        return null;
+    }
+
+    protected java.lang.String getNameForScoreboard() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.text.Text getName() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getOppositeRotationVector(float p0) {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getOppositeRotationVector(float p0, float p1) {
+        return null;
+    }
+
+    protected java.lang.Object getOrDefault(java.lang.Object p0, java.lang.Object p1) {
+        return null;
+    }
+
+    protected double getParticleX(double p0) {
+        return 0.0D;
+    }
+
+    protected double getParticleZ(double p0) {
+        return 0.0D;
+    }
+
+    public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getPassengerAttachmentPos(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p1, murat.simv2.simulation.mirror.net.minecraft.entity.EntityAttachments p2) {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getPassengerAttachmentPos(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.entity.EntityDimensions p1, float p2) {
+        return null;
+    }
+
+    public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getPassengerDismountOffset(double p0, double p1, float p2) {
+        return null;
+    }
+
+    protected java.util.List getPassengerList() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getPassengerRidingPos(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+        return null;
+    }
+
+    protected java.lang.Object getPassengerTeleportTarget(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p1) {
+        return null;
+    }
+
+    protected java.lang.Iterable getPassengersDeep() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getPickBlockStack() {
+        return null;
+    }
+
+    protected java.lang.Object getPistonBehavior() {
+        return null;
+    }
+
+    protected float getPitch(float p0) {
+        return 0.0F;
+    }
+
+    protected int getPlayerPassengers() {
+        return 0;
+    }
+
+    protected int getPortalCooldown() {
+        return 0;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.ProjectileDeflection getProjectileDeflection(murat.simv2.simulation.mirror.net.minecraft.entity.projectile.ProjectileEntity p0) {
+        return null;
+    }
+
+    protected double getRandomBodyY() {
+        return 0.0D;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random getRandom() {
+        return null;
+    }
+
+    protected java.lang.Object getRegistryManager() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.Entity.RemovalReason getRemovalReason() {
+        return null;
+    }
+
+    public static double getRenderDistanceMultiplier() {
+        return 0.0D;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.Entity getRootVehicle() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getRotationVec(float p0) {
+        return null;
+    }
+
+    protected int getSafeFallDistance() {
+        return 0;
+    }
+
+    protected java.lang.String getSavedEntityId() {
+        return null;
+    }
+
+    protected java.lang.Object getServer() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.sound.SoundCategory getSoundCategory() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent getSplashSound() {
+        return null;
+    }
+
+    protected java.lang.Object getStackReference(int p0) {
+        return null;
+    }
+
+    protected float getStepHeight() {
+        return 0.0F;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.block.BlockState getSteppingBlockState() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.text.Text getStyledDisplayName() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent getSwimSound() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getSyncedPos() {
+        return null;
+    }
+
+    protected float getTargetingMargin() {
+        return 0.0F;
+    }
+
+    protected int getTeamColorValue() {
+        return 0;
+    }
+
+    protected java.lang.Object getTrackedPosition() {
+        return null;
+    }
+
+    protected java.lang.Object getTyped(java.lang.Object p0) {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.EntityType getType() {
+        return null;
+    }
+
+    protected java.lang.String getUuidAsString() {
+        return null;
+    }
+
+    protected java.util.UUID getUuid() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getVehicleAttachmentPos(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getWeaponStack() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos getWorldSpawnPos(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
+        return null;
+    }
+
+    protected float getYaw(float p0) {
+        return 0.0F;
+    }
+
+    protected java.lang.Object get(java.lang.Object p0) {
+        return null;
+    }
+
+    protected boolean handleAttack(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+        return false;
+    }
+
+    protected void handleFallDamageForPassengers(double p0, float p1, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p2) {
+    }
+
+    protected boolean handleFallDamage(double p0, float p1, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p2) {
+        return false;
+    }
+
+    protected void handleFall(double p0, double p1, double p2, boolean p3) {
+    }
+
+    protected void handleStatus(byte p0) {
+    }
+
+    protected boolean hasCollidedSoftly(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
+        return false;
+    }
+
+    protected boolean hasControllingPassenger() {
+        return false;
+    }
+
+    protected boolean hasCustomName() {
+        return false;
+    }
+
+    protected boolean hasPassengerDeep(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+        return false;
+    }
+
+    protected boolean hasPassengers() {
+        return false;
+    }
+
+    protected boolean hasPassenger(java.util.function.Predicate p0) {
+        return false;
+    }
+
+    protected boolean hasPassenger(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+        return false;
+    }
+
+    protected boolean hasPlayerRider() {
+        return false;
+    }
+
+    protected boolean hasPortalCooldown() {
+        return false;
+    }
+
+    protected int hashCode() {
+        return 0;
+    }
+
+    protected void igniteByLava() {
+    }
+
+    protected void initDataTracker(murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker.Builder p0) {
+    }
+
+    protected java.lang.Object interactAt(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1, murat.simv2.simulation.mirror.net.minecraft.util.Hand p2) {
+        return null;
+    }
+
+    protected java.lang.Object interact(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.util.Hand p1) {
+        return null;
+    }
+
+    protected boolean isAlive() {
+        return false;
+    }
+
+    protected boolean isBeingRainedOn() {
+        return false;
+    }
+
+    protected boolean isCollidable() {
+        return false;
+    }
+
+    protected boolean isConnectedThroughVehicle(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+        return false;
+    }
+
+    protected boolean isControlledByMainPlayer() {
+        return false;
+    }
+
+    protected boolean isControlledByPlayer() {
+        return false;
+    }
+
+    protected boolean isCustomNameVisible() {
+        return false;
+    }
+
+    protected boolean isDescending() {
+        return false;
+    }
+
+    protected boolean isFlappingWings() {
+        return false;
+    }
+
+    protected boolean isGlowingLocal() {
+        return false;
+    }
+
+    protected boolean isGlowing() {
+        return false;
+    }
+
+    protected boolean isImmuneToExplosion(java.lang.Object p0) {
+        return false;
+    }
+
+    protected boolean isInFluid() {
+        return false;
+    }
+
+    protected boolean isInRange(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, double p1) {
+        return false;
+    }
+
+    protected boolean isInRange(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, double p1, double p2) {
+        return false;
+    }
+
+    protected boolean isInSneakingPose() {
+        return false;
+    }
+
+    protected boolean isInsideWall() {
+        return false;
+    }
+
+    protected boolean isInvisibleTo(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0) {
+        return false;
+    }
+
+    protected boolean isInvisible() {
+        return false;
+    }
+
+    protected boolean isInvulnerable() {
+        return false;
+    }
+
+    protected boolean isLiving() {
+        return false;
+    }
+
+    protected boolean isPartOf(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+        return false;
+    }
+
+    protected boolean isPlayer() {
+        return false;
+    }
+
+    protected boolean isPushable() {
+        return false;
+    }
+
+    protected boolean isPushedByFluids() {
+        return false;
+    }
+
+    protected boolean isSneaking() {
+        return false;
+    }
+
+    protected boolean isSpectator() {
+        return false;
+    }
+
+    protected boolean isSubmergedInWater() {
+        return false;
+    }
+
+    protected boolean isSupportedBy(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
+        return false;
+    }
+
+    protected void kill(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0) {
+    }
+
+    protected void lerpPosAndRotation(int p0, double p1, double p2, double p3, double p4, double p5) {
+    }
+
+    protected float lerpYaw(float p0) {
+        return 0.0F;
+    }
+
+    protected void lookAt(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
+    }
+
+    protected boolean method_30022(murat.simv2.simulation.mirror.net.minecraft.util.math.Box p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
+        return false;
+    }
+
+    public static boolean method_31475(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p1) {
+        return false;
+    }
+
+    protected java.util.Iterator method_31485() {
+        return null;
+    }
+
+    public static void method_37216(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+    }
+
+    public static boolean method_37217(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+        return false;
+    }
+
+    public static void method_49789(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.block.BlockState method_51700(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
+        return null;
+    }
+
+    public static boolean method_54756(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+        return false;
+    }
+
+    protected java.lang.String method_5689() {
+        return null;
+    }
+
+    protected java.lang.String method_5761() {
+        return null;
+    }
+
+    protected java.lang.String method_5766() {
+        return null;
+    }
+
+    protected java.lang.Object method_5813(java.lang.Object p0) {
+        return null;
+    }
+
+    protected java.lang.String method_5849() {
+        return null;
+    }
+
+    protected void method_67632(it.unimi.dsi.fastutil.longs.LongSet p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p2, murat.simv2.simulation.mirror.net.minecraft.entity.EntityCollisionHandler.Impl p3, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p4, int p5) {
+    }
+
+    protected void method_67634(java.util.UUID p0) {
+    }
+
+    protected boolean occludeVibrationSignals() {
+        return false;
+    }
+
+    protected void onBlockCollision(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0) {
+    }
+
+    protected void onBubbleColumnCollision(boolean p0) {
+    }
+
+    protected void onBubbleColumnSurfaceCollision(boolean p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
+    }
+
+    protected void onDamaged(murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p0) {
+    }
+
+    protected void onDataTrackerUpdate(java.util.List p0) {
+    }
+
+    protected void onExplodedBy(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+    }
+
+    protected void onPassengerLookAround(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+    }
+
+    protected void onPlayerCollision(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0) {
+    }
+
+    protected void onRemoved() {
+    }
+
+    protected void onRemove(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.RemovalReason p0) {
+    }
+
+    protected void onSpawnPacket(java.lang.Object p0) {
+    }
+
+    protected void onStartedTrackingBy(murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity p0) {
+    }
+
+    protected void onStoppedTrackingBy(murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity p0) {
+    }
+
+    protected void onStruckByLightning(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, java.lang.Object p1) {
+    }
+
+    protected void playSoundIfNotSilent(murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent p0) {
+    }
+
+    protected void playSound(murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent p0, float p1, float p2) {
+    }
+
+    protected void popQueuedCollisionCheck() {
+    }
+
+    protected void populateCrashReport(murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashReportSection p0) {
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d positionInPortal(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis p0, java.lang.Object p1) {
+        return null;
+    }
+
+    protected void pushAwayFrom(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+    }
+
+    protected void pushOutOfBlocks(double p0, double p1, double p2) {
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.hit.HitResult raycast(double p0, float p1, boolean p2) {
+        return null;
+    }
+
+    protected void readCustomDataFromNbt(murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound p0) {
+    }
+
+    protected void readNbt(murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound p0) {
+    }
+
+    protected void refreshPositionAfterTeleport(double p0, double p1, double p2) {
+    }
+
+    protected void refreshPositionAfterTeleport(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
+    }
+
+    protected void refreshPositionAndAngles(double p0, double p1, double p2, float p3, float p4) {
+    }
+
+    protected void refreshPositionAndAngles(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, float p1, float p2) {
+    }
+
+    protected void refreshPositionAndAngles(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, float p1, float p2) {
+    }
+
+    protected void reinitDimensions() {
+    }
+
+    protected void removeAllPassengers() {
+    }
+
+    public static murat.simv2.simulation.mirror.net.minecraft.text.Text removeClickEvents(murat.simv2.simulation.mirror.net.minecraft.text.Text p0) {
+        return null;
+    }
+
+    protected boolean removeCommandTag(java.lang.String p0) {
+        return false;
+    }
+
+    protected void removeFromDimension() {
+    }
+
+    protected void removePassenger(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+    }
+
+    protected void remove(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.RemovalReason p0) {
+    }
+
+    protected void requestTeleportAndDismount(double p0, double p1, double p2) {
+    }
+
+    protected void requestTeleportOffset(double p0, double p1, double p2) {
+    }
+
+    protected void requestTeleport(double p0, double p1, double p2) {
+    }
+
+    protected void resetPortalCooldown() {
+    }
+
+    protected void resetPosition() {
+    }
+
+    protected void rotate(float p0, float p1) {
+    }
+
+    protected boolean saveNbt(murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound p0) {
+        return false;
+    }
+
+    protected boolean saveSelfNbt(murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound p0) {
+        return false;
+    }
+
+    protected void scheduleVelocityUpdate() {
+    }
+
+    protected void sendTeleportPacket(java.lang.Object p0) {
+    }
+
+    protected void setAir(int p0) {
+    }
+
+    protected void setAngles(float p0, float p1) {
+    }
+
+    protected boolean setApplicableComponent(java.lang.Object p0, java.lang.Object p1) {
+        return false;
+    }
+
+    protected void setBodyYaw(float p0) {
+    }
+
+    protected void setChangeListener(java.lang.Object p0) {
+    }
+
+    protected void setComponent(java.lang.Object p0, java.lang.Object p1) {
+    }
+
+    protected void setCustomNameVisible(boolean p0) {
+    }
+
+    protected void setCustomName(murat.simv2.simulation.mirror.net.minecraft.text.Text p0) {
+    }
+
+    protected void setFlag(int p0, boolean p1) {
+    }
+
+    protected void setFrozenTicks(int p0) {
+    }
+
+    protected void setGlowing(boolean p0) {
+    }
+
+    protected void setHeadYaw(float p0) {
+    }
+
+    protected void setId(int p0) {
+    }
+
+    protected void setInPowderSnow(boolean p0) {
+    }
+
+    protected void setInvisible(boolean p0) {
+    }
+
+    protected void setInvulnerable(boolean p0) {
+    }
+
+    protected void setLastAngles(float p0, float p1) {
+    }
+
+    protected void setLastPositionAndAngles(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, float p1, float p2) {
+    }
+
+    protected void setLastPosition(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
+    }
+
+    protected void setMovement(boolean p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
+    }
+
+    protected void setNoGravity(boolean p0) {
+    }
+
+    protected void setOnFireForTicks(int p0) {
+    }
+
+    protected void setOnFireFor(float p0) {
+    }
+
+    protected void setOnFireFromLava() {
+    }
+
+    protected void setOnFire(boolean p0) {
+    }
+
+    protected void setOnGround(boolean p0) {
+    }
+
+    protected void setPitch(float p0) {
+    }
+
+    protected void setPortalCooldown(int p0) {
+    }
+
+    protected void setPose(murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose p0) {
+    }
+
+    protected void setPosition(java.lang.Object p0, java.util.Set p1) {
+    }
+
+    protected void setRemoved(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.RemovalReason p0) {
+    }
+
+    public static void setRenderDistanceMultiplier(double p0) {
+    }
+
+    protected void setRotation(float p0, float p1) {
+    }
+
+    protected void setSilent(boolean p0) {
+    }
+
+    protected void setSneaking(boolean p0) {
+    }
+
+    protected void setSprinting(boolean p0) {
+    }
+
+    protected void setSwimming(boolean p0) {
+    }
+
+    protected void setUuid(java.util.UUID p0) {
+    }
+
+    protected void setVelocityClient(double p0, double p1, double p2) {
+    }
+
+    protected void setWorld(murat.simv2.simulation.mirror.net.minecraft.world.World p0) {
+    }
+
+    protected void setYaw(float p0) {
+    }
+
+    protected boolean shouldControlVehicles() {
+        return false;
+    }
+
+    protected boolean shouldDismountUnderwater() {
+        return false;
+    }
+
+    protected boolean shouldPlayBurnSoundInLava() {
+        return false;
+    }
+
+    protected boolean shouldRenderName() {
+        return false;
+    }
+
+    protected boolean shouldRender(double p0) {
+        return false;
+    }
+
+    protected boolean shouldRender(double p0, double p1, double p2) {
+        return false;
+    }
+
+    protected boolean shouldSave() {
+        return false;
+    }
+
+    protected boolean shouldSetPositionOnLoad() {
+        return false;
+    }
+
+    protected boolean shouldSpawnSprintingParticles() {
+        return false;
+    }
+
+    protected void slowMovement(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
+    }
+
+    public static void spawnBubbleColumnParticles(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
+    }
+
+    protected void spawnSprintingParticles() {
+    }
+
+    protected double squaredDistanceTo(double p0, double p1, double p2) {
+        return 0.0D;
+    }
+
+    protected boolean startRiding(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+        return false;
+    }
+
+    protected boolean startRiding(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, boolean p1) {
+        return false;
+    }
+
+    protected void stopRiding() {
+    }
+
+    protected java.util.stream.Stream streamIntoPassengers() {
+        return null;
+    }
+
+    protected java.util.stream.Stream streamPassengersAndSelf() {
+        return null;
+    }
+
+    protected java.util.stream.Stream streamSelfAndPassengers() {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.Entity teleportCrossDimension(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, java.lang.Object p1) {
+        return null;
+    }
+
+    protected void teleportPassengers() {
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.Entity teleportSameDimension(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, java.lang.Object p1) {
+        return null;
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.entity.Entity teleportTo(java.lang.Object p0) {
+        return null;
+    }
+
+    protected boolean teleport(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, double p1, double p2, double p3, java.util.Set p4, float p5, float p6, boolean p7) {
+        return false;
+    }
+
+    protected void tickBlockCollisions(java.util.List p0) {
+    }
+
+    protected void tickBlockCollision(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
+    }
+
+    protected void tickInVoid() {
+    }
+
+    protected void tickPortalCooldown() {
+    }
+
+    protected void tickPortalTeleportation() {
+    }
+
+    protected void tickRiding() {
+    }
+
+    protected void tick() {
+    }
+
+    protected java.lang.String toString() {
+        return null;
+    }
+
+    protected void tryUsePortal(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
+    }
+
+    protected void unsetRemoved() {
+    }
+
+    protected void updateEventHandler(java.util.function.BiConsumer p0) {
+    }
+
+    protected void updateKilledAdvancementCriterion(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p1) {
+    }
+
+    protected void updateLastAngles() {
+    }
+
+    protected void updateLastPosition() {
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d updatePassengerForDismount(murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p0) {
+        return null;
+    }
+
+    protected void updatePassengerPosition(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
+    }
+
+    protected void updatePassengerPosition(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.entity.Entity.PositionUpdater p1) {
+    }
+
+    protected void updatePositionAndAngles(double p0, double p1, double p2, float p3, float p4) {
+    }
+
+    protected void updatePosition(double p0, double p1, double p2) {
+    }
+
+    protected void updateSubmergedInWaterState() {
+    }
+
+    protected void updateSwimming() {
+    }
+
+    protected void updateTrackedHeadRotation(float p0, int p1) {
+    }
+
+    protected void updateTrackedPositionAndAngles(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, float p1, float p2) {
+    }
+
+    protected void updateTrackedPosition(double p0, double p1, double p2) {
+    }
+
+    protected boolean updateWaterState() {
+        return false;
+    }
+
+    protected void writeCustomDataToNbt(murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound p0) {
+    }
+
+    protected murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound writeNbt(murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound p0) {
+        return null;
+    }
+
+    // END GENERATED PRIMARY CONTRACT STUBS
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static class MoveEffect {
@@ -1167,8 +2593,7 @@ public abstract class Entity {
     }
 
     public static interface PositionUpdater {
-        public default void accept(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, double p1, double p2, double p3) {
-        }
+        public void accept(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, double p1, double p2, double p3);
 
     }
 

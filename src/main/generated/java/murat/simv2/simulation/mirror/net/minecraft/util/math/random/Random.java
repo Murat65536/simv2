@@ -22,63 +22,35 @@ public interface Random {
         return null;
     }
 
-    public default int nextBetweenExclusive(int p0, int p1) {
-        return 0;
-    }
+    public int nextBetweenExclusive(int p0, int p1);
 
-    public default int nextBetween(int p0, int p1) {
-        return 0;
-    }
+    public int nextBetween(int p0, int p1);
 
-    public default boolean nextBoolean() {
-        return false;
-    }
+    public boolean nextBoolean();
 
-    public default double nextDouble() {
-        return 0.0D;
-    }
+    public double nextDouble();
 
-    public default float nextFloat() {
-        return 0.0F;
-    }
+    public float nextFloat();
 
-    public default double nextGaussian() {
-        return 0.0D;
-    }
+    public double nextGaussian();
 
-    public default int nextInt() {
-        return 0;
-    }
+    public int nextInt();
 
-    public default int nextInt(int p0) {
-        return 0;
-    }
+    public int nextInt(int p0);
 
-    public default long nextLong() {
-        return 0L;
-    }
+    public long nextLong();
 
-    public default java.lang.Object nextSplitter() {
-        return null;
-    }
+    public java.lang.Object nextSplitter();
 
-    public default double nextTriangular(double p0, double p1) {
-        return 0.0D;
-    }
+    public double nextTriangular(double p0, double p1);
 
-    public default float nextTriangular(float p0, float p1) {
-        return 0.0F;
-    }
+    public float nextTriangular(float p0, float p1);
 
-    public default void setSeed(long p0) {
-    }
+    public void setSeed(long p0);
 
-    public default void skip(int p0) {
-    }
+    public void skip(int p0);
 
-    public default murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random split() {
-        return null;
-    }
+    public murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random split();
 
     // END GENERATED MIRROR NESTED STUBS
 }

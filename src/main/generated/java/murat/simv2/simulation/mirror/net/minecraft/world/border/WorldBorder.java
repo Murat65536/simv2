@@ -197,55 +197,31 @@ public class WorldBorder {
     }
 
     public static interface Area {
-        public default murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape asVoxelShape() {
-            return null;
-        }
+        public murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape asVoxelShape();
 
-        public default murat.simv2.simulation.mirror.net.minecraft.world.border.WorldBorder.Area getAreaInstance() {
-            return null;
-        }
+        public murat.simv2.simulation.mirror.net.minecraft.world.border.WorldBorder.Area getAreaInstance();
 
-        public default double getBoundEast() {
-            return 0.0D;
-        }
+        public double getBoundEast();
 
-        public default double getBoundNorth() {
-            return 0.0D;
-        }
+        public double getBoundNorth();
 
-        public default double getBoundSouth() {
-            return 0.0D;
-        }
+        public double getBoundSouth();
 
-        public default double getBoundWest() {
-            return 0.0D;
-        }
+        public double getBoundWest();
 
-        public default double getShrinkingSpeed() {
-            return 0.0D;
-        }
+        public double getShrinkingSpeed();
 
-        public default double getSizeLerpTarget() {
-            return 0.0D;
-        }
+        public double getSizeLerpTarget();
 
-        public default long getSizeLerpTime() {
-            return 0L;
-        }
+        public long getSizeLerpTime();
 
-        public default double getSize() {
-            return 0.0D;
-        }
+        public double getSize();
 
-        public default java.lang.Object getStage() {
-            return null;
-        }
+        public java.lang.Object getStage();
 
-        public default void onCenterChanged() {
-        }
+        public void onCenterChanged();
 
-        public default void onMaxRadiusChanged() {
-        }
+        public void onMaxRadiusChanged();
 
     }
 

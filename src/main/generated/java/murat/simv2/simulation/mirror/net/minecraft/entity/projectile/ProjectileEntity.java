@@ -1832,9 +1832,7 @@ public class ProjectileEntity extends murat.simv2.simulation.mirror.net.minecraf
     }
 
     public static interface ProjectileCreator<T> {
-        public default murat.simv2.simulation.mirror.net.minecraft.entity.projectile.ProjectileEntity create(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p2) {
-            return null;
-        }
+        public murat.simv2.simulation.mirror.net.minecraft.entity.projectile.ProjectileEntity create(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p2);
 
     }
 

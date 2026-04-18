@@ -90,14 +90,12 @@ public class VoxelSet {
     }
 
     public static interface PositionBiConsumer {
-        public default void consume(int p0, int p1, int p2, int p3, int p4, int p5) {
-        }
+        public void consume(int p0, int p1, int p2, int p3, int p4, int p5);
 
     }
 
     public static interface PositionConsumer {
-        public default void consume(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p0, int p1, int p2, int p3) {
-        }
+        public void consume(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p0, int p1, int p2, int p3);
 
     }
 

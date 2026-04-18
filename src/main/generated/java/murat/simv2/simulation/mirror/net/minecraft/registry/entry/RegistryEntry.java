@@ -4,61 +4,35 @@ package murat.simv2.simulation.mirror.net.minecraft.registry.entry;
 public interface RegistryEntry<T> {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public default java.lang.String getIdAsString() {
-        return null;
-    }
+    public java.lang.String getIdAsString();
 
-    public default com.mojang.datafixers.util.Either getKeyOrValue() {
-        return null;
-    }
+    public com.mojang.datafixers.util.Either getKeyOrValue();
 
-    public default java.util.Optional getKey() {
-        return null;
-    }
+    public java.util.Optional getKey();
 
-    public default murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry.Type getType() {
-        return null;
-    }
+    public murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry.Type getType();
 
-    public default boolean hasKeyAndValue() {
-        return false;
-    }
+    public boolean hasKeyAndValue();
 
-    public default boolean isIn(murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey p0) {
-        return false;
-    }
+    public boolean isIn(murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey p0);
 
-    public default boolean matchesId(murat.simv2.simulation.mirror.net.minecraft.util.Identifier p0) {
-        return false;
-    }
+    public boolean matchesId(murat.simv2.simulation.mirror.net.minecraft.util.Identifier p0);
 
-    public default boolean matchesKey(murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p0) {
-        return false;
-    }
+    public boolean matchesKey(murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p0);
 
-    public default boolean matches(java.util.function.Predicate p0) {
-        return false;
-    }
+    public boolean matches(java.util.function.Predicate p0);
 
-    public default boolean matches(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0) {
-        return false;
-    }
+    public boolean matches(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0);
 
     public static murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry of(java.lang.Object p0) {
         return null;
     }
 
-    public default boolean ownerEquals(java.lang.Object p0) {
-        return false;
-    }
+    public boolean ownerEquals(java.lang.Object p0);
 
-    public default java.util.stream.Stream streamTags() {
-        return null;
-    }
+    public java.util.stream.Stream streamTags();
 
-    public default java.lang.Object value() {
-        return null;
-    }
+    public java.lang.Object value();
 
     public static class Direct<T> implements murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry {
         public java.lang.Object value;

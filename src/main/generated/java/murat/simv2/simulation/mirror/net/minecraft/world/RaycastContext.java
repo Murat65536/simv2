@@ -68,9 +68,7 @@ public class RaycastContext {
     }
 
     public static interface ShapeProvider {
-        public default murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape get(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.ShapeContext p3) {
-            return null;
-        }
+        public murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape get(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.ShapeContext p3);
 
     }
 

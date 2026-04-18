@@ -129,8 +129,7 @@ public class GameRules {
     }
 
     public static interface Acceptor<T> {
-        public default void call(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Visitor p0, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key p1, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type p2) {
-        }
+        public void call(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Visitor p0, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key p1, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type p2);
 
     }
 
@@ -425,14 +424,11 @@ public class GameRules {
     }
 
     public static interface Visitor {
-        public default void visitBoolean(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key p0, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type p1) {
-        }
+        public void visitBoolean(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key p0, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type p1);
 
-        public default void visitInt(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key p0, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type p1) {
-        }
+        public void visitInt(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key p0, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type p1);
 
-        public default void visit(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key p0, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type p1) {
-        }
+        public void visit(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key p0, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type p1);
 
     }
 

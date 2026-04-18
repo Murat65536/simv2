@@ -6,14 +6,11 @@ public interface EntityCollisionHandler {
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static final murat.simv2.simulation.mirror.net.minecraft.entity.EntityCollisionHandler DUMMY = null;
 
-    public default void addEvent(java.lang.Object p0) {
-    }
+    public void addEvent(java.lang.Object p0);
 
-    public default void addPostCallback(java.lang.Object p0, java.util.function.Consumer p1) {
-    }
+    public void addPostCallback(java.lang.Object p0, java.util.function.Consumer p1);
 
-    public default void addPreCallback(java.lang.Object p0, java.util.function.Consumer p1) {
-    }
+    public void addPreCallback(java.lang.Object p0, java.util.function.Consumer p1);
 
     public static class Impl implements murat.simv2.simulation.mirror.net.minecraft.entity.EntityCollisionHandler {
         public static java.lang.Object[] ALL_EVENTS;

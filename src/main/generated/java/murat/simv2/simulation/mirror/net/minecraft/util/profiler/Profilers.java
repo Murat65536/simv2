@@ -34,8 +34,7 @@ public class Profilers {
     }
 
     public static interface Scoped {
-        public default void close() {
-        }
+        public void close();
 
     }
 

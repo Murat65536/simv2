@@ -8,29 +8,17 @@ public interface ShapeContext {
         return null;
     }
 
-    public default boolean canWalkOnFluid(murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState p0, murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState p1) {
-        return false;
-    }
+    public boolean canWalkOnFluid(murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState p0, murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState p1);
 
-    public default murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape getCollisionShape(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
-        return null;
-    }
+    public murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape getCollisionShape(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2);
 
-    public default boolean isAbove(murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, boolean p2) {
-        return false;
-    }
+    public boolean isAbove(murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, boolean p2);
 
-    public default boolean isDescending() {
-        return false;
-    }
+    public boolean isDescending();
 
-    public default boolean isHolding(murat.simv2.simulation.mirror.net.minecraft.item.Item p0) {
-        return false;
-    }
+    public boolean isHolding(murat.simv2.simulation.mirror.net.minecraft.item.Item p0);
 
-    public default boolean isPlacement() {
-        return false;
-    }
+    public boolean isPlacement();
 
     public static murat.simv2.simulation.mirror.net.minecraft.block.ShapeContext ofPlacement(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
         return null;
