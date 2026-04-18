@@ -140,34 +140,10 @@ public final class AnalysisConfig {
         "net/minecraft/world/dimension/.*",
         "net/minecraft/world/event/GameEvent",
         "net/minecraft/world/GameRules.*",
-        // Java stdlib — scope exclusions (keeps classes out of CG entirely)
+        // Keep primordial JDK and common third-party libraries in scope.
+        // Excluding these breaks pointer analysis and often collapses the call graph.
         "java/awt/.*",
-        "javax/.*",
-        "sun/.*",
-        "com/sun/.*",
-        "jdk/.*",
-        "java/lang/Module.*",
-        "java/lang/StackStreamFactory",
-        "java/lang/Thread",
-        "java/lang/ClassLoader",
-        "java/lang/SecurityManager",
-        "java/lang/invoke/.*",
-        "java/lang/reflect/.*",
-        "java/lang/ref/.*",
-        "java/io/.*",
-        "java/nio/.*",
-        "java/net/.*",
-        "java/security/.*",
-        "java/text/.*",
-        "java/time/.*",
-        "java/util/.*",
-        // Third-party libs pulled in by MC
-        "com/google/.*",
-        "com/mojang/.*",
-        "org/apache/.*",
-        "org/slf4j/.*",
-        "io/netty/.*",
-        "it/unimi/dsi/fastutil/.*"
+        "javax/swing/.*"
     );
 
     // Methods to extract via backward slicing + Spoon pruning

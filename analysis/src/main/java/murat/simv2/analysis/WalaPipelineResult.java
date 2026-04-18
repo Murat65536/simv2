@@ -29,7 +29,7 @@ record WalaPipelineResult(
         return switch (spoonPrerequisiteStatus) {
             case READY -> "Backward slice lines are available for Spoon.";
             case POINTER_ANALYSIS_UNAVAILABLE ->
-                "WALA fell back to a CHA call graph, so pointer analysis was unavailable.";
+                "WALA did not provide pointer analysis for this run.";
             case SLICE_LINES_NOT_PRODUCED ->
                 "Backward slicing completed without producing usable source line mappings.";
         };

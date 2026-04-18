@@ -63,13 +63,15 @@ final class MirrorClassEmitter {
         deleteDirectoryIfExists(mirrorRootDir);
         Files.createDirectories(mirrorRootDir);
 
-        Set<String> closureClasses = buildClosureClasses(mirrorClosure, slicedDir);
         minecraftClassIndex = loadMinecraftClassIndex();
+        Set<String> closureClasses = buildClosureClasses(mirrorClosure, slicedDir);
         System.out.println("Mirror closure classes from artifacts: " + closureClasses.size());
         closureRewriteMap = buildClosureRewriteMap(closureClasses);
         closureRewriteRules = buildClosureRewriteRules(closureRewriteMap);
         Map<String, Set<String>> closureMethodSelectors = buildClosureMethodSelectors(closureClasses, mirrorClosure);
         Map<String, Set<FieldStub>> closureFields = buildClosureFields(closureClasses);
+        populateBytecodeMethodSelectors(closureClasses, closureMethodSelectors);
+        populateBytecodeFieldStubs(closureClasses, closureFields);
         emitPrimaryMirrorClasses(slicedDir, mirrorRootDir);
         emitClosureStubs(closureClasses, closureMethodSelectors, closureFields, mirrorRootDir);
     }
@@ -357,6 +359,19 @@ final class MirrorClassEmitter {
                 }
             }
         }
+        for (Map.Entry<String, String> entry : primaryClassesBySimpleName.entrySet()) {
+            Path slicedFile = slicedDir.resolve("Sliced" + entry.getKey() + ".java");
+            if (!Files.exists(slicedFile)) {
+                continue;
+            }
+            String source = Files.readString(slicedFile);
+            for (String className : extractVanillaClassesFromSource(source)) {
+                addClosureClass(closureClasses, className);
+            }
+        }
+
+        closureClasses = new TreeSet<>(augmentClosureClassesWithNamedNestedTypes(closureClasses));
+
         return Set.copyOf(closureClasses);
     }
 

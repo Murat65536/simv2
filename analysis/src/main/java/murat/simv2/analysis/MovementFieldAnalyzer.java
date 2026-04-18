@@ -32,7 +32,7 @@ public final class MovementFieldAnalyzer {
             throw new IllegalStateException(
                 "ALL mode requires Spoon prerequisites, but WALA did not produce usable slice lines. "
                     + walaResult.spoonReadinessDetail()
-                    + " Action: rerun with inputs where 0-1-Container-CFA pointer analysis succeeds, "
+                    + " Action: rerun with inputs where pointer analysis succeeds, "
                     + "or run with mode=wala for WALA-only output.");
         }
         runSpoonPhase(config, walaResult.classifiedFields(), walaResult.sliceLines(), walaResult.mirrorClosure());

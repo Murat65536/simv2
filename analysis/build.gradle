@@ -28,7 +28,20 @@ application {
     mainClass = 'murat.simv2.analysis.MovementFieldAnalyzer'
 }
 
-def analysisJvmArgs = ['-Xmx55g', '-XX:+UseParallelGC', '-Dcom.ibm.wala.fixedpoint.impl.verbose=true', '-noverify']
+def analysisXmx = (project.findProperty('analysisXmx') ?: '8g').toString()
+def analysisVerboseFixedPoint = (project.findProperty('analysisVerboseFixedPoint') ?: 'false')
+    .toString()
+    .toBoolean()
+def analysisDisableBytecodeVerify = (project.findProperty('analysisDisableBytecodeVerify') ?: 'false')
+    .toString()
+    .toBoolean()
+def analysisJvmArgs = ['-Xmx' + analysisXmx, '-XX:+UseParallelGC']
+if (analysisDisableBytecodeVerify) {
+    analysisJvmArgs.add('-noverify')
+}
+if (analysisVerboseFixedPoint) {
+    analysisJvmArgs.add('-Dcom.ibm.wala.fixedpoint.impl.verbose=true')
+}
 
 def resolveAnalysisArgs = { String mode ->
     // Find a linemapped JAR + sources JAR pair from the same hash

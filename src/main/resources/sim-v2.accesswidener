@@ -104,3 +104,8 @@ accessible method net/minecraft/entity/Entity collectStepHeights (Lnet/minecraft
 accessible method net/minecraft/entity/Entity findCollisionsForMovement (Lnet/minecraft/entity/Entity;Lnet/minecraft/world/World;Ljava/util/List;Lnet/minecraft/util/math/Box;)Ljava/util/List;
 accessible method net/minecraft/entity/Entity getAxisCheckOrder (Lnet/minecraft/util/math/Vec3d;)Ljava/lang/Iterable;
 accessible method net/minecraft/entity/Entity movementInputToVelocity (Lnet/minecraft/util/math/Vec3d;FF)Lnet/minecraft/util/math/Vec3d;
+accessible class net/minecraft/entity/boss/WitherEntity
+accessible class net/minecraft/entity/boss/dragon/EnderDragonEntity
+accessible class net/minecraft/entity/passive/ParrotEntity
+accessible class net/minecraft/entity/passive/TameableEntity
+accessible class net/minecraft/entity/passive/WolfEntity

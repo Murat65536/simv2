@@ -10,7 +10,6 @@ import com.ibm.wala.ipa.callgraph.AnalysisScope;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.CallGraphBuilder;
 import com.ibm.wala.ipa.callgraph.Entrypoint;
-import com.ibm.wala.ipa.callgraph.cha.CHACallGraph;
 import com.ibm.wala.ipa.callgraph.impl.DefaultEntrypoint;
 import com.ibm.wala.ipa.callgraph.impl.Util;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
@@ -141,31 +140,27 @@ final class WalaPipelineRunner {
                                           IClassHierarchy cha,
                                           Set<Entrypoint> entrypoints) throws Exception {
         System.out.println("Attempting 0-1-Container-CFA call graph...");
-        try {
-            AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
-            options.setReflectionOptions(AnalysisOptions.ReflectionOptions.NONE);
-            AnalysisCache cache = new AnalysisCacheImpl();
-            CallGraphBuilder<InstanceKey> builder = Util.makeZeroOneContainerCFABuilder(
-                options, cache, cha, scope);
+        AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
+        AnalysisCache cache = new AnalysisCacheImpl();
+        CallGraphBuilder<InstanceKey> builder = Util.makeZeroOneContainerCFABuilder(
+            options, cache, cha, scope);
 
-            long cgStart = System.currentTimeMillis();
-            CallGraph cg = builder.makeCallGraph(options, new PrintingProgressMonitor());
-            PointerAnalysis<InstanceKey> pa = builder.getPointerAnalysis();
-            long cgTime = System.currentTimeMillis() - cgStart;
-            System.out.println("0-1-Container-CFA call graph: "
-                + cg.getNumberOfNodes() + " nodes in " + (cgTime / 1000) + "s");
-            if (cg.getNumberOfNodes() <= 5) {
-                System.out.println("0-1-Container-CFA produced trivial graph, falling back to CHA...");
-                throw new RuntimeException("trivial graph");
-            }
-            return new CallGraphState(cg, pa);
-        } catch (Exception ex) {
-            System.out.println("0-1-Container-CFA failed (" + ex.getMessage() + "), using CHA call graph...");
-            CHACallGraph chaCg = new CHACallGraph(cha);
-            chaCg.init(entrypoints);
-            System.out.println("CHA call graph: " + chaCg.getNumberOfNodes() + " nodes");
-            return new CallGraphState(chaCg, null);
+        long cgStart = System.currentTimeMillis();
+        CallGraph cg = builder.makeCallGraph(options, new PrintingProgressMonitor());
+        PointerAnalysis<InstanceKey> pa = builder.getPointerAnalysis();
+        long cgTime = System.currentTimeMillis() - cgStart;
+        System.out.println("0-1-Container-CFA call graph: "
+            + cg.getNumberOfNodes() + " nodes in " + (cgTime / 1000) + "s");
+        if (cg.getNumberOfNodes() <= 5) {
+            throw new IllegalStateException(
+                "0-1-Container-CFA produced a trivial call graph (" + cg.getNumberOfNodes()
+                    + " nodes). Check exclusions and analysis inputs.");
         }
+        if (pa == null) {
+            throw new IllegalStateException(
+                "0-1-Container-CFA did not produce pointer analysis.");
+        }
+        return new CallGraphState(cg, pa);
     }
 
     private SliceExportResult exportSliceLinesIfAvailable(Path outputDir,
@@ -178,7 +173,7 @@ final class WalaPipelineRunner {
         if (pa == null) {
             removeStaleArtifacts(sliceJsonPath, mirrorClosurePath);
             System.out.println(
-                "\nBackward slice unavailable: pointer analysis is unavailable after CHA fallback.");
+                "\nBackward slice unavailable: pointer analysis is unavailable from call-graph build.");
             System.out.println("Spoon prerequisites are not satisfied for this run.");
             return new SliceExportResult(
                 null,
@@ -271,16 +266,16 @@ final class WalaPipelineRunner {
 
     private Set<Entrypoint> createEntrypoints(IClassHierarchy cha) {
         Set<Entrypoint> entrypoints = new HashSet<>();
-        TypeReference concreteType = TypeReference.findOrCreate(
-            ClassLoaderReference.Application, AnalysisConfig.CLIENT_PLAYER_CLASS);
-        IClass concreteClass = cha.lookupClass(concreteType);
-        if (concreteClass == null) {
-            System.err.println("ERROR: ClientPlayerEntity not found in class hierarchy");
-            return entrypoints;
-        }
         for (AnalysisConfig.EntryMethod em : AnalysisConfig.ENTRY_METHODS) {
+            TypeReference ownerType = TypeReference.findOrCreate(
+                ClassLoaderReference.Application, em.className());
+            IClass ownerClass = cha.lookupClass(ownerType);
+            if (ownerClass == null) {
+                System.err.println("WARNING: Entry owner class not found: " + em.className());
+                continue;
+            }
             MethodReference concreteMethodRef = MethodReference.findOrCreate(
-                concreteType, Selector.make(em.methodName() + em.descriptor()));
+                ownerType, Selector.make(em.methodName() + em.descriptor()));
             IMethod resolved = cha.resolveMethod(concreteMethodRef);
             if (resolved == null) {
                 System.err.println("WARNING: Method not found: "
@@ -288,7 +283,7 @@ final class WalaPipelineRunner {
                 continue;
             }
             entrypoints.add(new DefaultEntrypoint(concreteMethodRef, cha));
-            System.out.println("  Entry: ClientPlayerEntity." + em.methodName() + em.descriptor()
+            System.out.println("  Entry: " + em.className() + "." + em.methodName() + em.descriptor()
                 + " (resolves to " + resolved.getDeclaringClass().getName() + ")");
         }
         return entrypoints;

@@ -7,6 +7,9 @@ public class InvalidIdentifierException {
     public InvalidIdentifierException(java.lang.String p0) {
     }
 
+    public InvalidIdentifierException(java.lang.String p0, java.lang.Throwable p1) {
+    }
+
     public InvalidIdentifierException() {
     }
 

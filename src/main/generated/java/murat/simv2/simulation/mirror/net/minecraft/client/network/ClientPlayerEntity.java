@@ -2,25 +2,25 @@ package murat.simv2.simulation.mirror.net.minecraft.client.network;
 
 import java.util.Iterator;
 import java.util.stream.StreamSupport;
+import murat.simv2.simulation.mirror.net.minecraft.block.BlockState;
 import murat.simv2.simulation.mirror.net.minecraft.block.ShapeContext;
+import murat.simv2.simulation.mirror.net.minecraft.client.MinecraftClient;
+import murat.simv2.simulation.mirror.net.minecraft.client.input.Input;
+import murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose;
+import murat.simv2.simulation.mirror.net.minecraft.entity.JumpingMount;
 import murat.simv2.simulation.mirror.net.minecraft.entity.MovementType;
 import murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes;
 import murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffects;
+import murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerAbilities;
+import murat.simv2.simulation.mirror.net.minecraft.registry.tag.FluidTags;
+import murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.Box;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.Direction;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.Vec2f;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.input.Input;
-import net.minecraft.entity.EntityPose;
-import net.minecraft.entity.JumpingMount;
-import net.minecraft.entity.player.PlayerAbilities;
-import net.minecraft.registry.tag.FluidTags;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.shape.VoxelShape;
+import murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape;
 
 // Mirrored from net.minecraft.client.network.ClientPlayerEntity
 // Movement-relevant statements only (WALA backward slice + Spoon AST pruning)
@@ -30,9 +30,9 @@ public abstract class ClientPlayerEntity extends AbstractClientPlayerEntity {
 
     public boolean inSneakingPose;
 
-    public Input input = new Input();
+    public murat.simv2.simulation.mirror.net.minecraft.client.input.Input input = new murat.simv2.simulation.mirror.net.minecraft.client.input.Input();
 
-    public MinecraftClient client;
+    public murat.simv2.simulation.mirror.net.minecraft.client.MinecraftClient client;
 
     public float renderPitch;
 
@@ -81,7 +81,7 @@ public abstract class ClientPlayerEntity extends AbstractClientPlayerEntity {
         return this.getWorld().canCollide(this, box2);
     }
 
-    public void playSound(SoundEvent sound, float volume, float pitch) {
+    public void playSound(murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent sound, float volume, float pitch) {
         this.getWorld().playSoundClient(this.getX(), this.getY(), this.getZ(), sound, this.getSoundCategory(), volume, pitch, false);
     }
 
@@ -151,8 +151,8 @@ public abstract class ClientPlayerEntity extends AbstractClientPlayerEntity {
         boolean bl = this.input.playerInput.jump();
         boolean bl2 = this.input.playerInput.sneak();
         boolean bl3 = this.input.hasForwardMovement();
-        PlayerAbilities playerAbilities = this.getAbilities();
-        this.inSneakingPose = ((((!playerAbilities.flying) && (!this.isSwimming())) && (!this.hasVehicle())) && this.canChangeIntoPose(EntityPose.CROUCHING)) && (this.isSneaking() || ((!this.isSleeping()) && (!this.canChangeIntoPose(EntityPose.STANDING))));
+        murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerAbilities playerAbilities = this.getAbilities();
+        this.inSneakingPose = ((((!playerAbilities.flying) && (!this.isSwimming())) && (!this.hasVehicle())) && this.canChangeIntoPose(murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose.CROUCHING)) && (this.isSneaking() || ((!this.isSleeping()) && (!this.canChangeIntoPose(murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose.STANDING))));
         boolean bl4 = false;
         if (this.ticksToNextAutoJump > 0) {
             this.ticksToNextAutoJump--;
@@ -178,7 +178,7 @@ public abstract class ClientPlayerEntity extends AbstractClientPlayerEntity {
         if ((this.isTouchingWater() && this.input.playerInput.sneak()) && this.shouldSwimInFluids()) {
             this.knockDownwards();
         }
-        if (this.isSubmergedIn(FluidTags.WATER)) {
+        if (this.isSubmergedIn(murat.simv2.simulation.mirror.net.minecraft.registry.tag.FluidTags.WATER)) {
             int i = (this.isSpectator()) ? 10 : 1;
         }
         if (playerAbilities.flying && this.isCamera()) {
@@ -193,7 +193,7 @@ public abstract class ClientPlayerEntity extends AbstractClientPlayerEntity {
                 this.setVelocity(this.getVelocity().add(0.0, (i * playerAbilities.getFlySpeed()) * 3.0F, 0.0));
             }
         }
-        JumpingMount jumpingMount = this.getJumpingMount();
+        murat.simv2.simulation.mirror.net.minecraft.entity.JumpingMount jumpingMount = this.getJumpingMount();
         super.tickMovement();
     }
 
@@ -234,10 +234,10 @@ public abstract class ClientPlayerEntity extends AbstractClientPlayerEntity {
             if (!(j < (-0.15F))) {
                 murat.simv2.simulation.mirror.net.minecraft.block.ShapeContext shapeContext = murat.simv2.simulation.mirror.net.minecraft.block.ShapeContext.of(this);
                 murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos blockPos = murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos.ofFloored(this.getX(), this.getBoundingBox().maxY, this.getZ());
-                BlockState blockState = this.getWorld().getBlockState(blockPos);
+                murat.simv2.simulation.mirror.net.minecraft.block.BlockState blockState = this.getWorld().getBlockState(blockPos);
                 if (blockState.getCollisionShape(this.getWorld(), blockPos, shapeContext).isEmpty()) {
                     blockPos = blockPos.up();
-                    BlockState blockState2 = this.getWorld().getBlockState(blockPos);
+                    murat.simv2.simulation.mirror.net.minecraft.block.BlockState blockState2 = this.getWorld().getBlockState(blockPos);
                     if (blockState2.getCollisionShape(this.getWorld(), blockPos, shapeContext).isEmpty()) {
                         float n = 1.2F;
                         if (this.hasStatusEffect(murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffects.JUMP_BOOST)) {
@@ -256,7 +256,7 @@ public abstract class ClientPlayerEntity extends AbstractClientPlayerEntity {
                         murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d11 = vec3d7.subtract(vec3d9);
                         murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d12 = vec3d6.add(vec3d9);
                         murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d13 = vec3d7.add(vec3d9);
-                        Iterable<VoxelShape> iterable = this.getWorld().getCollisions(this, box);
+                        Iterable<murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape> iterable = this.getWorld().getCollisions(this, box);
                         Iterator<murat.simv2.simulation.mirror.net.minecraft.util.math.Box> iterator = StreamSupport.stream(iterable.spliterator(), false).flatMap(shape -> shape.getBoundingBoxes().stream()).iterator();
                         float r = Float.MIN_VALUE;
                         while (iterator.hasNext()) {
@@ -267,14 +267,14 @@ public abstract class ClientPlayerEntity extends AbstractClientPlayerEntity {
                                 murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos blockPos2 = murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos.ofFloored(vec3d14);
                                 for (int s = 1; s < n; s++) {
                                     murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos blockPos3 = blockPos2.up(s);
-                                    BlockState blockState3 = this.getWorld().getBlockState(blockPos3);
-                                    VoxelShape voxelShape = null;
+                                    murat.simv2.simulation.mirror.net.minecraft.block.BlockState blockState3 = this.getWorld().getBlockState(blockPos3);
+                                    murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape voxelShape = null;
                                     if (!(voxelShape = blockState3.getCollisionShape(this.getWorld(), blockPos3, shapeContext)).isEmpty()) {
                                         r = ((float) (voxelShape.getMax(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis.Y))) + blockPos3.getY();
                                     }
                                     if (s > 1) {
                                         blockPos = blockPos.up();
-                                        BlockState blockState4 = this.getWorld().getBlockState(blockPos);
+                                        murat.simv2.simulation.mirror.net.minecraft.block.BlockState blockState4 = this.getWorld().getBlockState(blockPos);
                                     }
                                 }
                             }
