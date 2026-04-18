@@ -40,26 +40,10 @@ import java.util.jar.JarFile;
  */
 public class SpoonSlicePruner {
 
-    /** MC entity type → Sliced type simple name mapping */
-    private static final Map<String, String> TYPE_REMAP = Map.of(
-        "Entity", "SlicedEntity",
-        "LivingEntity", "SlicedLivingEntity",
-        "PlayerEntity", "SlicedPlayerEntity",
-        "AbstractClientPlayerEntity", "SlicedAbstractClientPlayerEntity",
-        "ClientPlayerEntity", "SlicedClientPlayerEntity"
-    );
-
-    /**
-     * Methods that should expose sliced peer parameters inside generated sliced code.
-     * Vanilla-facing APIs, overrides, and bridge helpers intentionally keep vanilla types.
-     */
-    private static final Set<String> SLICED_PARAM_METHODS = Set.of();
-
     private static final Set<String> SUBCLASS_VISIBLE_HELPERS = Set.of(
         "adjustMovementForCollisions",
         "applyMoveEffect"
     );
-    private static final boolean STRICT_WALA_LINE_FIDELITY = true;
 
     private final Path sourcesJar;
     private final Path minecraftJar;
@@ -108,15 +92,6 @@ public class SpoonSlicePruner {
             Set<String> hierarchyDefinedFields = new LinkedHashSet<>();
             // Collect access widener entries needed for private members
             Set<String> awEntries = new TreeSet<>();
-            // Methods found during a child's transitive closure that belong to a parent class
-            Map<String, List<CtMethod<?>>> deferredMethods = new LinkedHashMap<>();
-            // Track which sigs each class contributed to hierarchyDefinedMethods
-            // so we can remove them before re-processing
-            Map<String, Set<String>> classContributedSigs = new LinkedHashMap<>();
-            // Track which fields each class contributed to hierarchyDefinedFields
-            // so we can remove them before re-processing
-            Map<String, Set<String>> classContributedFields = new LinkedHashMap<>();
-
             for (String className : AnalysisConfig.TARGET_CLASSES_DOT) {
                 Map<String, Set<Integer>> methodLines = sliceLines.get(className);
                 if (methodLines == null || methodLines.isEmpty()) {
@@ -130,57 +105,9 @@ public class SpoonSlicePruner {
                     continue;
                 }
 
-                // Include any methods deferred from child classes (disabled in strict mode).
-                List<CtMethod<?>> extraMethods = STRICT_WALA_LINE_FIDELITY
-                    ? List.of()
-                    : deferredMethods.remove(type.getSimpleName());
-
-                Set<String> beforeMethods = new LinkedHashSet<>(hierarchyDefinedMethods);
-                Set<String> beforeFields = new LinkedHashSet<>(hierarchyDefinedFields);
                 buildSlicedClass(type, methodLines, outputDir, factory,
-                    emittedSimpleNames, typeIndex, hierarchyDefinedMethods, hierarchyDefinedFields, awEntries,
-                    deferredMethods, extraMethods);
-                Set<String> contributedMethods = new LinkedHashSet<>(hierarchyDefinedMethods);
-                contributedMethods.removeAll(beforeMethods);
-                classContributedSigs.put(type.getSimpleName(), contributedMethods);
-                Set<String> contributedFields = new LinkedHashSet<>(hierarchyDefinedFields);
-                contributedFields.removeAll(beforeFields);
-                classContributedFields.put(type.getSimpleName(), contributedFields);
+                    emittedSimpleNames, typeIndex, hierarchyDefinedMethods, hierarchyDefinedFields, awEntries);
                 emittedSimpleNames.add(type.getSimpleName());
-            }
-
-            // Re-process parent classes that gained deferred methods from later children.
-            if (!STRICT_WALA_LINE_FIDELITY && !deferredMethods.isEmpty()) {
-                for (String className : AnalysisConfig.TARGET_CLASSES_DOT) {
-                    CtType<?> type = typeIndex.get(className);
-                    if (type == null) continue;
-                    List<CtMethod<?>> extra = deferredMethods.remove(type.getSimpleName());
-                    if (extra == null || extra.isEmpty()) continue;
-
-                    // Remove this class's previous contributions so the transitive
-                    // closure can re-discover them (the file will be overwritten)
-                    Set<String> previousSigs = classContributedSigs.getOrDefault(
-                        type.getSimpleName(), Set.of());
-                    hierarchyDefinedMethods.removeAll(previousSigs);
-                    Set<String> previousFields = classContributedFields.getOrDefault(
-                        type.getSimpleName(), Set.of());
-                    hierarchyDefinedFields.removeAll(previousFields);
-
-                    Map<String, Set<Integer>> methodLines = sliceLines.getOrDefault(className, Map.of());
-                    System.out.println("Re-processing " + type.getSimpleName()
-                        + " with " + extra.size() + " deferred methods from children");
-                    Set<String> beforeMethods = new LinkedHashSet<>(hierarchyDefinedMethods);
-                    Set<String> beforeFields = new LinkedHashSet<>(hierarchyDefinedFields);
-                    buildSlicedClass(type, methodLines, outputDir, factory,
-                        emittedSimpleNames, typeIndex, hierarchyDefinedMethods, hierarchyDefinedFields, awEntries,
-                        deferredMethods, extra);
-                    Set<String> contributedMethods = new LinkedHashSet<>(hierarchyDefinedMethods);
-                    contributedMethods.removeAll(beforeMethods);
-                    classContributedSigs.put(type.getSimpleName(), contributedMethods);
-                    Set<String> contributedFields = new LinkedHashSet<>(hierarchyDefinedFields);
-                    contributedFields.removeAll(beforeFields);
-                    classContributedFields.put(type.getSimpleName(), contributedFields);
-                }
             }
 
             // Append sliced-class AW entries to the existing access widener
@@ -390,9 +317,7 @@ public class SpoonSlicePruner {
                                    Map<String, CtType<?>> typeIndex,
                                    Set<String> hierarchyDefinedMethods,
                                    Set<String> hierarchyDefinedFields,
-                                   Set<String> awEntries,
-                                   Map<String, List<CtMethod<?>>> deferredMethods,
-                                   List<CtMethod<?>> extraMethods) throws IOException {
+                                    Set<String> awEntries) throws IOException {
         String simpleName = type.getSimpleName();
         String slicedName = "Sliced" + simpleName;
         System.out.println("Pruning " + type.getQualifiedName() + "...");
@@ -419,7 +344,6 @@ public class SpoonSlicePruner {
             }
 
             CtMethod<?> cloned = original.clone();
-            rewriteMethodSignature(cloned, original);
             relaxHelperVisibility(cloned);
             String sig = methodKey(original);
             String rewrittenSig = methodKey(cloned);
@@ -452,39 +376,6 @@ public class SpoonSlicePruner {
             definedNames.add(methodName);
         }
 
-        // Include methods deferred from child classes (strict mode forbids this).
-        if (!STRICT_WALA_LINE_FIDELITY && extraMethods != null) {
-            for (CtMethod<?> extra : extraMethods) {
-                CtMethod<?> cloned = extra.clone();
-                rewriteMethodSignature(cloned, extra);
-                relaxHelperVisibility(cloned);
-                String sig = methodKey(extra);
-                String rewrittenSig = methodKey(cloned);
-                if (!definedSigs.contains(sig) && !definedSigs.contains(rewrittenSig)) {
-                    clonedMethods.add(cloned);
-                    definedSigs.add(sig);
-                    definedSigs.add(rewrittenSig);
-                    definedNames.add(extra.getSimpleName());
-                }
-            }
-        }
-
-        // Constructors are structural for non-strict mode only. In strict mode they must be WALA-selected.
-        if (!STRICT_WALA_LINE_FIDELITY && type instanceof CtClass<?> ctClass) {
-            for (CtConstructor<?> ctor : ctClass.getConstructors()) {
-                CtMethod<?> wrappedCtor = wrapConstructorAsMethod(ctor, false);
-                if (wrappedCtor == null) {
-                    continue;
-                }
-                String sig = methodKey(wrappedCtor);
-                if (!definedSigs.contains(sig)) {
-                    clonedMethods.add(wrappedCtor);
-                    definedSigs.add(sig);
-                    definedNames.add(wrappedCtor.getSimpleName());
-                }
-            }
-        }
-
         if (clonedMethods.isEmpty()) {
             System.out.println("  No methods resolved for " + simpleName + " — skipping");
             return;
@@ -495,56 +386,6 @@ public class SpoonSlicePruner {
         Set<String> allKnownSigs = new LinkedHashSet<>(definedSigs);
         allKnownSigs.addAll(hierarchyDefinedMethods);
 
-        int transitiveClosed = 0;
-        int deferred = 0;
-        if (!STRICT_WALA_LINE_FIDELITY) {
-            boolean changed = true;
-            while (changed) {
-                changed = false;
-                Set<MethodCall> unresolvedCalls = findUnresolvedThisCalls(type, clonedMethods, allKnownSigs);
-                for (MethodCall call : unresolvedCalls) {
-                    CtMethod<?> found = findMethodInHierarchy(call, type, typeIndex);
-                    if (found != null) {
-                        // Check if method belongs to a parent class that has a sliced version
-                        CtType<?> declaringType = found.getDeclaringType();
-                        String declaringName = declaringType != null ? declaringType.getSimpleName() : simpleName;
-                        boolean belongsToParent = !declaringName.equals(simpleName)
-                            && emittedSimpleNames.contains(declaringName);
-
-                        String originalSig = methodKey(found);
-                        CtMethod<?> cloned = found.clone();
-                        rewriteMethodSignature(cloned, found);
-                        relaxHelperVisibility(cloned);
-                        String rewrittenSig = methodKey(cloned);
-                        if (!definedSigs.contains(originalSig) && !definedSigs.contains(rewrittenSig)) {
-                            if (belongsToParent) {
-                                // Defer to parent — don't include body here
-                                deferredMethods.computeIfAbsent(declaringName, k -> new ArrayList<>()).add(found);
-                                definedSigs.add(originalSig);
-                                definedSigs.add(rewrittenSig);
-                                allKnownSigs.add(originalSig);
-                                allKnownSigs.add(rewrittenSig);
-                                deferred++;
-                                changed = true;
-                            } else {
-                                clonedMethods.add(cloned);
-                                definedSigs.add(originalSig);
-                                definedSigs.add(rewrittenSig);
-                                definedNames.add(call.name);
-                                allKnownSigs.add(originalSig);
-                                allKnownSigs.add(rewrittenSig);
-                                transitiveClosed++;
-                                changed = true;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        if (transitiveClosed > 0 || deferred > 0) {
-            System.out.println("  Transitively included " + transitiveClosed + " methods"
-                + (deferred > 0 ? ", deferred " + deferred + " to parent classes" : ""));
-        }
 
         // ── Phase 2b: Voidify non-void methods whose return statements were pruned ──
         voidifyUnusedReturns(clonedMethods, hierarchyDefinedMethods, prunedReturnMethods);
@@ -569,79 +410,45 @@ public class SpoonSlicePruner {
             }
             m.setDocComment(null);
 
-            // Apply AST-based type rewrites (replaces text-based applyTextTypeRewrites)
-            applyAstTypeRewrites(m, definedNames, simpleName, factory);
             emittedMethods.add(m);
         }
-        if (STRICT_WALA_LINE_FIDELITY) {
-            List<String> nonWalaMethods = new ArrayList<>();
-            for (CtMethod<?> emitted : emittedMethods) {
-                String key = methodKey(emitted);
-                if (!walaSelectedMethodKeys.contains(key)) {
-                    nonWalaMethods.add(key);
-                }
+
+        List<String> nonWalaMethods = new ArrayList<>();
+        for (CtMethod<?> emitted : emittedMethods) {
+            String key = methodKey(emitted);
+            if (!walaSelectedMethodKeys.contains(key)) {
+                nonWalaMethods.add(key);
             }
-            if (!nonWalaMethods.isEmpty()) {
-                throw new IllegalStateException("Strict WALA mode: non-WALA methods emitted for "
-                    + simpleName + ": " + String.join(", ", nonWalaMethods.stream().limit(10).toList()));
-            }
+        }
+        if (!nonWalaMethods.isEmpty()) {
+            throw new IllegalStateException("Strict WALA mode: non-WALA methods emitted for "
+                + simpleName + ": " + String.join(", ", nonWalaMethods.stream().limit(10).toList()));
         }
 
         // ── Phase 5: Generate abstract stubs for remaining unresolved calls ──
         // Re-scan after transitive closure for still-unresolved methods
         Set<String> finalKnownSigs = new LinkedHashSet<>(allKnownSigs);
         Set<MethodCall> stillUnresolved = findUnresolvedThisCalls(type, clonedMethods, finalKnownSigs);
-        List<CtMethod<?>> abstractStubMethods = new ArrayList<>();
-        Set<String> stubNames = new LinkedHashSet<>();
-        if (STRICT_WALA_LINE_FIDELITY) {
-            if (!stillUnresolved.isEmpty()) {
-                MethodCall first = stillUnresolved.iterator().next();
-                throw new IllegalStateException("Strict WALA mode: unresolved self call in "
-                    + simpleName + ": this." + first.name + "(...)");
-            }
-        } else {
-            for (MethodCall call : stillUnresolved) {
-                String callKey = methodKey(call.name, call.argTypes);
-                if (stubNames.contains(callKey)) continue;
-                // Find the method in the original MC hierarchy to get its signature
-                CtMethod<?> originalMethod = findMethodInHierarchy(call, type, typeIndex);
-                if (originalMethod != null) {
-                    CtMethod<?> stub = generateAbstractStub(originalMethod, factory);
-                    if (stub != null) {
-                        String rewrittenSig = rewrittenMethodKey(originalMethod);
-                        if (emittedSigs.contains(rewrittenSig)) {
-                            continue;
-                        }
-                        abstractStubMethods.add(stub);
-                        stubNames.add(callKey);
-                        stubNames.add(methodKey(originalMethod));
-                        stubNames.add(rewrittenSig);
-                        definedNames.add(call.name);
-                    }
-                } else {
-                    System.out.println("  WARNING: Cannot resolve this." + call.name
-                        + "(" + call.argCount + " args) — no stub generated");
-                }
-            }
-            if (!abstractStubMethods.isEmpty()) {
-                System.out.println("  Generated " + abstractStubMethods.size() + " abstract stubs");
-            }
+        if (!stillUnresolved.isEmpty()) {
+            MethodCall first = stillUnresolved.iterator().next();
+            throw new IllegalStateException("Strict WALA mode: unresolved self call in "
+                + simpleName + ": this." + first.name + "(...)");
         }
+        List<CtMethod<?>> abstractStubMethods = List.of();
+        Set<String> stubNames = Set.of();
 
         // ── Phase 6: Build output ──
         List<CtMethod<?>> allMethods = new ArrayList<>(emittedMethods);
-        allMethods.addAll(abstractStubMethods);
         List<CtField<?>> fieldDecls = extractFieldDeclarations(type, allMethods, typeIndex, hierarchyDefinedFields);
-        if (STRICT_WALA_LINE_FIDELITY) {
-            Set<String> referencedFieldNames = collectReferencedFieldNames(allMethods);
-            List<String> extraFields = fieldDecls.stream()
-                .map(CtField::getSimpleName)
-                .filter(name -> !referencedFieldNames.contains(name))
-                .toList();
-            if (!extraFields.isEmpty()) {
-                throw new IllegalStateException("Strict WALA mode: non-referenced fields emitted for "
-                    + simpleName + ": " + String.join(", ", extraFields.stream().limit(10).toList()));
-            }
+
+        Set<String> referencedFieldNames = collectReferencedFieldNames(allMethods);
+        List<String> extraFields = fieldDecls.stream()
+            .map(CtField::getSimpleName)
+            .filter(name -> !referencedFieldNames.contains(name))
+            .toList();
+        if (!extraFields.isEmpty()) {
+            throw new IllegalStateException("Strict WALA mode: non-referenced fields emitted for "
+                + simpleName + ": " + String.join(", ", extraFields.stream().limit(10).toList()));
         }
         rewriteTrackedDataFieldInitializers(fieldDecls, simpleName, factory);
         retargetStaticFieldAccessesToLocalSlicedType(allMethods, fieldDecls, simpleName);
@@ -769,96 +576,6 @@ public class SpoonSlicePruner {
         return false;
     }
 
-    /**
-     * Searches the type hierarchy (within target classes) for the best matching overload.
-     */
-    private CtMethod<?> findMethodInHierarchy(MethodCall call,
-                                              CtType<?> startType,
-                                              Map<String, CtType<?>> typeIndex) {
-        List<CtType<?>> hierarchy = new ArrayList<>();
-        hierarchy.add(startType);
-
-        if (startType instanceof CtClass<?> ctClass) {
-            CtTypeReference<?> superRef = ctClass.getSuperclass();
-            while (superRef != null) {
-                CtType<?> superType = typeIndex.get(superRef.getQualifiedName());
-                if (superType != null) {
-                    hierarchy.add(superType);
-                    if (superType instanceof CtClass<?> sc) {
-                        superRef = sc.getSuperclass();
-                    } else break;
-                } else break;
-            }
-        }
-
-        for (CtType<?> current : hierarchy) {
-            CtMethod<?> found = findBestOverload(current, call);
-            if (found != null) {
-                return found;
-            }
-        }
-
-        return null;
-    }
-
-    private CtMethod<?> findBestOverload(CtType<?> type, MethodCall call) {
-        CtMethod<?> fallback = null;
-        int bestScore = Integer.MIN_VALUE;
-
-        for (CtMethod<?> method : type.getMethods()) {
-            if (!normalizeMethodName(method.getSimpleName()).equals(call.name)
-                || method.getParameters().size() != call.argCount) {
-                continue;
-            }
-
-            if (fallback == null) {
-                fallback = method;
-            }
-
-            int score = scoreOverload(method, call.argTypes);
-            if (score > bestScore) {
-                bestScore = score;
-                fallback = method;
-            }
-        }
-
-        // Note: intentionally NOT using getAllMethods() here.
-        // getMethods() returns only declared methods, so findMethodInHierarchy
-        // walks up and finds each method in its declaring class, ensuring
-        // correct placement in the sliced hierarchy.
-
-        return fallback;
-    }
-
-    private int scoreOverload(CtMethod<?> method, List<String> argTypes) {
-        int score = 0;
-        List<CtParameter<?>> params = method.getParameters();
-        for (int i = 0; i < params.size(); i++) {
-            String paramType = typeKey(params.get(i).getType());
-            String argType = (i < argTypes.size()) ? argTypes.get(i) : "?";
-
-            if (argType.equals(paramType)) {
-                score += 4;
-            } else if ("null".equals(argType) && !isPrimitiveType(paramType)) {
-                score += 2;
-            } else if ("?".equals(argType)) {
-                score += 1;
-            } else if (rewriteTypeName(argType).equals(rewriteTypeName(paramType))) {
-                score += 3;
-            } else {
-                score -= 2;
-            }
-        }
-        return score;
-    }
-
-    private boolean isPrimitiveType(String typeName) {
-        return switch (typeName) {
-            case "boolean", "byte", "char", "short", "int", "long", "float", "double" -> true;
-            default -> false;
-        };
-    }
-
     private List<String> invocationArgTypes(CtInvocation<?> invocation) {
         List<String> argTypes = new ArrayList<>();
         for (CtExpression<?> arg : invocation.getArguments()) {
@@ -916,27 +633,6 @@ public class SpoonSlicePruner {
         return ref.getSimpleName();
     }
 
-    // ── Type reference rewriting ──
-
-    /**
-     * Rewrites MC entity type references to Sliced types in method PARAMETERS only.
-     * This is intentionally targeted — we don't rewrite return types, local variables,
-     * inner class references (Entity.MoveEffect), static field access, etc.
-     */
-    private void rewriteParameterTypes(CtMethod<?> method, CtMethod<?> originalMethod) {
-        if (!shouldRewriteParameterTypes(originalMethod)) {
-            return;
-        }
-        for (CtParameter<?> param : method.getParameters()) {
-            CtTypeReference<?> ref = param.getType();
-            remapTypeReferenceToSliced(ref);
-        }
-    }
-
-    private void rewriteMethodSignature(CtMethod<?> method, CtMethod<?> originalMethod) {
-        rewriteParameterTypes(method, originalMethod);
-    }
-
     private void relaxHelperVisibility(CtMethod<?> method) {
         if (method.hasModifier(ModifierKind.FINAL)) {
             method.removeModifier(ModifierKind.FINAL);
@@ -947,117 +643,6 @@ public class SpoonSlicePruner {
         if (method.hasModifier(ModifierKind.PRIVATE)) {
             method.removeModifier(ModifierKind.PRIVATE);
             method.addModifier(ModifierKind.PROTECTED);
-        }
-    }
-
-    // ── AST-based type rewrites (replaces former text-based applyTextTypeRewrites) ──
-
-    /**
-     * Creates a CtFieldRead for {@code this.entityBridge}.
-     */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private CtExpression<?> createEntityBridgeRead(Factory factory) {
-        CtFieldRead read = factory.Core().createFieldRead();
-        read.setTarget(factory.Code().createThisAccess(factory.Type().objectType()));
-        CtFieldReference ref = factory.Core().createFieldReference();
-        ref.setSimpleName("entityBridge");
-        read.setVariable(ref);
-        return read;
-    }
-
-    /**
-     * Creates {@code (mcTypeName) this.entityBridge} — a cast bridge read.
-     */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private CtExpression<?> createCastEntityBridgeRead(Factory factory, String mcTypeName) {
-        CtFieldRead read = factory.Core().createFieldRead();
-        read.setTarget(factory.Code().createThisAccess(factory.Type().objectType()));
-        CtFieldReference ref = factory.Core().createFieldReference();
-        ref.setSimpleName("entityBridge");
-        read.setVariable(ref);
-        CtTypeReference castType = factory.Core().createTypeReference();
-        castType.setSimpleName(mcTypeName);
-        read.addTypeCast(castType);
-        return read;
-    }
-
-    /**
-     * True if the CtThisAccess is a bare {@code this} used as an argument
-     * (not as a method/field qualifier).
-     */
-    private boolean isThisInArgumentPosition(CtThisAccess<?> thisAccess) {
-        if (!thisAccess.getTypeCasts().isEmpty()) return false;
-        CtElement parent = thisAccess.getParent();
-        if (parent instanceof CtInvocation<?> inv) {
-            return inv.getArguments().contains(thisAccess);
-        }
-        if (parent instanceof CtConstructorCall<?> call) {
-            return call.getArguments().contains(thisAccess);
-        }
-        return false;
-    }
-
-    /**
-     * Replaces bare {@code this} in argument positions with
-     * {@code (mcTypeName) this.entityBridge} within the subtree.
-     */
-    private void replaceThisInArgPositions(CtElement root, Factory factory, String mcTypeName) {
-        for (CtThisAccess<?> ta : new ArrayList<CtThisAccess<?>>(root.getElements(new TypeFilter<CtThisAccess<?>>(CtThisAccess.class)))) {
-            if (isThisInArgumentPosition(ta)) {
-                ta.replace(createCastEntityBridgeRead(factory, mcTypeName));
-            }
-        }
-    }
-
-    /**
-     * Applies all type rewrites on a method's AST in-place.
-     * Replaces the former text-based applyTextTypeRewrites method.
-     */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private void applyAstTypeRewrites(CtMethod<?> method, Set<String> definedNames,
-                                       String mcTypeName, Factory factory) {
-        if (method.getBody() == null) return;
-
-        // 2-3. instanceof rewrites
-        for (CtBinaryOperator<?> binOp : new ArrayList<>(method.getElements(new TypeFilter<CtBinaryOperator<?>>(CtBinaryOperator.class)))) {
-            if (binOp.getKind() != BinaryOperatorKind.INSTANCEOF) continue;
-            if (!(binOp.getLeftHandOperand() instanceof CtThisAccess<?> lhs) || !lhs.getTypeCasts().isEmpty()) continue;
-
-            CtExpression<?> rhs = binOp.getRightHandOperand();
-            String typeName = null;
-            if (rhs instanceof CtTypeAccess<?> ta) {
-                typeName = ta.getAccessedType().getSimpleName();
-            }
-            if (typeName == null) continue;
-
-            if (TYPE_REMAP.containsKey(typeName)) {
-                // this instanceof Entity -> this instanceof SlicedEntity
-                remapTypeReferenceToSliced(((CtTypeAccess<?>) rhs).getAccessedType());
-            }
-        }
-
-        // 4. Cast rewrites: (Entity) this -> (SlicedEntity) this
-        for (CtThisAccess<?> ta : new ArrayList<CtThisAccess<?>>(method.getElements(new TypeFilter<CtThisAccess<?>>(CtThisAccess.class)))) {
-            for (CtTypeReference<?> cast : ta.getTypeCasts()) {
-                remapTypeReferenceToSliced(cast);
-            }
-        }
-
-        // 5. Static/self type accesses used as invocation/field targets:
-        // ClientPlayerEntity.foo() -> SlicedClientPlayerEntity.foo()
-        // ClientPlayerEntity.SOME_FIELD -> SlicedClientPlayerEntity.SOME_FIELD
-        // (but keep class literals like PlayerEntity.class unchanged)
-        for (CtTypeAccess<?> typeAccess : new ArrayList<>(method.getElements(new TypeFilter<CtTypeAccess<?>>(CtTypeAccess.class)))) {
-            CtElement parent = typeAccess.getParent();
-            if (parent instanceof CtInvocation<?> invocation && invocation.getTarget() == typeAccess) {
-                remapTypeReferenceToSliced(typeAccess.getAccessedType());
-                continue;
-            }
-            if (parent instanceof CtFieldAccess<?> fieldAccess
-                && fieldAccess.getTarget() == typeAccess
-                && !isClassLiteralFieldAccess(fieldAccess)) {
-                remapTypeReferenceToSliced(typeAccess.getAccessedType());
-            }
         }
     }
 
@@ -1082,7 +667,7 @@ public class SpoonSlicePruner {
             return;
         }
 
-        String localSlicedType = rewriteTypeName(mcTypeName);
+        String localSlicedType = "Sliced" + mcTypeName;
         for (CtMethod<?> method : methods) {
             for (CtFieldAccess<?> fieldAccess : method.getElements(new TypeFilter<>(CtFieldAccess.class))) {
                 if (isClassLiteralFieldAccess(fieldAccess)) {
@@ -1107,68 +692,6 @@ public class SpoonSlicePruner {
                 }
             }
         }
-    }
-
-    // ── Abstract stub generation ──
-
-    /**
-     * Generates an abstract method stub as a CtMethod from an original MC method.
-     * Applies type rewriting to the stub parameters.
-     */
-    private CtMethod<?> generateAbstractStub(CtMethod<?> original, Factory factory) {
-        CtMethod<?> stub = factory.createMethod();
-        stub.addModifier(ModifierKind.PUBLIC);
-        stub.addModifier(ModifierKind.ABSTRACT);
-        stub.setType(original.getType().clone());
-        stub.setSimpleName(original.getSimpleName());
-
-        for (CtParameter<?> p : original.getParameters()) {
-            CtParameter<?> clonedParam = p.clone();
-            if (shouldRewriteParameterTypes(original)) {
-                CtTypeReference<?> ref = clonedParam.getType();
-                remapTypeReferenceToSliced(ref);
-            }
-            stub.addParameter(clonedParam);
-        }
-
-        return stub;
-    }
-
-    /** Applies TYPE_REMAP to a simple type name if it matches. */
-    private String rewriteTypeName(String simpleName) {
-        return TYPE_REMAP.getOrDefault(simpleName, simpleName);
-    }
-
-    private void remapTypeReferenceToSliced(CtTypeReference<?> ref) {
-        if (ref == null) {
-            return;
-        }
-        String replacement = TYPE_REMAP.get(ref.getSimpleName());
-        if (replacement == null) {
-            return;
-        }
-        CtTypeReference<?> slicedRef = ref.getFactory().Type()
-            .createSimplyQualifiedReference("murat.simv2.simulation.sliced." + replacement);
-        ref.setSimpleName(slicedRef.getSimpleName());
-        ref.setPackage(slicedRef.getPackage());
-        ref.setDeclaringType(null);
-    }
-
-    private boolean shouldRewriteParameterTypes(CtMethod<?> method) {
-        if (method == null) return false;
-        CtType<?> declaringType = method.getDeclaringType();
-        if (declaringType == null) return false;
-        return SLICED_PARAM_METHODS.contains(declaringType.getSimpleName() + "#" + method.getSimpleName());
-    }
-
-    private String rewrittenMethodKey(CtMethod<?> method) {
-        List<String> paramTypes = new ArrayList<>();
-        boolean rewriteParams = shouldRewriteParameterTypes(method);
-        for (CtParameter<?> parameter : method.getParameters()) {
-            String typeName = typeKey(parameter.getType());
-            paramTypes.add(rewriteParams ? rewriteTypeName(typeName) : typeName);
-        }
-        return methodKey(method.getSimpleName(), paramTypes);
     }
 
     // ── Statement pruning ──
@@ -1542,7 +1065,7 @@ public class SpoonSlicePruner {
             methods,
             typeIndex,
             inheritedFieldNames,
-            !STRICT_WALA_LINE_FIDELITY
+            false
         );
     }
 

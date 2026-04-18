@@ -185,14 +185,14 @@ public abstract class Entity {
         this.pos = murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d.ZERO;
         this.blockPos = murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos.ORIGIN;
         murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker.Builder builder = new murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker.Builder(this);
-        builder.add(Entity.FLAGS, ((byte) (0)));
-        builder.add(Entity.AIR, this.getMaxAir());
-        builder.add(Entity.NAME_VISIBLE, false);
-        builder.add(Entity.CUSTOM_NAME, Optional.empty());
-        builder.add(Entity.SILENT, false);
-        builder.add(Entity.NO_GRAVITY, false);
-        builder.add(Entity.POSE, murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose.STANDING);
-        builder.add(Entity.FROZEN_TICKS, 0);
+        builder.add(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.FLAGS, ((byte) (0)));
+        builder.add(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.AIR, this.getMaxAir());
+        builder.add(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.NAME_VISIBLE, false);
+        builder.add(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.CUSTOM_NAME, Optional.empty());
+        builder.add(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.SILENT, false);
+        builder.add(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.NO_GRAVITY, false);
+        builder.add(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.POSE, murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose.STANDING);
+        builder.add(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.FROZEN_TICKS, 0);
         this.initDataTracker(builder);
         this.dataTracker = builder.build();
         this.setPosition(0.0, 0.0, 0.0);
@@ -203,7 +203,7 @@ public abstract class Entity {
     }
 
     public murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose getPose() {
-        return this.dataTracker.get(Entity.POSE);
+        return this.dataTracker.get(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.POSE);
     }
 
     public boolean isInPose(murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose pose) {
@@ -294,7 +294,7 @@ public abstract class Entity {
                 }
                 murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d2 = this.getPos();
                 List<murat.simv2.simulation.mirror.net.minecraft.entity.Entity.QueuedCollisionCheck> list = new ObjectArrayList<>();
-                for (murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis axis : Entity.getAxisCheckOrder(vec3d)) {
+                for (murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis axis : murat.simv2.simulation.mirror.net.minecraft.entity.Entity.getAxisCheckOrder(vec3d)) {
                     double e = vec3d.getComponentAlongAxis(axis);
                     if (e != 0.0) {
                         murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d3 = vec3d2.offset(axis.getPositiveDirection(), e);
@@ -495,7 +495,7 @@ public abstract class Entity {
     protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d adjustMovementForCollisions(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d movement) {
         murat.simv2.simulation.mirror.net.minecraft.util.math.Box box = this.getBoundingBox();
         List<murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape> list = this.getWorld().getEntityCollisions(this, box.stretch(movement));
-        murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = (movement.lengthSquared() == 0.0) ? movement : Entity.adjustMovementForCollisions(this, movement, box, this.getWorld(), list);
+        murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = (movement.lengthSquared() == 0.0) ? movement : murat.simv2.simulation.mirror.net.minecraft.entity.Entity.adjustMovementForCollisions(this, movement, box, this.getWorld(), list);
         boolean bl = movement.x != vec3d.x;
         boolean bl2 = movement.y != vec3d.y;
         boolean bl3 = movement.z != vec3d.z;
@@ -503,11 +503,11 @@ public abstract class Entity {
         if (((this.getStepHeight() > 0.0F) && (bl4 || this.isOnGround())) && (bl || bl3)) {
             murat.simv2.simulation.mirror.net.minecraft.util.math.Box box2 = (bl4) ? box.offset(0.0, vec3d.y, 0.0) : box;
             murat.simv2.simulation.mirror.net.minecraft.util.math.Box box3 = box2.stretch(movement.x, this.getStepHeight(), movement.z);
-            List<murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape> list2 = Entity.findCollisionsForMovement(this, this.world, list, box3);
+            List<murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape> list2 = murat.simv2.simulation.mirror.net.minecraft.entity.Entity.findCollisionsForMovement(this, this.world, list, box3);
             float f = ((float) (vec3d.y));
             float[] fs = collectStepHeights(box2, list2, this.getStepHeight(), f);
             for (float g : fs) {
-                murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d2 = Entity.adjustMovementForCollisions(new murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d(movement.x, g, movement.z), box2, list2);
+                murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d2 = murat.simv2.simulation.mirror.net.minecraft.entity.Entity.adjustMovementForCollisions(new murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d(movement.x, g, movement.z), box2, list2);
                 if (vec3d2.horizontalLengthSquared() > vec3d.horizontalLengthSquared()) {
                     double d = box.minY - box2.minY;
                     return vec3d2.subtract(0.0, d, 0.0);
@@ -519,8 +519,8 @@ public abstract class Entity {
 
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d adjustMovementForCollisions(@Nullable
     murat.simv2.simulation.mirror.net.minecraft.entity.Entity entity, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d movement, murat.simv2.simulation.mirror.net.minecraft.util.math.Box entityBoundingBox, murat.simv2.simulation.mirror.net.minecraft.world.World world, List<murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape> collisions) {
-        List<murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape> list = Entity.findCollisionsForMovement(entity, world, collisions, entityBoundingBox.stretch(movement));
-        return Entity.adjustMovementForCollisions(movement, entityBoundingBox, list);
+        List<murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape> list = murat.simv2.simulation.mirror.net.minecraft.entity.Entity.findCollisionsForMovement(entity, world, collisions, entityBoundingBox.stretch(movement));
+        return murat.simv2.simulation.mirror.net.minecraft.entity.Entity.adjustMovementForCollisions(movement, entityBoundingBox, list);
     }
 
     private static List<murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape> findCollisionsForMovement(@Nullable
@@ -536,7 +536,7 @@ public abstract class Entity {
             return movement;
         } else {
             murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d.ZERO;
-            for (murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis axis : Entity.getAxisCheckOrder(movement)) {
+            for (murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis axis : murat.simv2.simulation.mirror.net.minecraft.entity.Entity.getAxisCheckOrder(movement)) {
                 double d = movement.getComponentAlongAxis(axis);
                 if (d != 0.0) {
                     double e = murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShapes.calculateMaxOffset(axis, entityBoundingBox.offset(vec3d), collisions, d);
@@ -548,7 +548,7 @@ public abstract class Entity {
     }
 
     private static Iterable<murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis> getAxisCheckOrder(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d movement) {
-        return Math.abs(movement.x) < Math.abs(movement.z) ? Entity.Z_THEN_X : Entity.X_THEN_Z;
+        return Math.abs(movement.x) < Math.abs(movement.z) ? murat.simv2.simulation.mirror.net.minecraft.entity.Entity.Z_THEN_X : murat.simv2.simulation.mirror.net.minecraft.entity.Entity.X_THEN_Z;
     }
 
     private void checkBlockCollision(List<murat.simv2.simulation.mirror.net.minecraft.entity.Entity.QueuedCollisionCheck> queuedCollisionChecks, murat.simv2.simulation.mirror.net.minecraft.entity.EntityCollisionHandler.Impl collisionHandler) {
@@ -647,11 +647,11 @@ public abstract class Entity {
     }
 
     public boolean isSilent() {
-        return this.dataTracker.get(Entity.SILENT);
+        return this.dataTracker.get(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.SILENT);
     }
 
     public boolean hasNoGravity() {
-        return this.dataTracker.get(Entity.NO_GRAVITY);
+        return this.dataTracker.get(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.NO_GRAVITY);
     }
 
     public double getFinalGravity() {
@@ -735,7 +735,7 @@ public abstract class Entity {
     }
 
     public void updateVelocity(float speed, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d movementInput) {
-        murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = Entity.movementInputToVelocity(movementInput, speed, this.getYaw());
+        murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = murat.simv2.simulation.mirror.net.minecraft.entity.Entity.movementInputToVelocity(movementInput, speed, this.getYaw());
         this.setVelocity(this.getVelocity().add(vec3d));
     }
 
@@ -801,7 +801,7 @@ public abstract class Entity {
 
     public boolean isOnFire() {
         boolean bl = (this.getWorld() != null) && this.getWorld().isClient;
-        return (!this.isFireImmune()) && ((this.fireTicks > 0) || (bl && this.getFlag(Entity.ON_FIRE_FLAG_INDEX)));
+        return (!this.isFireImmune()) && ((this.fireTicks > 0) || (bl && this.getFlag(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.ON_FIRE_FLAG_INDEX)));
     }
 
     public boolean hasVehicle() {
@@ -813,11 +813,11 @@ public abstract class Entity {
     }
 
     public boolean isSprinting() {
-        return this.getFlag(Entity.SPRINTING_FLAG_INDEX);
+        return this.getFlag(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.SPRINTING_FLAG_INDEX);
     }
 
     public boolean isSwimming() {
-        return this.getFlag(Entity.SWIMMING_FLAG_INDEX);
+        return this.getFlag(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.SWIMMING_FLAG_INDEX);
     }
 
     public boolean isInSwimmingPose() {
@@ -852,7 +852,7 @@ public abstract class Entity {
     }
 
     protected boolean getFlag(int index) {
-        return (this.dataTracker.get(Entity.FLAGS) & (1 << index)) != 0;
+        return (this.dataTracker.get(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.FLAGS) & (1 << index)) != 0;
     }
 
     public int getMaxAir() {
@@ -860,7 +860,7 @@ public abstract class Entity {
     }
 
     public int getFrozenTicks() {
-        return this.dataTracker.get(Entity.FROZEN_TICKS);
+        return this.dataTracker.get(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.FROZEN_TICKS);
     }
 
     public boolean isFrozen() {
@@ -886,7 +886,7 @@ public abstract class Entity {
     }
 
     public void onTrackedDataSet(murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<?> data) {
-        if (Entity.POSE.equals(data)) {
+        if (murat.simv2.simulation.mirror.net.minecraft.entity.Entity.POSE.equals(data)) {
             this.calculateDimensions();
         }
     }
@@ -898,7 +898,7 @@ public abstract class Entity {
         this.dimensions = entityDimensions2;
         this.refreshPosition();
         boolean bl = (entityDimensions2.width() <= 4.0F) && (entityDimensions2.height() <= 4.0F);
-        if ((((((!this.world.isClient) && (!this.firstUpdate)) && (!this.noClip)) && bl) && ((entityDimensions2.width() > entityDimensions.width()) || (entityDimensions2.height() > entityDimensions.height()))) && (!(this instanceof PlayerEntity))) {
+        if ((((((!this.world.isClient) && (!this.firstUpdate)) && (!this.noClip)) && bl) && ((entityDimensions2.width() > entityDimensions.width()) || (entityDimensions2.height() > entityDimensions.height()))) && (!(this instanceof murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity))) {
             this.recalculateDimensions(entityDimensions);
         }
     }
@@ -987,7 +987,7 @@ public abstract class Entity {
                 if (o > 0) {
                     vec3d = vec3d.multiply(1.0 / o);
                 }
-                if (!(this instanceof PlayerEntity)) {
+                if (!(this instanceof murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity)) {
                     vec3d = vec3d.normalize();
                 }
                 murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d3 = this.getVelocity();

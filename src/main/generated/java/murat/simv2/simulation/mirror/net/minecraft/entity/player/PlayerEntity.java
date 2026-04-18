@@ -438,11 +438,11 @@ public abstract class PlayerEntity extends LivingEntity {
     }
 
     protected void setAbsorptionAmountUnclamped(float absorptionAmount) {
-        this.getDataTracker().set(PlayerEntity.ABSORPTION_AMOUNT, absorptionAmount);
+        this.getDataTracker().set(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity.ABSORPTION_AMOUNT, absorptionAmount);
     }
 
     public float getAbsorptionAmount() {
-        return this.getDataTracker().get(PlayerEntity.ABSORPTION_AMOUNT);
+        return this.getDataTracker().get(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity.ABSORPTION_AMOUNT);
     }
 
     public void setFireTicks(int fireTicks) {
@@ -450,11 +450,11 @@ public abstract class PlayerEntity extends LivingEntity {
     }
 
     public murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound getShoulderEntityLeft() {
-        return this.dataTracker.get(PlayerEntity.LEFT_SHOULDER_ENTITY);
+        return this.dataTracker.get(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity.LEFT_SHOULDER_ENTITY);
     }
 
     public murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound getShoulderEntityRight() {
-        return this.dataTracker.get(PlayerEntity.RIGHT_SHOULDER_ENTITY);
+        return this.dataTracker.get(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity.RIGHT_SHOULDER_ENTITY);
     }
 
     public float getAttackCooldownProgressPerTick() {

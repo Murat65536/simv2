@@ -232,11 +232,11 @@ public abstract class LivingEntity extends Entity {
     }
 
     public float getHealth() {
-        return this.dataTracker.get(LivingEntity.HEALTH);
+        return this.dataTracker.get(murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity.HEALTH);
     }
 
     public void setHealth(float health) {
-        this.dataTracker.set(LivingEntity.HEALTH, murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.clamp(health, 0.0F, this.getMaxHealth()));
+        this.dataTracker.set(murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity.HEALTH, murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.clamp(health, 0.0F, this.getMaxHealth()));
     }
 
     public boolean isDead() {
@@ -337,7 +337,7 @@ public abstract class LivingEntity extends Entity {
 
     private void playThornsSound(murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource damageSource) {
         if (damageSource.isOf(murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageTypes.THORNS)) {
-            murat.simv2.simulation.mirror.net.minecraft.sound.SoundCategory soundCategory = (this instanceof PlayerEntity) ? murat.simv2.simulation.mirror.net.minecraft.sound.SoundCategory.PLAYERS : murat.simv2.simulation.mirror.net.minecraft.sound.SoundCategory.HOSTILE;
+            murat.simv2.simulation.mirror.net.minecraft.sound.SoundCategory soundCategory = (this instanceof murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity) ? murat.simv2.simulation.mirror.net.minecraft.sound.SoundCategory.PLAYERS : murat.simv2.simulation.mirror.net.minecraft.sound.SoundCategory.HOSTILE;
             this.getWorld().playSound(null, this.getPos().x, this.getPos().y, this.getPos().z, murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvents.ENCHANT_THORNS_HIT, soundCategory);
         }
     }
@@ -970,7 +970,7 @@ public abstract class LivingEntity extends Entity {
     }
 
     public boolean isUsingRiptide() {
-        return (this.dataTracker.get(LivingEntity.LIVING_FLAGS) & 4) != 0;
+        return (this.dataTracker.get(murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity.LIVING_FLAGS) & 4) != 0;
     }
 
     public murat.simv2.simulation.mirror.net.minecraft.entity.PositionInterpolator getInterpolator() {
@@ -1006,7 +1006,7 @@ public abstract class LivingEntity extends Entity {
     }
 
     public boolean isGliding() {
-        return this.getFlag(LivingEntity.GLIDING_FLAG_INDEX);
+        return this.getFlag(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.GLIDING_FLAG_INDEX);
     }
 
     public boolean isInSwimmingPose() {
@@ -1014,7 +1014,7 @@ public abstract class LivingEntity extends Entity {
     }
 
     public murat.simv2.simulation.mirror.net.minecraft.entity.EntityDimensions getDimensions(murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose pose) {
-        return pose == murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose.SLEEPING ? LivingEntity.SLEEPING_DIMENSIONS : this.getBaseDimensions(pose).scaled(this.getScale());
+        return pose == murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose.SLEEPING ? murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity.SLEEPING_DIMENSIONS : this.getBaseDimensions(pose).scaled(this.getScale());
     }
 
     public boolean isSleeping() {

@@ -120,7 +120,7 @@ public abstract class ClientPlayerEntity extends AbstractClientPlayerEntity {
             if (this.shouldSlowDown()) {
                 float f = ((float) (this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.SNEAKING_SPEED)));
             }
-            return ClientPlayerEntity.applyDirectionalMovementSpeedFactors(vec2f);
+            return murat.simv2.simulation.mirror.net.minecraft.client.network.ClientPlayerEntity.applyDirectionalMovementSpeedFactors(vec2f);
         }
         return null;
     }
@@ -130,7 +130,7 @@ public abstract class ClientPlayerEntity extends AbstractClientPlayerEntity {
         if (f <= 0.0F) {
         } else {
             murat.simv2.simulation.mirror.net.minecraft.util.math.Vec2f vec2f = vec.multiply(1.0F / f);
-            float g = ClientPlayerEntity.getDirectionalMovementSpeedMultiplier(vec2f);
+            float g = murat.simv2.simulation.mirror.net.minecraft.client.network.ClientPlayerEntity.getDirectionalMovementSpeedMultiplier(vec2f);
             float h = Math.min(f * g, 1.0F);
         }
         return null;
