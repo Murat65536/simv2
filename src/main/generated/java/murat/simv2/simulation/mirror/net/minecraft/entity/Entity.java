@@ -1221,29 +1221,10 @@ public abstract class Entity {
     protected void addPortalChunkTicketAt(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
     }
 
-    protected void addVelocityInternal(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
-    }
-
     protected void addVelocity(double p0, double p1, double p2) {
     }
 
     protected void addVelocity(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
-    }
-
-    public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d adjustMovementForCollisions(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p2, murat.simv2.simulation.mirror.net.minecraft.world.World p3, java.util.List p4) {
-        return null;
-    }
-
-    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d adjustMovementForCollisions(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
-        return null;
-    }
-
-    public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d adjustMovementForCollisions(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p1, java.util.List p2) {
-        return null;
-    }
-
-    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d adjustMovementForPiston(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
-        return null;
     }
 
     protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d adjustMovementForSneaking(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, murat.simv2.simulation.mirror.net.minecraft.entity.MovementType p1) {
@@ -1266,9 +1247,6 @@ public abstract class Entity {
         return 0.0F;
     }
 
-    protected void applyMoveEffect(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.MoveEffect p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3) {
-    }
-
     protected float applyRotation(java.lang.Object p0) {
         return 0.0F;
     }
@@ -1287,16 +1265,8 @@ public abstract class Entity {
         return false;
     }
 
-    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Box calculateDefaultBoundingBox(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
-        return null;
-    }
-
     protected float calculateNextStepSoundDistance() {
         return 0.0F;
-    }
-
-    protected double calculatePistonMovementFactor(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis p0, double p1) {
-        return 0.0D;
     }
 
     protected boolean canActVoluntarily() {
@@ -1316,10 +1286,6 @@ public abstract class Entity {
     }
 
     protected boolean canBeSpectated(murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity p0) {
-        return false;
-    }
-
-    protected boolean canClimb(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0) {
         return false;
     }
 
@@ -1362,13 +1328,7 @@ public abstract class Entity {
     protected void changeLookDirection(double p0, double p1) {
     }
 
-    protected void checkBlockCollision(java.util.List p0, murat.simv2.simulation.mirror.net.minecraft.entity.EntityCollisionHandler.Impl p1) {
-    }
-
     protected void checkDespawn() {
-    }
-
-    protected void checkWaterState() {
     }
 
     protected boolean clientDamage(murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p0) {
@@ -1439,10 +1399,6 @@ public abstract class Entity {
         return 0.0F;
     }
 
-    protected boolean doesNotCollide(murat.simv2.simulation.mirror.net.minecraft.util.math.Box p0) {
-        return false;
-    }
-
     protected boolean doesRenderOnFire() {
         return false;
     }
@@ -1469,18 +1425,7 @@ public abstract class Entity {
     protected void emitGameEvent(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p1) {
     }
 
-    protected boolean equals(java.lang.Object p0) {
-        return false;
-    }
-
     protected void extinguishWithSound() {
-    }
-
-    protected void fall(double p0, boolean p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3) {
-    }
-
-    public static java.util.List findCollisionsForMovement(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, java.util.List p2, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p3) {
-        return null;
     }
 
     public static java.lang.Object fromName(java.lang.String p0) {
@@ -1496,10 +1441,6 @@ public abstract class Entity {
     }
 
     protected murat.simv2.simulation.mirror.net.minecraft.entity.EntityAttachments getAttachments() {
-        return null;
-    }
-
-    public static java.lang.Iterable getAxisCheckOrder(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
         return null;
     }
 
@@ -1575,10 +1516,6 @@ public abstract class Entity {
         return 0;
     }
 
-    protected murat.simv2.simulation.mirror.net.minecraft.entity.EntityDimensions getDimensions(murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose p0) {
-        return null;
-    }
-
     protected murat.simv2.simulation.mirror.net.minecraft.text.Text getDisplayName() {
         return null;
     }
@@ -1613,10 +1550,6 @@ public abstract class Entity {
 
     protected murat.simv2.simulation.mirror.net.minecraft.entity.Entity getFirstPassenger() {
         return null;
-    }
-
-    protected double getFluidHeight(murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey p0) {
-        return 0.0D;
     }
 
     protected float getFreezingScale() {
@@ -1827,10 +1760,6 @@ public abstract class Entity {
         return 0.0F;
     }
 
-    protected murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos getStepSoundPos(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
-        return null;
-    }
-
     protected murat.simv2.simulation.mirror.net.minecraft.block.BlockState getSteppingBlockState() {
         return null;
     }
@@ -1895,10 +1824,6 @@ public abstract class Entity {
         return null;
     }
 
-    protected boolean handleAttack(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
-        return false;
-    }
-
     protected void handleFallDamageForPassengers(double p0, float p1, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p2) {
     }
 
@@ -1948,10 +1873,6 @@ public abstract class Entity {
         return false;
     }
 
-    protected int hashCode() {
-        return 0;
-    }
-
     protected void igniteByLava() {
     }
 
@@ -1967,14 +1888,6 @@ public abstract class Entity {
     }
 
     protected boolean isAlive() {
-        return false;
-    }
-
-    protected boolean isAlwaysInvulnerableTo(murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p0) {
-        return false;
-    }
-
-    protected boolean isBeingRainedOn() {
         return false;
     }
 
@@ -2022,19 +1935,11 @@ public abstract class Entity {
         return false;
     }
 
-    protected boolean isInPose(murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose p0) {
-        return false;
-    }
-
     protected boolean isInRange(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, double p1) {
         return false;
     }
 
     protected boolean isInRange(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, double p1, double p2) {
-        return false;
-    }
-
-    protected boolean isInSameTeam(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
         return false;
     }
 
@@ -2090,19 +1995,7 @@ public abstract class Entity {
         return false;
     }
 
-    protected boolean isSubmergedIn(murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey p0) {
-        return false;
-    }
-
     protected boolean isSupportedBy(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
-        return false;
-    }
-
-    protected boolean isTeamPlayer(murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam p0) {
-        return false;
-    }
-
-    protected boolean isTeammate(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
         return false;
     }
 
@@ -2175,13 +2068,6 @@ public abstract class Entity {
     protected void method_67634(java.util.UUID p0) {
     }
 
-    public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d movementInputToVelocity(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, float p1, float p2) {
-        return null;
-    }
-
-    protected void move(murat.simv2.simulation.mirror.net.minecraft.entity.MovementType p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
-    }
-
     protected boolean occludeVibrationSignals() {
         return false;
     }
@@ -2228,25 +2114,10 @@ public abstract class Entity {
     protected void onStruckByLightning(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, java.lang.Object p1) {
     }
 
-    protected void onTrackedDataSet(murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData p0) {
-    }
-
-    protected void playCombinationStepSounds(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1) {
-    }
-
-    protected void playSecondaryStepSound(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0) {
-    }
-
     protected void playSoundIfNotSilent(murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent p0) {
     }
 
     protected void playSound(murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent p0, float p1, float p2) {
-    }
-
-    protected void playStepSounds(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1) {
-    }
-
-    protected void playStepSound(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1) {
     }
 
     protected void popQueuedCollisionCheck() {
@@ -2273,10 +2144,6 @@ public abstract class Entity {
     }
 
     protected void readNbt(murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound p0) {
-    }
-
-    protected boolean recalculateDimensions(murat.simv2.simulation.mirror.net.minecraft.entity.EntityDimensions p0) {
-        return false;
     }
 
     protected void refreshPositionAfterTeleport(double p0, double p1, double p2) {
@@ -2349,9 +2216,6 @@ public abstract class Entity {
     protected void sendTeleportPacket(java.lang.Object p0) {
     }
 
-    protected void serverDamage(murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p0, float p1) {
-    }
-
     protected void setAir(int p0) {
     }
 
@@ -2363,9 +2227,6 @@ public abstract class Entity {
     }
 
     protected void setBodyYaw(float p0) {
-    }
-
-    protected void setBoundingBox(murat.simv2.simulation.mirror.net.minecraft.util.math.Box p0) {
     }
 
     protected void setChangeListener(java.lang.Object p0) {
@@ -2413,9 +2274,6 @@ public abstract class Entity {
     protected void setLastPosition(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
     }
 
-    protected void setMovement(boolean p0, boolean p1, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p2) {
-    }
-
     protected void setMovement(boolean p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
     }
 
@@ -2449,9 +2307,6 @@ public abstract class Entity {
     protected void setPosition(java.lang.Object p0, java.util.Set p1) {
     }
 
-    protected void setPosition(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
-    }
-
     protected void setRemoved(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.RemovalReason p0) {
     }
 
@@ -2479,9 +2334,6 @@ public abstract class Entity {
     protected void setVelocityClient(double p0, double p1, double p2) {
     }
 
-    protected void setVelocity(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
-    }
-
     protected void setWorld(murat.simv2.simulation.mirror.net.minecraft.world.World p0) {
     }
 
@@ -2493,10 +2345,6 @@ public abstract class Entity {
     }
 
     protected boolean shouldDismountUnderwater() {
-        return false;
-    }
-
-    protected boolean shouldPlayAmethystChimeSound(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0) {
         return false;
     }
 
@@ -2541,23 +2389,11 @@ public abstract class Entity {
         return 0.0D;
     }
 
-    protected double squaredDistanceTo(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
-        return 0.0D;
-    }
-
-    protected double squaredDistanceTo(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
-        return 0.0D;
-    }
-
     protected boolean startRiding(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
         return false;
     }
 
     protected boolean startRiding(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, boolean p1) {
-        return false;
-    }
-
-    protected boolean stepOnBlock(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, boolean p2, boolean p3, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p4) {
         return false;
     }
 
@@ -2595,9 +2431,6 @@ public abstract class Entity {
         return false;
     }
 
-    protected void tickBlockCollisions(java.util.List p0) {
-    }
-
     protected void tickBlockCollision(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
     }
 
@@ -2616,10 +2449,6 @@ public abstract class Entity {
     protected void tick() {
     }
 
-    protected java.lang.String toString() {
-        return null;
-    }
-
     protected void tryUsePortal(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
     }
 
@@ -2636,10 +2465,6 @@ public abstract class Entity {
     }
 
     protected void updateLastPosition() {
-    }
-
-    protected boolean updateMovementInFluid(murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey p0, double p1) {
-        return false;
     }
 
     protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d updatePassengerForDismount(murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p0) {
@@ -2661,9 +2486,6 @@ public abstract class Entity {
     protected void updateSubmergedInWaterState() {
     }
 
-    protected void updateSupportingBlockPos(boolean p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
-    }
-
     protected void updateSwimming() {
     }
 
@@ -2674,9 +2496,6 @@ public abstract class Entity {
     }
 
     protected void updateTrackedPosition(double p0, double p1, double p2) {
-    }
-
-    protected void updateVelocity(float p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
     }
 
     protected boolean updateWaterState() {

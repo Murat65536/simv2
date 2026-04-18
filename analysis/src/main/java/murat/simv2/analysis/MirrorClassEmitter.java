@@ -2164,6 +2164,7 @@ final class MirrorClassEmitter {
 
         String simpleName = simpleNameOf(fqcn);
         Set<String> existingMethodKeys = extractExistingMethodKeys(normalized, simpleName);
+        Set<String> existingMethodNameArities = extractExistingMethodNameArities(normalized, simpleName);
         Set<String> existingFieldNames = extractExistingFieldNames(normalized);
 
         Set<String> methodSelectors = new TreeSet<>();
@@ -2187,7 +2188,13 @@ final class MirrorClassEmitter {
             if (methodStub == null || methodStub.isClassInitializer() || methodStub.isConstructor()) {
                 continue;
             }
+            if (shouldSkipPrimaryContractMethodStub(methodStub)) {
+                continue;
+            }
             if (existingMethodKeys.contains(methodStub.signatureKey())) {
+                continue;
+            }
+            if (existingMethodNameArities.contains(methodStub.nameArityKey())) {
                 continue;
             }
             missingMethodSelectors.add(selector);
@@ -2267,7 +2274,7 @@ final class MirrorClassEmitter {
     private Set<String> extractExistingMethodKeys(String source, String ownerSimpleName) {
         Set<String> keys = new TreeSet<>();
         Pattern methodPattern = Pattern.compile(
-            "\\b(?:public|protected|private)\\s+(?:static\\s+)?(?:[\\w.$<>\\[\\], ?]+\\s+)?([A-Za-z_$][\\w$]*)\\s*\\(([^)]*)\\)\\s*(?:\\{|;)"
+            "(?m)^\\s*(?:(?:public|protected|private)\\s+)?(?:static\\s+)?(?:final\\s+)?(?:synchronized\\s+)?(?:native\\s+)?(?:strictfp\\s+)?(?:[\\w.$<>\\[\\], ?]+\\s+)([A-Za-z_$][\\w$]*)\\s*\\(([^)]*)\\)\\s*(?:\\{|;)"
         );
         Matcher matcher = methodPattern.matcher(source);
         while (matcher.find()) {
@@ -2279,6 +2286,25 @@ final class MirrorClassEmitter {
             }
             String normalizedName = ownerSimpleName.equals(methodName) ? "<init>" : methodName;
             keys.add(normalizedName + "|" + String.join(",", parameterTypes));
+        }
+        return keys;
+    }
+
+    private Set<String> extractExistingMethodNameArities(String source, String ownerSimpleName) {
+        Set<String> keys = new TreeSet<>();
+        Pattern methodPattern = Pattern.compile(
+            "(?m)^\\s*(?:(?:public|protected|private)\\s+)?(?:static\\s+)?(?:final\\s+)?(?:synchronized\\s+)?(?:native\\s+)?(?:strictfp\\s+)?(?:[\\w.$<>\\[\\], ?]+\\s+)([A-Za-z_$][\\w$]*)\\s*\\(([^)]*)\\)\\s*(?:\\{|;)"
+        );
+        Matcher matcher = methodPattern.matcher(source);
+        while (matcher.find()) {
+            String methodName = matcher.group(1);
+            String params = matcher.group(2);
+            List<String> parameterTypes = parseSourceParameterTypes(params);
+            if (parameterTypes == null) {
+                continue;
+            }
+            String normalizedName = ownerSimpleName.equals(methodName) ? "<init>" : methodName;
+            keys.add(normalizedName + "#" + parameterTypes.size());
         }
         return keys;
     }
@@ -2335,6 +2361,9 @@ final class MirrorClassEmitter {
         for (String selector : new TreeSet<>(methodSelectors)) {
             MethodStub methodStub = parseMethodSelector(selector, ownerBinaryName, true);
             if (methodStub == null || methodStub.isClassInitializer() || methodStub.isConstructor()) {
+                continue;
+            }
+            if (shouldSkipPrimaryContractMethodStub(methodStub)) {
                 continue;
             }
             String signatureKey = methodStub.signatureKey();
@@ -2655,6 +2684,21 @@ final class MirrorClassEmitter {
         private String signatureKey() {
             return methodName + "|" + String.join(",", parameterTypes);
         }
+
+        private String nameArityKey() {
+            return methodName + "#" + parameterTypes.size();
+        }
+    }
+
+    private boolean shouldSkipPrimaryContractMethodStub(MethodStub methodStub) {
+        if (methodStub == null) {
+            return true;
+        }
+        return switch (methodStub.methodName()) {
+            case "equals", "hashCode", "toString", "clone", "finalize",
+                 "wait", "notify", "notifyAll", "getClass" -> true;
+            default -> false;
+        };
     }
 
     private record FieldStub(String fieldName, String fieldType, boolean isStatic) {
