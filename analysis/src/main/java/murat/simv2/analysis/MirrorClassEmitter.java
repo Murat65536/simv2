@@ -1,5 +1,25 @@
 package murat.simv2.analysis;
 
+import spoon.Launcher;
+import spoon.processing.Processor;
+import spoon.reflect.code.CtComment;
+import spoon.reflect.code.CtLiteral;
+import spoon.reflect.cu.CompilationUnit;
+import spoon.reflect.code.CtTypeAccess;
+import spoon.reflect.declaration.CtElement;
+import spoon.reflect.declaration.CtPackage;
+import spoon.reflect.declaration.CtType;
+import spoon.reflect.factory.Factory;
+import spoon.reflect.reference.CtTypeReference;
+import spoon.reflect.visitor.DefaultImportComparator;
+import spoon.reflect.visitor.DefaultJavaPrettyPrinter;
+import spoon.reflect.visitor.ForceImportProcessor;
+import spoon.reflect.visitor.ImportCleaner;
+import spoon.reflect.visitor.ImportConflictDetector;
+import spoon.reflect.visitor.PrettyPrinter;
+import spoon.reflect.visitor.filter.TypeFilter;
+import spoon.support.compiler.VirtualFile;
+
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -127,43 +147,7 @@ final class MirrorClassEmitter {
     }
 
     private String transformPrimaryClassSource(String source, String fqcn) {
-        String transformed = source;
-
-        for (Map.Entry<String, String> classEntry : primaryClassesBySimpleName.entrySet()) {
-            String targetSimple = classEntry.getKey();
-            String targetFqcn = classEntry.getValue();
-            transformed = replaceSimpleTypeReference(transformed, targetSimple, targetFqcn);
-        }
-
-        String packageName = packageNameOf(fqcn);
-        String mirroredPackageName = packageName.isBlank()
-            ? MIRROR_PACKAGE_PREFIX
-            : MIRROR_PACKAGE_PREFIX + "." + packageName;
-        transformed = transformed.replace(
-            "package " + SLICED_PACKAGE + ";",
-            "package " + mirroredPackageName + ";"
-        );
-
-        for (Map.Entry<String, String> classEntry : primaryClassesBySimpleName.entrySet()) {
-            String simpleName = classEntry.getKey();
-            String originalFqcn = classEntry.getValue();
-            String oldSimple = "Sliced" + simpleName;
-            String oldFqcn = SLICED_PACKAGE + "." + oldSimple;
-            String newFqcn = mirroredFqcn(originalFqcn);
-
-            transformed = transformed.replace(oldFqcn, newFqcn);
-            transformed = replaceTypeIdentifier(transformed, oldSimple, simpleName);
-        }
-
-        transformed = qualifyClosureSimpleReferences(transformed, fqcn);
-        transformed = rewriteClosureTypeReferences(transformed);
-        transformed = rewriteQualifiedVanillaReferences(transformed);
-        transformed = transformed.replace("Sliced from ", "Mirrored from ");
-        transformed = transformed.replace("sliced construction", "mirror construction");
-        transformed = transformed.replace(
-            "// Mirrored from " + mirroredFqcn(fqcn),
-            "// Mirrored from " + fqcn
-        );
+        String transformed = transformPrimaryClassSourceWithAst(source, fqcn);
         if ("net.minecraft.entity.Entity".equals(fqcn)) {
             transformed = normalizeEntityPrimarySignatures(transformed);
             transformed = upsertEntityCompatBlock(transformed);
@@ -175,160 +159,198 @@ final class MirrorClassEmitter {
             transformed = upsertPrimaryContractBlock(transformed, fqcn);
         }
         transformed = injectPrimaryNoArgConstructor(transformed, fqcn);
-        transformed = addRequiredPrimaryImports(transformed, fqcn);
-        return normalizeImports(transformed, fqcn);
+        return transformed;
     }
 
-    private String addRequiredPrimaryImports(String source, String fqcn) {
-        String currentPackage = packageNameOf(fqcn);
-        String currentSimpleName = simpleNameOf(fqcn);
-        TreeSet<String> importsToAdd = new TreeSet<>();
+    private String transformPrimaryClassSourceWithAst(String source, String fqcn) {
+        Launcher launcher = new Launcher();
+        launcher.getEnvironment().setNoClasspath(true);
+        launcher.getEnvironment().setIgnoreSyntaxErrors(true);
+        launcher.getEnvironment().setComplianceLevel(21);
+        launcher.getEnvironment().setAutoImports(true);
+        launcher.addInputResource(new VirtualFile(source, simpleNameOf(fqcn) + ".java"));
+        launcher.buildModel();
 
-        for (Map.Entry<String, String> entry : primaryClassesBySimpleName.entrySet()) {
-            String targetSimple = entry.getKey();
-            String targetClass = entry.getValue();
-            if (targetSimple.equals(currentSimpleName)) {
+        CtType<?> type = launcher.getModel().getAllTypes().stream()
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("Unable to parse primary sliced source for " + fqcn));
+        Factory factory = launcher.getFactory();
+        String mirroredPackageName = mirroredPackageNameOf(fqcn);
+        CtPackage mirroredPackage = factory.Package().getOrCreate(mirroredPackageName);
+        CtPackage existingPackage = type.getPackage();
+        if (existingPackage != null && !mirroredPackageName.equals(existingPackage.getQualifiedName())) {
+            existingPackage.removeType(type);
+        }
+        if (!mirroredPackage.getTypes().contains(type)) {
+            mirroredPackage.addType(type);
+        }
+
+        String expectedSlicedSimpleName = "Sliced" + simpleNameOf(fqcn);
+        if (expectedSlicedSimpleName.equals(type.getSimpleName())) {
+            type.setSimpleName(simpleNameOf(fqcn));
+        }
+
+        Map<String, String> uniqueImportsBySimpleName = uniqueImportsBySimpleName(source);
+        @SuppressWarnings("unchecked")
+        List<CtTypeReference<?>> typeReferences = (List<CtTypeReference<?>>) (List<?>)
+            type.getElements(new TypeFilter<>(CtTypeReference.class));
+        for (CtTypeReference<?> ref : new ArrayList<>(typeReferences)) {
+            String rewrite = rewritePrimaryReference(ref, fqcn, uniqueImportsBySimpleName);
+            if (rewrite == null || rewrite.equals(ref.getQualifiedName())) {
                 continue;
             }
-            if (packageNameOf(targetClass).equals(currentPackage)) {
+            ref.replace(factory.Type().createReference(rewrite));
+        }
+        @SuppressWarnings("unchecked")
+        List<CtTypeAccess<?>> typeAccesses = (List<CtTypeAccess<?>>) (List<?>)
+            type.getElements(new TypeFilter<>(CtTypeAccess.class));
+        for (CtTypeAccess<?> typeAccess : new ArrayList<>(typeAccesses)) {
+            CtTypeReference<?> accessedType = typeAccess.getAccessedType();
+            if (accessedType == null) {
                 continue;
             }
-            String targetImport = mirroredFqcn(targetClass);
-            if (source.contains("import " + targetImport + ";")) {
+            String rewrite = rewritePrimaryTypeName(
+                accessedType.getQualifiedName(),
+                fqcn,
+                uniqueImportsBySimpleName
+            );
+            if (rewrite == null || rewrite.equals(accessedType.getQualifiedName())) {
                 continue;
             }
-            Pattern usage = Pattern.compile("\\b" + Pattern.quote(targetSimple) + "\\b");
-            if (usage.matcher(source).find()) {
-                importsToAdd.add("import " + targetImport + ";");
-            }
+            typeAccess.setAccessedType(factory.Type().createReference(rewrite));
         }
+        rewritePrimaryCommentsAndLiterals(type, fqcn);
 
-        if (importsToAdd.isEmpty()) {
-            return source;
-        }
+        CompilationUnit compilationUnit = factory.Core().createCompilationUnit();
+        compilationUnit.setFile(Path.of(type.getSimpleName() + ".java").toFile());
+        compilationUnit.setDeclaredPackage(mirroredPackage);
+        compilationUnit.addDeclaredType(type);
+        type.setPosition(factory.createPartialSourcePosition(compilationUnit));
 
-        String lineSeparator = source.contains("\r\n") ? "\r\n" : "\n";
-        String[] lines = source.split("\\R", -1);
-        StringBuilder sb = new StringBuilder();
-        int insertAfter = 0;
-        int packageLineIndex = -1;
-        for (int i = 0; i < lines.length; i++) {
-            if (lines[i].startsWith("package ")) {
-                packageLineIndex = i;
-            }
-            if (lines[i].startsWith("import ")) {
-                insertAfter = i + 1;
-            } else if (!lines[i].isBlank() && !lines[i].startsWith("package ")) {
-                break;
-            }
-        }
-        if (insertAfter == 0 && packageLineIndex >= 0) {
-            insertAfter = packageLineIndex + 1;
-        }
-
-        for (int i = 0; i < lines.length; i++) {
-            sb.append(lines[i]).append(lineSeparator);
-            if (i + 1 == insertAfter) {
-                for (String importLine : importsToAdd) {
-                    sb.append(importLine).append(lineSeparator);
-                }
-            }
-        }
-        return sb.toString();
+        PrettyPrinter printer = createPrimaryPrettyPrinter(factory);
+        return printer.printCompilationUnit(compilationUnit);
     }
 
-    private String normalizeImports(String source, String fqcn) {
-        String lineSeparator = source.contains("\r\n") ? "\r\n" : "\n";
-        String[] lines = source.split("\\R", -1);
-        String packageLine = null;
-        TreeSet<String> imports = new TreeSet<>();
-        List<String> bodyLines = new ArrayList<>();
-
-        for (String line : lines) {
-            String trimmed = line.trim();
-            if (trimmed.startsWith("package ")) {
-                packageLine = trimmed;
-                continue;
-            }
-
-            Matcher importMatcher = IMPORT_PATTERN.matcher(trimmed);
-            if (importMatcher.matches()) {
-                boolean isStatic = importMatcher.group(1) != null;
-                String importTarget = importMatcher.group(2);
-                String rewrittenTarget = rewriteImportTarget(importTarget, isStatic);
-                if (shouldKeepImport(rewrittenTarget, isStatic, fqcn)) {
-                    imports.add("import " + (isStatic ? "static " : "") + rewrittenTarget + ";");
-                }
-                continue;
-            }
-
-            bodyLines.add(line);
-        }
-
-        while (!bodyLines.isEmpty() && bodyLines.get(0).isBlank()) {
-            bodyLines.remove(0);
-        }
-
-        StringBuilder normalized = new StringBuilder();
-        if (packageLine != null) {
-            normalized.append(packageLine).append(lineSeparator).append(lineSeparator);
-        }
-        if (!imports.isEmpty()) {
-            for (String importLine : imports) {
-                normalized.append(importLine).append(lineSeparator);
-            }
-            normalized.append(lineSeparator);
-        }
-
-        for (int i = 0; i < bodyLines.size(); i++) {
-            normalized.append(bodyLines.get(i));
-            if (i < bodyLines.size() - 1) {
-                normalized.append(lineSeparator);
-            }
-        }
-        if (normalized.length() > 0 && !normalized.toString().endsWith(lineSeparator)) {
-            normalized.append(lineSeparator);
-        }
-        return normalized.toString();
+    private PrettyPrinter createPrimaryPrettyPrinter(Factory factory) {
+        DefaultJavaPrettyPrinter printer = new DefaultJavaPrettyPrinter(factory.getEnvironment());
+        List<Processor<CtElement>> preprocessors = List.of(
+            new ForceImportProcessor(),
+            new ImportCleaner().setCanAddImports(false),
+            new ImportConflictDetector(),
+            new ImportCleaner().setImportComparator(new DefaultImportComparator())
+        );
+        printer.setIgnoreImplicit(false);
+        printer.setPreprocessors(preprocessors);
+        return printer;
     }
 
-    private boolean shouldKeepImport(String importTarget, boolean isStatic, String fqcn) {
-        String currentMirroredFqcn = mirroredFqcn(fqcn);
-        String ownerType = importTarget;
-        if (isStatic) {
+    private void rewritePrimaryCommentsAndLiterals(CtType<?> type, String fqcn) {
+        for (CtComment comment : new ArrayList<>(type.getComments())) {
+            String content = comment.getContent();
+            if (content == null || content.isBlank()) {
+                continue;
+            }
+            String rewritten = content
+                .replace("Sliced from ", "Mirrored from ")
+                .replace("sliced construction", "mirror construction")
+                .replace("Mirrored from " + mirroredFqcn(fqcn), "Mirrored from " + fqcn);
+            comment.setContent(rewritten);
+        }
+        @SuppressWarnings("unchecked")
+        List<CtLiteral<?>> literals = (List<CtLiteral<?>>) (List<?>) type.getElements(new TypeFilter<>(CtLiteral.class));
+        for (CtLiteral<?> literal : literals) {
+            Object value = literal.getValue();
+            if (!(value instanceof String s) || !s.contains("sliced construction")) {
+                continue;
+            }
+            @SuppressWarnings("unchecked")
+            CtLiteral<String> stringLiteral = (CtLiteral<String>) literal;
+            stringLiteral.setValue(s.replace("sliced construction", "mirror construction"));
+        }
+    }
+
+    private Map<String, String> uniqueImportsBySimpleName(String source) {
+        Map<String, Set<String>> bySimpleName = new LinkedHashMap<>();
+        for (String line : source.split("\\R")) {
+            Matcher importMatcher = IMPORT_PATTERN.matcher(line.trim());
+            if (!importMatcher.matches() || importMatcher.group(1) != null) {
+                continue;
+            }
+            String importTarget = importMatcher.group(2);
+            if (importTarget.endsWith(".*")) {
+                continue;
+            }
+            bySimpleName.computeIfAbsent(simpleNameOf(importTarget), key -> new TreeSet<>()).add(importTarget);
             int memberSeparator = importTarget.lastIndexOf('.');
-            if (memberSeparator <= 0) {
-                return false;
+            if (memberSeparator > 0) {
+                String ownerType = importTarget.substring(0, memberSeparator);
+                bySimpleName.computeIfAbsent(simpleNameOf(ownerType), key -> new TreeSet<>()).add(ownerType);
             }
-            ownerType = importTarget.substring(0, memberSeparator);
         }
-
-        if (primaryClassesBySimpleName.containsValue(ownerType)) {
-            return false;
+        Map<String, String> unique = new LinkedHashMap<>();
+        for (Map.Entry<String, Set<String>> entry : bySimpleName.entrySet()) {
+            if (entry.getValue().size() == 1) {
+                unique.put(entry.getKey(), entry.getValue().iterator().next());
+            }
         }
-        if (ownerType.equals(currentMirroredFqcn) || ownerType.startsWith(currentMirroredFqcn + ".")) {
-            return false;
-        }
-        return isStatic || !packageNameOf(ownerType).equals(packageNameOf(currentMirroredFqcn));
+        return unique;
     }
 
-    private String rewriteImportTarget(String importTarget, boolean isStatic) {
-        if (!isStatic) {
-            return rewriteImportType(importTarget);
-        }
-
-        int memberSeparator = importTarget.lastIndexOf('.');
-        if (memberSeparator <= 0) {
-            return rewriteImportType(importTarget);
-        }
-
-        String ownerType = importTarget.substring(0, memberSeparator);
-        String memberName = importTarget.substring(memberSeparator + 1);
-        return rewriteImportType(ownerType) + "." + memberName;
+    private String rewritePrimaryReference(CtTypeReference<?> reference,
+                                           String currentFqcn,
+                                           Map<String, String> uniqueImportsBySimpleName) {
+        return rewritePrimaryTypeName(reference.getQualifiedName(), currentFqcn, uniqueImportsBySimpleName);
     }
 
-    private String rewriteImportType(String importTarget) {
-        return rewriteTypeReference(importTarget);
+    private String mirroredPackageNameOf(String fqcn) {
+        String packageName = packageNameOf(fqcn);
+        return packageName.isBlank() ? MIRROR_PACKAGE_PREFIX : MIRROR_PACKAGE_PREFIX + "." + packageName;
+    }
+
+    private String rewritePrimaryTypeName(String qualifiedName,
+                                          String currentFqcn,
+                                          Map<String, String> uniqueImportsBySimpleName) {
+        if (qualifiedName == null || qualifiedName.isBlank()) {
+            return null;
+        }
+        String importedQualifiedName;
+        if (!qualifiedName.contains(".")) {
+            importedQualifiedName = uniqueImportsBySimpleName.getOrDefault(qualifiedName, qualifiedName);
+        } else {
+            importedQualifiedName = qualifiedName;
+            if (!qualifiedName.startsWith("net.minecraft.") && !qualifiedName.startsWith(MIRROR_PACKAGE_PREFIX_DOT)) {
+                int firstDot = qualifiedName.indexOf('.');
+                String prefix = qualifiedName.substring(0, firstDot);
+                String mappedPrefix = uniqueImportsBySimpleName.get(prefix);
+                if (mappedPrefix != null) {
+                    importedQualifiedName = mappedPrefix + qualifiedName.substring(firstDot);
+                }
+            }
+        }
+        for (Map.Entry<String, String> entry : primaryClassesBySimpleName.entrySet()) {
+            String targetSimpleName = entry.getKey();
+            String targetFqcn = entry.getValue();
+            if (targetFqcn.equals(currentFqcn)
+                && ("Sliced" + targetSimpleName).equals(qualifiedName)) {
+                return targetSimpleName;
+            }
+            if (targetFqcn.equals(currentFqcn)
+                && targetSimpleName.equals(qualifiedName)) {
+                return null;
+            }
+            if (qualifiedName.equals("Sliced" + targetSimpleName)
+                || qualifiedName.equals(SLICED_PACKAGE + ".Sliced" + targetSimpleName)
+                || qualifiedName.equals(targetSimpleName)
+                || importedQualifiedName.equals(targetFqcn)
+                || qualifiedName.equals(targetFqcn)) {
+                return mirroredFqcn(targetFqcn);
+            }
+        }
+        String rewritten = resolveMirroredTypeName(importedQualifiedName);
+        if (rewritten != null && !rewritten.equals(importedQualifiedName)) {
+            return rewritten;
+        }
+        return null;
     }
 
     private String rewriteTypeReference(String typeName) {

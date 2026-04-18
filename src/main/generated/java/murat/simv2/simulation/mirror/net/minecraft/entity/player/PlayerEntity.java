@@ -1,12 +1,13 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity.player;
-
 import java.util.Optional;
 import murat.simv2.simulation.mirror.net.minecraft.block.BlockState;
 import murat.simv2.simulation.mirror.net.minecraft.entity.Entity;
+import murat.simv2.simulation.mirror.net.minecraft.entity.Entity.MoveEffect;
 import murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose;
 import murat.simv2.simulation.mirror.net.minecraft.entity.EntityType;
 import murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot;
 import murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity;
+import murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity.FallSounds;
 import murat.simv2.simulation.mirror.net.minecraft.entity.MovementType;
 import murat.simv2.simulation.mirror.net.minecraft.entity.ProjectileDeflection;
 import murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes;
@@ -32,7 +33,7 @@ import murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvents;
 import murat.simv2.simulation.mirror.net.minecraft.util.Hand;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.Box;
-import murat.simv2.simulation.mirror.net.minecraft.util.math.Direction;
+import murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d;
 import murat.simv2.simulation.mirror.net.minecraft.world.Difficulty;
@@ -40,18 +41,17 @@ import murat.simv2.simulation.mirror.net.minecraft.world.GameMode;
 import murat.simv2.simulation.mirror.net.minecraft.world.GameRules;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 // Mirrored from net.minecraft.entity.player.PlayerEntity
 // Movement-relevant statements only (WALA backward slice + Spoon AST pruning)
 // Generated - do not edit
 public abstract class PlayerEntity extends LivingEntity {
-    public static final murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<Float> ABSORPTION_AMOUNT = murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity.ABSORPTION_AMOUNT;
+    public static final TrackedData ABSORPTION_AMOUNT = PlayerEntity.ABSORPTION_AMOUNT;
 
-    public static final murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound> LEFT_SHOULDER_ENTITY = murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker.registerData(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity.class, murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedDataHandlerRegistry.NBT_COMPOUND);
+    public static final TrackedData LEFT_SHOULDER_ENTITY = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.NBT_COMPOUND);
 
-    public static final murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound> RIGHT_SHOULDER_ENTITY = murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker.registerData(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity.class, murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedDataHandlerRegistry.NBT_COMPOUND);
+    public static final TrackedData RIGHT_SHOULDER_ENTITY = DataTracker.registerData(PlayerEntity.class, TrackedDataHandlerRegistry.NBT_COMPOUND);
 
-    public final murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerAbilities abilities = new murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerAbilities();
+    public final PlayerAbilities abilities = new PlayerAbilities();
 
     public int experienceLevel = 0;
 
@@ -62,7 +62,7 @@ public abstract class PlayerEntity extends LivingEntity {
     public float riptideAttackDamage;
 
     @Nullable
-    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack riptideStack;
+    public ItemStack riptideStack;
 
     public boolean velocityModified;
 
@@ -70,20 +70,20 @@ public abstract class PlayerEntity extends LivingEntity {
         return this.isSneaking();
     }
 
-    protected boolean canChangeIntoPose(murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose pose) {
+    protected boolean canChangeIntoPose(EntityPose pose) {
         return this.getWorld().isSpaceEmpty(this, this.getDimensions(pose).getBoxAt(this.getPos()).contract(1.0E-7));
     }
 
-    protected murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent getSwimSound() {
-        return murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvents.ENTITY_PLAYER_SWIM;
+    protected SoundEvent getSwimSound() {
+        return SoundEvents.ENTITY_PLAYER_SWIM;
     }
 
-    protected murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent getSplashSound() {
-        return murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvents.ENTITY_PLAYER_SPLASH;
+    protected SoundEvent getSplashSound() {
+        return SoundEvents.ENTITY_PLAYER_SPLASH;
     }
 
-    protected murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent getHighSpeedSplashSound() {
-        return murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvents.ENTITY_PLAYER_SPLASH_HIGH_SPEED;
+    protected SoundEvent getHighSpeedSplashSound() {
+        return SoundEvents.ENTITY_PLAYER_SPLASH_HIGH_SPEED;
     }
 
     public void tickMovement() {
@@ -91,7 +91,7 @@ public abstract class PlayerEntity extends LivingEntity {
             this.onLanding();
         }
         super.tickMovement();
-        this.setMovementSpeed(((float) (this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.MOVEMENT_SPEED))));
+        this.setMovementSpeed(((float) (this.getAttributeValue(EntityAttributes.MOVEMENT_SPEED))));
         float f = 0.0F;
         if ((this.isOnGround() && (!this.isDead())) && (!this.isSwimming())) {
             f = Math.min(0.1F, ((float) (this.getVelocity().horizontalLength())));
@@ -100,68 +100,68 @@ public abstract class PlayerEntity extends LivingEntity {
         this.updateShoulderEntity(this.getShoulderEntityRight());
     }
 
-    private void updateShoulderEntity(murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound entityNbt) {
+    private void updateShoulderEntity(NbtCompound entityNbt) {
         if ((!entityNbt.isEmpty()) && (!entityNbt.getBoolean("Silent", false))) {
             if (this.getWorld().random.nextInt(200) == 0) {
-                murat.simv2.simulation.mirror.net.minecraft.entity.EntityType<?> entityType = ((murat.simv2.simulation.mirror.net.minecraft.entity.EntityType<?>) (entityNbt.get("id", murat.simv2.simulation.mirror.net.minecraft.entity.EntityType.CODEC).orElse(null)));
-                if ((entityType == murat.simv2.simulation.mirror.net.minecraft.entity.EntityType.PARROT) && (!murat.simv2.simulation.mirror.net.minecraft.entity.passive.ParrotEntity.imitateNearbyMob(this.getWorld(), this))) {
-                    this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), murat.simv2.simulation.mirror.net.minecraft.entity.passive.ParrotEntity.getRandomSound(this.getWorld(), this.getWorld().random), this.getSoundCategory(), 1.0F, murat.simv2.simulation.mirror.net.minecraft.entity.passive.ParrotEntity.getSoundPitch(this.getWorld().random));
+                EntityType entityType = ((EntityType) (entityNbt.get("id", EntityType.CODEC).orElse(null)));
+                if ((entityType == EntityType.PARROT) && (!ParrotEntity.imitateNearbyMob(this.getWorld(), this))) {
+                    this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), ParrotEntity.getRandomSound(this.getWorld(), this.getWorld().random), this.getSoundCategory(), 1.0F, ParrotEntity.getSoundPitch(this.getWorld().random));
                 }
             }
         }
     }
 
     @NotNull
-    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getWeaponStack() {
+    public ItemStack getWeaponStack() {
         return this.isUsingRiptide() && (this.riptideStack != null) ? this.riptideStack : super.getWeaponStack();
     }
 
-    public void onDeath(murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource damageSource) {
+    public void onDeath(DamageSource damageSource) {
         super.onDeath(damageSource);
         this.refreshPosition();
-        if ((!this.isSpectator()) && (this.getWorld() instanceof murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld serverWorld)) {
+        if ((!this.isSpectator()) && (this.getWorld() instanceof ServerWorld serverWorld)) {
             this.drop(serverWorld, damageSource);
         }
         if (damageSource != null) {
-            this.setVelocity((-murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.cos((this.getDamageTiltYaw() + this.getYaw()) * ((float) (Math.PI / 180.0)))) * 0.1F, 0.1F, (-murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.sin((this.getDamageTiltYaw() + this.getYaw()) * ((float) (Math.PI / 180.0)))) * 0.1F);
+            this.setVelocity((-MathHelper.cos((this.getDamageTiltYaw() + this.getYaw()) * ((float) (Math.PI / 180.0)))) * 0.1F, 0.1F, (-MathHelper.sin((this.getDamageTiltYaw() + this.getYaw()) * ((float) (Math.PI / 180.0)))) * 0.1F);
         } else {
             this.setVelocity(0.0, 0.1, 0.0);
         }
         this.extinguish();
     }
 
-    protected murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent getHurtSound(murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource source) {
+    protected SoundEvent getHurtSound(DamageSource source) {
         return source.getType().effects().getSound();
     }
 
-    protected murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent getDeathSound() {
-        return murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvents.ENTITY_PLAYER_DEATH;
+    protected SoundEvent getDeathSound() {
+        return SoundEvents.ENTITY_PLAYER_DEATH;
     }
 
-    public boolean isInvulnerableTo(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld world, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource source) {
+    public boolean isInvulnerableTo(ServerWorld world, DamageSource source) {
         if (super.isInvulnerableTo(world, source)) {
             return true;
-        } else if (source.isIn(murat.simv2.simulation.mirror.net.minecraft.registry.tag.DamageTypeTags.IS_DROWNING)) {
-            return !world.getGameRules().getBoolean(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.DROWNING_DAMAGE);
-        } else if (source.isIn(murat.simv2.simulation.mirror.net.minecraft.registry.tag.DamageTypeTags.IS_FALL)) {
-            return !world.getGameRules().getBoolean(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.FALL_DAMAGE);
-        } else if (source.isIn(murat.simv2.simulation.mirror.net.minecraft.registry.tag.DamageTypeTags.IS_FIRE)) {
-            return !world.getGameRules().getBoolean(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.FIRE_DAMAGE);
+        } else if (source.isIn(DamageTypeTags.IS_DROWNING)) {
+            return !world.getGameRules().getBoolean(GameRules.DROWNING_DAMAGE);
+        } else if (source.isIn(DamageTypeTags.IS_FALL)) {
+            return !world.getGameRules().getBoolean(GameRules.FALL_DAMAGE);
+        } else if (source.isIn(DamageTypeTags.IS_FIRE)) {
+            return !world.getGameRules().getBoolean(GameRules.FIRE_DAMAGE);
         } else {
-            return source.isIn(murat.simv2.simulation.mirror.net.minecraft.registry.tag.DamageTypeTags.IS_FREEZING) ? !world.getGameRules().getBoolean(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.FREEZE_DAMAGE) : false;
+            return source.isIn(DamageTypeTags.IS_FREEZING) ? !world.getGameRules().getBoolean(GameRules.FREEZE_DAMAGE) : false;
         }
     }
 
-    public boolean damage(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld world, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource source, float amount) {
+    public boolean damage(ServerWorld world, DamageSource source, float amount) {
         if (this.isInvulnerableTo(world, source)) {
-        } else if (this.abilities.invulnerable && (!source.isIn(murat.simv2.simulation.mirror.net.minecraft.registry.tag.DamageTypeTags.BYPASSES_INVULNERABILITY))) {
+        } else if (this.abilities.invulnerable && (!source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY))) {
         } else if (this.isDead()) {
         } else {
             if (source.isScaledWithDifficulty()) {
-                if (world.getDifficulty() == murat.simv2.simulation.mirror.net.minecraft.world.Difficulty.EASY) {
+                if (world.getDifficulty() == Difficulty.EASY) {
                     amount = Math.min((amount / 2.0F) + 1.0F, amount);
                 }
-                if (world.getDifficulty() == murat.simv2.simulation.mirror.net.minecraft.world.Difficulty.HARD) {
+                if (world.getDifficulty() == Difficulty.HARD) {
                     amount = (amount * 3.0F) / 2.0F;
                 }
             }
@@ -170,15 +170,15 @@ public abstract class PlayerEntity extends LivingEntity {
         return false;
     }
 
-    protected void damageArmor(murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource source, float amount) {
-        this.damageEquipment(source, amount, new murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot[]{ murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot.FEET, murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot.LEGS, murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot.CHEST, murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot.HEAD });
+    protected void damageArmor(DamageSource source, float amount) {
+        this.damageEquipment(source, amount, new EquipmentSlot[]{ EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD });
     }
 
-    protected void damageHelmet(murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource source, float amount) {
-        this.damageEquipment(source, amount, new murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot[]{ murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot.HEAD });
+    protected void damageHelmet(DamageSource source, float amount) {
+        this.damageEquipment(source, amount, new EquipmentSlot[]{ EquipmentSlot.HEAD });
     }
 
-    protected void applyDamage(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld world, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource source, float amount) {
+    protected void applyDamage(ServerWorld world, DamageSource source, float amount) {
         if (!this.isInvulnerableTo(world, source)) {
             amount = this.applyArmorToDamage(source, amount);
             amount = this.modifyAppliedDamage(source, amount);
@@ -199,9 +199,9 @@ public abstract class PlayerEntity extends LivingEntity {
         return !this.abilities.flying;
     }
 
-    protected murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d adjustMovementForSneaking(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d movement, murat.simv2.simulation.mirror.net.minecraft.entity.MovementType type) {
+    protected Vec3d adjustMovementForSneaking(Vec3d movement, MovementType type) {
         float f = this.getStepHeight();
-        if (((((!this.abilities.flying) && (!(movement.y > 0.0))) && ((type == murat.simv2.simulation.mirror.net.minecraft.entity.MovementType.SELF) || (type == murat.simv2.simulation.mirror.net.minecraft.entity.MovementType.PLAYER))) && this.clipAtLedge()) && this.method_30263(f)) {
+        if (((((!this.abilities.flying) && (!(movement.y > 0.0))) && ((type == MovementType.SELF) || (type == MovementType.PLAYER))) && this.clipAtLedge()) && this.method_30263(f)) {
             double d = movement.x;
             double e = movement.z;
             double h = Math.signum(d) * 0.05;
@@ -221,7 +221,7 @@ public abstract class PlayerEntity extends LivingEntity {
                     e -= i;
                 }
             } 
-            return new murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d(d, movement.y, e);
+            return new Vec3d(d, movement.y, e);
         } else {
             return movement;
         }
@@ -232,29 +232,29 @@ public abstract class PlayerEntity extends LivingEntity {
     }
 
     private boolean isSpaceAroundPlayerEmpty(double offsetX, double offsetZ, double d) {
-        murat.simv2.simulation.mirror.net.minecraft.util.math.Box box = this.getBoundingBox();
-        return this.getWorld().isSpaceEmpty(this, new murat.simv2.simulation.mirror.net.minecraft.util.math.Box((box.minX + 1.0E-7) + offsetX, (box.minY - d) - 1.0E-7, (box.minZ + 1.0E-7) + offsetZ, (box.maxX - 1.0E-7) + offsetX, box.minY, (box.maxZ - 1.0E-7) + offsetZ));
+        Box box = this.getBoundingBox();
+        return this.getWorld().isSpaceEmpty(this, new Box((box.minX + 1.0E-7) + offsetX, (box.minY - d) - 1.0E-7, (box.minZ + 1.0E-7) + offsetZ, (box.maxX - 1.0E-7) + offsetX, box.minY, (box.maxZ - 1.0E-7) + offsetZ));
     }
 
-    public void attack(murat.simv2.simulation.mirror.net.minecraft.entity.Entity target) {
+    public void attack(Entity target) {
         if (target.isAttackable()) {
             if (!target.handleAttack(this)) {
-                float f = (this.isUsingRiptide()) ? this.riptideAttackDamage : ((float) (this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.ATTACK_DAMAGE)));
-                murat.simv2.simulation.mirror.net.minecraft.item.ItemStack itemStack = this.getWeaponStack();
-                murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource damageSource = ((murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource) (Optional.ofNullable(itemStack.getItem().getDamageSource(this)).orElse(this.getDamageSources().playerAttack(this))));
+                float f = (this.isUsingRiptide()) ? this.riptideAttackDamage : ((float) (this.getAttributeValue(EntityAttributes.ATTACK_DAMAGE)));
+                ItemStack itemStack = this.getWeaponStack();
+                DamageSource damageSource = ((DamageSource) (Optional.ofNullable(itemStack.getItem().getDamageSource(this)).orElse(this.getDamageSources().playerAttack(this))));
                 float g = this.getDamageAgainst(target, f, damageSource) - f;
                 float h = this.getAttackCooldownProgress(0.5F);
                 f *= 0.2F + ((h * h) * 0.8F);
                 g *= h;
-                if ((target.getType().isIn(murat.simv2.simulation.mirror.net.minecraft.registry.tag.EntityTypeTags.REDIRECTABLE_PROJECTILE) && (target instanceof murat.simv2.simulation.mirror.net.minecraft.entity.projectile.ProjectileEntity projectileEntity)) && projectileEntity.deflect(murat.simv2.simulation.mirror.net.minecraft.entity.ProjectileDeflection.REDIRECTED, this, this, true)) {
-                    this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvents.ENTITY_PLAYER_ATTACK_NODAMAGE, this.getSoundCategory());
+                if ((target.getType().isIn(EntityTypeTags.REDIRECTABLE_PROJECTILE) && (target instanceof ProjectileEntity projectileEntity)) && projectileEntity.deflect(ProjectileDeflection.REDIRECTED, this, this, true)) {
+                    this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_NODAMAGE, this.getSoundCategory());
                 } else if ((f > 0.0F) || (g > 0.0F)) {
                     boolean bl = h > 0.9F;
                     boolean bl2 = false;
                     if (this.isSprinting() && bl) {
-                        this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvents.ENTITY_PLAYER_ATTACK_KNOCKBACK, this.getSoundCategory(), 1.0F, 1.0F);
+                        this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_KNOCKBACK, this.getSoundCategory(), 1.0F, 1.0F);
                     }
-                    boolean bl3 = (((((((bl && (this.fallDistance > 0.0)) && (!this.isOnGround())) && (!this.isClimbing())) && (!this.isTouchingWater())) && (!this.hasStatusEffect(murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffects.BLINDNESS))) && (!this.hasVehicle())) && (target instanceof murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity)) && (!this.isSprinting());
+                    boolean bl3 = (((((((bl && (this.fallDistance > 0.0)) && (!this.isOnGround())) && (!this.isClimbing())) && (!this.isTouchingWater())) && (!this.hasStatusEffect(StatusEffects.BLINDNESS))) && (!this.hasVehicle())) && (target instanceof LivingEntity)) && (!this.isSprinting());
                     float i = f + g;
                     boolean bl4 = false;
                     if (((bl && (!bl3)) && (!bl2)) && this.isOnGround()) {
@@ -262,79 +262,79 @@ public abstract class PlayerEntity extends LivingEntity {
                         double e = this.getMovementSpeed() * 2.5;
                     }
                     float j = 0.0F;
-                    murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = target.getVelocity();
+                    Vec3d vec3d = target.getVelocity();
                     boolean bl5 = target.sidedDamage(damageSource, i);
                     if (bl5) {
                         float k = this.getAttackKnockbackAgainst(target, damageSource) + (bl2 ? 1.0F : 0.0F);
                         if (k > 0.0F) {
-                            if (target instanceof murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity livingEntity2) {
-                                livingEntity2.takeKnockback(k * 0.5F, murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.sin(this.getYaw() * ((float) (Math.PI / 180.0))), -murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.cos(this.getYaw() * ((float) (Math.PI / 180.0))));
+                            if (target instanceof LivingEntity livingEntity2) {
+                                livingEntity2.takeKnockback(k * 0.5F, MathHelper.sin(this.getYaw() * ((float) (Math.PI / 180.0))), -MathHelper.cos(this.getYaw() * ((float) (Math.PI / 180.0))));
                             } else {
-                                target.addVelocity(((-murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.sin(this.getYaw() * ((float) (Math.PI / 180.0)))) * k) * 0.5F, 0.1, (murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.cos(this.getYaw() * ((float) (Math.PI / 180.0))) * k) * 0.5F);
+                                target.addVelocity(((-MathHelper.sin(this.getYaw() * ((float) (Math.PI / 180.0)))) * k) * 0.5F, 0.1, (MathHelper.cos(this.getYaw() * ((float) (Math.PI / 180.0))) * k) * 0.5F);
                             }
                             this.setVelocity(this.getVelocity().multiply(0.6, 1.0, 0.6));
                         }
                         if (bl4) {
-                            float l = 1.0F + (((float) (this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.SWEEPING_DAMAGE_RATIO))) * f);
-                            for (murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity livingEntity3 : this.getWorld().getNonSpectatingEntities(murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity.class, target.getBoundingBox().expand(1.0, 0.25, 1.0))) {
-                                if (((((livingEntity3 != this) && (livingEntity3 != target)) && (!this.isTeammate(livingEntity3))) && (!((livingEntity3 instanceof murat.simv2.simulation.mirror.net.minecraft.entity.decoration.ArmorStandEntity armorStandEntity) && armorStandEntity.isMarker()))) && (this.squaredDistanceTo(livingEntity3) < 9.0)) {
+                            float l = 1.0F + (((float) (this.getAttributeValue(EntityAttributes.SWEEPING_DAMAGE_RATIO))) * f);
+                            for (LivingEntity livingEntity3 : this.getWorld().getNonSpectatingEntities(LivingEntity.class, target.getBoundingBox().expand(1.0, 0.25, 1.0))) {
+                                if (((((livingEntity3 != this) && (livingEntity3 != target)) && (!this.isTeammate(livingEntity3))) && (!((livingEntity3 instanceof ArmorStandEntity armorStandEntity) && armorStandEntity.isMarker()))) && (this.squaredDistanceTo(livingEntity3) < 9.0)) {
                                     float m = this.getDamageAgainst(livingEntity3, l, damageSource) * h;
-                                    if ((this.getWorld() instanceof murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld serverWorld) && livingEntity3.damage(serverWorld, damageSource, m)) {
-                                        livingEntity3.takeKnockback(0.4F, murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.sin(this.getYaw() * ((float) (Math.PI / 180.0))), -murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.cos(this.getYaw() * ((float) (Math.PI / 180.0))));
+                                    if ((this.getWorld() instanceof ServerWorld serverWorld) && livingEntity3.damage(serverWorld, damageSource, m)) {
+                                        livingEntity3.takeKnockback(0.4F, MathHelper.sin(this.getYaw() * ((float) (Math.PI / 180.0))), -MathHelper.cos(this.getYaw() * ((float) (Math.PI / 180.0))));
                                     }
                                 }
                             }
-                            this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, this.getSoundCategory(), 1.0F, 1.0F);
+                            this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, this.getSoundCategory(), 1.0F, 1.0F);
                             this.spawnSweepAttackParticles();
                         }
-                        if ((target instanceof murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity) && target.velocityModified) {
+                        if ((target instanceof ServerPlayerEntity) && target.velocityModified) {
                             target.setVelocity(vec3d);
                         }
                         if (bl3) {
-                            this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, this.getSoundCategory(), 1.0F, 1.0F);
+                            this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, this.getSoundCategory(), 1.0F, 1.0F);
                         }
                         if ((!bl3) && (!bl4)) {
                             if (bl) {
-                                this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, this.getSoundCategory(), 1.0F, 1.0F);
+                                this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, this.getSoundCategory(), 1.0F, 1.0F);
                             } else {
-                                this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvents.ENTITY_PLAYER_ATTACK_WEAK, this.getSoundCategory(), 1.0F, 1.0F);
+                                this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_WEAK, this.getSoundCategory(), 1.0F, 1.0F);
                             }
                         }
-                        murat.simv2.simulation.mirror.net.minecraft.entity.Entity entity = target;
-                        if (target instanceof murat.simv2.simulation.mirror.net.minecraft.entity.boss.dragon.EnderDragonPart) {
-                            entity = ((murat.simv2.simulation.mirror.net.minecraft.entity.boss.dragon.EnderDragonPart) (target)).owner;
+                        Entity entity = target;
+                        if (target instanceof EnderDragonPart) {
+                            entity = ((EnderDragonPart) (target)).owner;
                         }
                         boolean bl6 = false;
-                        if (((!this.getWorld().isClient) && (!itemStack.isEmpty())) && (entity instanceof murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity)) {
+                        if (((!this.getWorld().isClient) && (!itemStack.isEmpty())) && (entity instanceof LivingEntity)) {
                             if (itemStack.isEmpty()) {
                                 if (itemStack == this.getMainHandStack()) {
-                                    this.setStackInHand(murat.simv2.simulation.mirror.net.minecraft.util.Hand.MAIN_HAND, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack.EMPTY);
+                                    this.setStackInHand(Hand.MAIN_HAND, ItemStack.EMPTY);
                                 } else {
-                                    this.setStackInHand(murat.simv2.simulation.mirror.net.minecraft.util.Hand.OFF_HAND, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack.EMPTY);
+                                    this.setStackInHand(Hand.OFF_HAND, ItemStack.EMPTY);
                                 }
                             }
                         }
                     } else {
-                        this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvents.ENTITY_PLAYER_ATTACK_NODAMAGE, this.getSoundCategory(), 1.0F, 1.0F);
+                        this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_NODAMAGE, this.getSoundCategory(), 1.0F, 1.0F);
                     }
                 }
             }
         }
     }
 
-    protected float getDamageAgainst(murat.simv2.simulation.mirror.net.minecraft.entity.Entity target, float baseDamage, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource damageSource) {
+    protected float getDamageAgainst(Entity target, float baseDamage, DamageSource damageSource) {
         return baseDamage;
     }
 
-    protected void attackLivingEntity(murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity target) {
+    protected void attackLivingEntity(LivingEntity target) {
         this.attack(target);
     }
 
     public void spawnSweepAttackParticles() {
-        double d = -murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.sin(this.getYaw() * ((float) (Math.PI / 180.0)));
-        double e = murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.cos(this.getYaw() * ((float) (Math.PI / 180.0)));
-        if (this.getWorld() instanceof murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld) {
-            ((murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld) (this.getWorld())).spawnParticles(murat.simv2.simulation.mirror.net.minecraft.particle.ParticleTypes.SWEEP_ATTACK, this.getX() + d, this.getBodyY(0.5), this.getZ() + e, 0, d, 0.0, e, 0.0);
+        double d = -MathHelper.sin(this.getYaw() * ((float) (Math.PI / 180.0)));
+        double e = MathHelper.cos(this.getYaw() * ((float) (Math.PI / 180.0)));
+        if (this.getWorld() instanceof ServerWorld) {
+            ((ServerWorld) (this.getWorld())).spawnParticles(ParticleTypes.SWEEP_ATTACK, this.getX() + d, this.getBodyY(0.5), this.getZ() + e, 0, d, 0.0, e, 0.0);
         }
     }
 
@@ -358,22 +358,22 @@ public abstract class PlayerEntity extends LivingEntity {
         this.wakeUp(true, true);
     }
 
-    public void travel(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d movementInput) {
+    public void travel(Vec3d movementInput) {
         if (this.hasVehicle()) {
             super.travel(movementInput);
         } else {
             if (this.isSwimming()) {
                 double d = this.getRotationVector().y;
                 double e = (d < (-0.2)) ? 0.085 : 0.06;
-                if (((d <= 0.0) || this.jumping) || (!this.getWorld().getFluidState(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos.ofFloored(this.getX(), (this.getY() + 1.0) - 0.1, this.getZ())).isEmpty())) {
-                    murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d vec3d = this.getVelocity();
+                if (((d <= 0.0) || this.jumping) || (!this.getWorld().getFluidState(BlockPos.ofFloored(this.getX(), (this.getY() + 1.0) - 0.1, this.getZ())).isEmpty())) {
+                    Vec3d vec3d = this.getVelocity();
                     this.setVelocity(vec3d.add(0.0, (d - vec3d.y) * e, 0.0));
                 }
             }
             if (this.getAbilities().flying) {
                 double d = this.getVelocity().y;
                 super.travel(movementInput);
-                this.setVelocity(this.getVelocity().withAxis(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis.Y, d * 0.6));
+                this.setVelocity(this.getVelocity().withAxis(Axis.Y, d * 0.6));
             } else {
                 super.travel(movementInput);
             }
@@ -381,7 +381,7 @@ public abstract class PlayerEntity extends LivingEntity {
     }
 
     public float getMovementSpeed() {
-        return ((float) (this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.MOVEMENT_SPEED)));
+        return ((float) (this.getAttributeValue(EntityAttributes.MOVEMENT_SPEED)));
     }
 
     protected void onSwimmingStart() {
@@ -390,15 +390,15 @@ public abstract class PlayerEntity extends LivingEntity {
         }
     }
 
-    protected void playStepSound(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos pos, murat.simv2.simulation.mirror.net.minecraft.block.BlockState state) {
+    protected void playStepSound(BlockPos pos, BlockState state) {
         if (this.isTouchingWater()) {
             this.playSwimSound();
             this.playSecondaryStepSound(state);
         } else {
-            murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos blockPos = this.getStepSoundPos(pos);
+            BlockPos blockPos = this.getStepSoundPos(pos);
             if (!pos.equals(blockPos)) {
-                murat.simv2.simulation.mirror.net.minecraft.block.BlockState blockState = this.getWorld().getBlockState(blockPos);
-                if (blockState.isIn(murat.simv2.simulation.mirror.net.minecraft.registry.tag.BlockTags.COMBINATION_STEP_SOUND_BLOCKS)) {
+                BlockState blockState = this.getWorld().getBlockState(blockPos);
+                if (blockState.isIn(BlockTags.COMBINATION_STEP_SOUND_BLOCKS)) {
                     this.playCombinationStepSounds(blockState, state);
                 } else {
                     super.playStepSound(blockPos, blockState);
@@ -409,24 +409,24 @@ public abstract class PlayerEntity extends LivingEntity {
         }
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity.FallSounds getFallSounds() {
-        return new murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity.FallSounds(murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvents.ENTITY_PLAYER_SMALL_FALL, murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvents.ENTITY_PLAYER_BIG_FALL);
+    public FallSounds getFallSounds() {
+        return new FallSounds(SoundEvents.ENTITY_PLAYER_SMALL_FALL, SoundEvents.ENTITY_PLAYER_BIG_FALL);
     }
 
-    protected int getExperienceToDrop(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld world) {
-        return (!world.getGameRules().getBoolean(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.KEEP_INVENTORY)) && (!this.isSpectator()) ? Math.min(this.experienceLevel * 7, 100) : 0;
+    protected int getExperienceToDrop(ServerWorld world) {
+        return (!world.getGameRules().getBoolean(GameRules.KEEP_INVENTORY)) && (!this.isSpectator()) ? Math.min(this.experienceLevel * 7, 100) : 0;
     }
 
     protected boolean shouldAlwaysDropExperience() {
         return true;
     }
 
-    protected murat.simv2.simulation.mirror.net.minecraft.entity.Entity.MoveEffect getMoveEffect() {
-        return this.abilities.flying || (this.isOnGround() && this.isSneaky()) ? murat.simv2.simulation.mirror.net.minecraft.entity.Entity.MoveEffect.NONE : murat.simv2.simulation.mirror.net.minecraft.entity.Entity.MoveEffect.ALL;
+    protected MoveEffect getMoveEffect() {
+        return this.abilities.flying || (this.isOnGround() && this.isSneaky()) ? MoveEffect.NONE : MoveEffect.ALL;
     }
 
     public boolean isSpectator() {
-        return this.getGameMode() == murat.simv2.simulation.mirror.net.minecraft.world.GameMode.SPECTATOR;
+        return this.getGameMode() == GameMode.SPECTATOR;
     }
 
     public boolean isSwimming() {
@@ -438,31 +438,31 @@ public abstract class PlayerEntity extends LivingEntity {
     }
 
     protected void setAbsorptionAmountUnclamped(float absorptionAmount) {
-        this.getDataTracker().set(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity.ABSORPTION_AMOUNT, absorptionAmount);
+        this.getDataTracker().set(PlayerEntity.ABSORPTION_AMOUNT, absorptionAmount);
     }
 
     public float getAbsorptionAmount() {
-        return this.getDataTracker().get(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity.ABSORPTION_AMOUNT);
+        return this.getDataTracker().get(PlayerEntity.ABSORPTION_AMOUNT);
     }
 
     public void setFireTicks(int fireTicks) {
         super.setFireTicks(this.abilities.invulnerable ? Math.min(fireTicks, 1) : fireTicks);
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound getShoulderEntityLeft() {
-        return this.dataTracker.get(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity.LEFT_SHOULDER_ENTITY);
+    public NbtCompound getShoulderEntityLeft() {
+        return this.dataTracker.get(PlayerEntity.LEFT_SHOULDER_ENTITY);
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound getShoulderEntityRight() {
-        return this.dataTracker.get(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity.RIGHT_SHOULDER_ENTITY);
+    public NbtCompound getShoulderEntityRight() {
+        return this.dataTracker.get(PlayerEntity.RIGHT_SHOULDER_ENTITY);
     }
 
     public float getAttackCooldownProgressPerTick() {
-        return ((float) ((1.0 / this.getAttributeValue(murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributes.ATTACK_SPEED)) * 20.0));
+        return ((float) ((1.0 / this.getAttributeValue(EntityAttributes.ATTACK_SPEED)) * 20.0));
     }
 
     public float getAttackCooldownProgress(float baseTime) {
-        return murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper.clamp((this.lastAttackedTicks + baseTime) / this.getAttackCooldownProgressPerTick(), 0.0F, 1.0F);
+        return MathHelper.clamp((this.lastAttackedTicks + baseTime) / this.getAttackCooldownProgressPerTick(), 0.0F, 1.0F);
     }
 
     protected float getVelocityMultiplier() {
