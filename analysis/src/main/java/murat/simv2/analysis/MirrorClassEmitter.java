@@ -70,6 +70,8 @@ final class MirrorClassEmitter {
     private final Path minecraftJar;
     private final Map<String, String> primaryClassesBySimpleName;
     private Map<String, String> closureRewriteMap = Map.of();
+    private Map<String, Set<String>> closureTypesBySimpleName = Map.of();
+    private Map<String, String> uniqueClosureTypesBySimpleName = Map.of();
     private List<TypeRewriteRule> closureRewriteRules = List.of();
     private Map<String, BytecodeClass> minecraftClassIndex = Map.of();
 
@@ -89,6 +91,8 @@ final class MirrorClassEmitter {
         Set<String> closureClasses = buildClosureClasses(mirrorClosure, primarySources);
         System.out.println("Mirror closure classes from artifacts: " + closureClasses.size());
         closureRewriteMap = buildClosureRewriteMap(closureClasses);
+        closureTypesBySimpleName = buildClosureTypesBySimpleName(closureRewriteMap.keySet());
+        uniqueClosureTypesBySimpleName = buildUniqueClosureTypesBySimpleName(closureRewriteMap.keySet());
         closureRewriteRules = buildClosureRewriteRules(closureRewriteMap);
         Map<String, Set<String>> closureMethodSelectors = buildClosureMethodSelectors(closureClasses, mirrorClosure);
         Map<String, Set<FieldStub>> closureFields = buildClosureFields(closureClasses);
@@ -160,6 +164,7 @@ final class MirrorClassEmitter {
             transformed = upsertPrimaryContractBlock(transformed, fqcn);
         }
         transformed = injectPrimaryNoArgConstructor(transformed, fqcn);
+        transformed = normalizeNestedImportTargets(transformed, fqcn);
         return transformed;
     }
 
@@ -297,6 +302,126 @@ final class MirrorClassEmitter {
         return unique;
     }
 
+    private String normalizeNestedImportTargets(String source, String currentFqcn) {
+        if (source == null || source.isBlank()) {
+            return source;
+        }
+        Map<String, Set<String>> importsBySimpleName = new LinkedHashMap<>();
+        String[] lines = source.split("\\R", -1);
+        for (String line : lines) {
+            Matcher importMatcher = IMPORT_PATTERN.matcher(line.trim());
+            if (!importMatcher.matches() || importMatcher.group(1) != null) {
+                continue;
+            }
+            String importTarget = importMatcher.group(2);
+            if (importTarget == null || importTarget.isBlank()) {
+                continue;
+            }
+            importsBySimpleName.computeIfAbsent(simpleNameOf(importTarget), ignored -> new TreeSet<>()).add(importTarget);
+            int memberSeparator = importTarget.lastIndexOf('.');
+            if (memberSeparator > 0) {
+                String ownerType = importTarget.substring(0, memberSeparator);
+                if (ownerType.contains(".")) {
+                    importsBySimpleName.computeIfAbsent(simpleNameOf(ownerType), ignored -> new TreeSet<>()).add(ownerType);
+                }
+            }
+        }
+
+        String currentPackage = packageNameOf(currentFqcn);
+        StringBuilder rebuilt = new StringBuilder(source.length() + 128);
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+            Matcher importMatcher = IMPORT_PATTERN.matcher(line.trim());
+            if (importMatcher.matches() && importMatcher.group(1) == null) {
+                String importTarget = importMatcher.group(2);
+                String rewrittenImport = rewriteNestedImportTarget(importTarget, currentPackage, importsBySimpleName);
+                if (rewrittenImport != null && !rewrittenImport.equals(importTarget)) {
+                    line = line.replace(importTarget, rewrittenImport);
+                }
+            }
+            rebuilt.append(line);
+            if (i < lines.length - 1) {
+                rebuilt.append('\n');
+            }
+        }
+        return rebuilt.toString();
+    }
+
+    private String rewriteNestedImportTarget(String importTarget,
+                                             String currentPackage,
+                                             Map<String, Set<String>> importsBySimpleName) {
+        if (importTarget == null || importTarget.isBlank()) {
+            return null;
+        }
+        if (importTarget.startsWith(MIRROR_PACKAGE_PREFIX_DOT)
+            || importTarget.startsWith("net.minecraft.")
+            || importTarget.startsWith("java.")
+            || importTarget.startsWith("javax.")
+            || importTarget.startsWith("com.")
+            || importTarget.startsWith("org.")
+            || importTarget.startsWith("it.")) {
+            return null;
+        }
+        int firstDot = importTarget.indexOf('.');
+        if (firstDot <= 0) {
+            return null;
+        }
+        String ownerSimpleName = importTarget.substring(0, firstDot);
+        String nestedSuffix = importTarget.substring(firstDot);
+        String ownerType = null;
+
+        Set<String> importedOwners = importsBySimpleName.get(ownerSimpleName);
+        if (importedOwners != null && importedOwners.size() == 1) {
+            String candidate = importedOwners.iterator().next();
+            if (candidate.contains(".")) {
+                ownerType = candidate;
+            }
+        }
+        if (ownerType == null) {
+            ownerType = uniqueClosureTypesBySimpleName.get(ownerSimpleName);
+        }
+        if (ownerType == null) {
+            ownerType = resolveNestedOwnerByMember(ownerSimpleName, nestedSuffix);
+        }
+        if (ownerType == null && currentPackage != null && !currentPackage.isBlank()) {
+            String samePackageOwner = currentPackage + "." + ownerSimpleName;
+            if (closureRewriteMap.containsKey(samePackageOwner + nestedSuffix)) {
+                ownerType = samePackageOwner;
+            }
+        }
+        if (ownerType == null) {
+            return null;
+        }
+        String rewritten = resolveMirroredTypeName(ownerType + nestedSuffix);
+        return rewritten == null ? ownerType + nestedSuffix : rewritten;
+    }
+
+    private Map<String, Set<String>> buildClosureTypesBySimpleName(Set<String> closureClasses) {
+        Map<String, Set<String>> bySimpleName = new LinkedHashMap<>();
+        for (String className : closureClasses) {
+            if (className == null || className.isBlank()) {
+                continue;
+            }
+            bySimpleName.computeIfAbsent(simpleNameOf(className), key -> new TreeSet<>()).add(className);
+        }
+        Map<String, Set<String>> frozen = new LinkedHashMap<>();
+        for (Map.Entry<String, Set<String>> entry : bySimpleName.entrySet()) {
+            frozen.put(entry.getKey(), Set.copyOf(entry.getValue()));
+        }
+        return Map.copyOf(frozen);
+    }
+
+    private Map<String, String> buildUniqueClosureTypesBySimpleName(Set<String> closureClasses) {
+        Map<String, String> unique = new LinkedHashMap<>();
+        Map<String, Set<String>> bySimpleName = buildClosureTypesBySimpleName(closureClasses);
+        for (Map.Entry<String, Set<String>> entry : bySimpleName.entrySet()) {
+            if (entry.getValue().size() == 1) {
+                unique.put(entry.getKey(), entry.getValue().iterator().next());
+            }
+        }
+        return Map.copyOf(unique);
+    }
+
     private String rewritePrimaryReference(CtTypeReference<?> reference,
                                            String currentFqcn,
                                            Map<String, String> uniqueImportsBySimpleName) {
@@ -317,12 +442,30 @@ final class MirrorClassEmitter {
         String importedQualifiedName;
         if (!qualifiedName.contains(".")) {
             importedQualifiedName = uniqueImportsBySimpleName.getOrDefault(qualifiedName, qualifiedName);
+            if (!importedQualifiedName.contains(".")) {
+                String currentPackage = packageNameOf(currentFqcn);
+                if (!currentPackage.isBlank()) {
+                    String samePackageCandidate = currentPackage + "." + qualifiedName;
+                    if (resolveMirroredTypeName(samePackageCandidate) != null) {
+                        importedQualifiedName = samePackageCandidate;
+                    }
+                }
+            }
+            if (!importedQualifiedName.contains(".")) {
+                importedQualifiedName = uniqueClosureTypesBySimpleName.getOrDefault(importedQualifiedName, importedQualifiedName);
+            }
         } else {
             importedQualifiedName = qualifiedName;
             if (!qualifiedName.startsWith("net.minecraft.") && !qualifiedName.startsWith(MIRROR_PACKAGE_PREFIX_DOT)) {
                 int firstDot = qualifiedName.indexOf('.');
                 String prefix = qualifiedName.substring(0, firstDot);
                 String mappedPrefix = uniqueImportsBySimpleName.get(prefix);
+                if (mappedPrefix == null) {
+                    mappedPrefix = uniqueClosureTypesBySimpleName.get(prefix);
+                }
+                if (mappedPrefix == null) {
+                    mappedPrefix = resolveNestedOwnerByMember(prefix, qualifiedName.substring(firstDot));
+                }
                 if (mappedPrefix != null) {
                     importedQualifiedName = mappedPrefix + qualifiedName.substring(firstDot);
                 }
@@ -352,6 +495,24 @@ final class MirrorClassEmitter {
             return rewritten;
         }
         return null;
+    }
+
+    private String resolveNestedOwnerByMember(String ownerSimpleName, String nestedSuffix) {
+        Set<String> candidates = closureTypesBySimpleName.get(ownerSimpleName);
+        if (candidates == null || candidates.isEmpty()) {
+            return null;
+        }
+        String match = null;
+        for (String candidateOwner : candidates) {
+            if (!closureRewriteMap.containsKey(candidateOwner + nestedSuffix)) {
+                continue;
+            }
+            if (match != null && !match.equals(candidateOwner)) {
+                return null;
+            }
+            match = candidateOwner;
+        }
+        return match;
     }
 
     private String rewriteTypeReference(String typeName) {

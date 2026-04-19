@@ -1,4 +1,5 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity;
+import murat.simv2.simulation.mirror.net.minecraft.util.hit.HitResult.Type;
 import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -39,7 +40,6 @@ import murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashException;
 import murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashReport;
 import murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashReportSection;
 import murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult;
-import murat.simv2.simulation.mirror.net.minecraft.util.hit.HitResult.Type;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos.Mutable;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.Box;
@@ -528,7 +528,7 @@ public abstract class Entity {
 
     private static List<VoxelShape> findCollisionsForMovement(@Nullable
     Entity entity, World world, List<VoxelShape> regularCollisions, Box movingEntityBoundingBox) {
-        com.google.common.collect.ImmutableList.Builder<VoxelShape> builder = ImmutableList.builderWithExpectedSize(regularCollisions.size() + 1);
+        ImmutableList.Builder<VoxelShape> builder = ImmutableList.builderWithExpectedSize(regularCollisions.size() + 1);
         WorldBorder worldBorder = world.getWorldBorder();
         boolean bl = (entity != null) && worldBorder.canCollide(entity, movingEntityBoundingBox);
         return builder.build();
@@ -574,7 +574,7 @@ public abstract class Entity {
                                         blockState.onEntityCollision(this.getWorld(), pos, this, collisionHandler);
                                         this.onBlockCollision(blockState);
                                     } catch (Throwable var14) {
-                                        CrashReport crashReport = CrashReport.create(var14, "Colliding entity with block");
+                                        CrashReport crashReport = CrashReport.create(net.minecraft.entity.var14, "Colliding entity with block");
                                         CrashReportSection crashReportSection = crashReport.addElement("Block being collided with");
                                         CrashReportSection.addBlockInfo(crashReportSection, this.getWorld(), pos, blockState);
                                         CrashReportSection crashReportSection2 = crashReport.addElement("Entity being checked for collision");

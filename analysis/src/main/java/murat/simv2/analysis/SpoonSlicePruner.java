@@ -16,7 +16,6 @@ import spoon.reflect.visitor.ImportConflictDetector;
 import spoon.reflect.visitor.PrettyPrinter;
 import spoon.reflect.visitor.filter.TypeFilter;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
@@ -47,36 +46,30 @@ public class SpoonSlicePruner {
 
     private final Path sourcesJar;
     private final Path minecraftJar;
-    private final List<Path> extraClasspathOverride;
     private final Map<String, Map<String, Set<Integer>>> sliceLines;
     private final SlicedFieldPlanner fieldPlanner = new SlicedFieldPlanner();
     private final SpoonRepairPasses repairPasses = new SpoonRepairPasses();
 
     public SpoonSlicePruner(Path sourcesJar,
                             Path minecraftJar,
-                            String extraClasspathOverride,
                             Map<String, Map<String, Set<Integer>>> sliceLines) {
         this.sourcesJar = Objects.requireNonNull(sourcesJar, "sourcesJar");
         this.minecraftJar = Objects.requireNonNull(minecraftJar, "minecraftJar");
-        this.extraClasspathOverride = parseClasspath(extraClasspathOverride);
         this.sliceLines = Objects.requireNonNull(sliceLines, "sliceLines");
     }
 
     public Map<String, String> pruneAndCollect(Path outputDir) throws IOException {
         Path tempDir = Files.createTempDirectory("mc-sources-");
         try {
-            extractTargetSources(tempDir);
+            extractModelSources(tempDir);
 
             System.out.println("Building Spoon model...");
             Launcher launcher = new Launcher();
             launcher.addInputResource(tempDir.toString());
-            String[] sourceClasspath = buildSourceClasspath();
-            System.out.println("Spoon source classpath entries: " + sourceClasspath.length);
             launcher.getEnvironment().setNoClasspath(true);
-            launcher.getEnvironment().setIgnoreSyntaxErrors(true);
+            launcher.getEnvironment().setIgnoreSyntaxErrors(false);
             launcher.getEnvironment().setComplianceLevel(21);
-            launcher.getEnvironment().setAutoImports(true);
-            launcher.getModelBuilder().setSourceClasspath(sourceClasspath);
+            launcher.getEnvironment().setAutoImports(false);
             launcher.buildModel();
             CtModel model = launcher.getModel();
             Factory factory = launcher.getFactory();
@@ -102,8 +95,8 @@ public class SpoonSlicePruner {
 
                 CtType<?> type = typeIndex.get(className);
                 if (type == null) {
-                    System.err.println("  Type not found in Spoon model: " + className);
-                    continue;
+                    throw new IllegalStateException("Type not found in Spoon model: " + className
+                        + ". Regenerate artifacts and verify source extraction/classpath inputs.");
                 }
 
                 String slicedSource = buildSlicedClass(type, methodLines, factory,
@@ -151,21 +144,6 @@ public class SpoonSlicePruner {
         }
     }
 
-    private List<Path> parseClasspath(String rawClasspath) {
-        if (rawClasspath == null || rawClasspath.isBlank()) {
-            return List.of();
-        }
-        List<Path> entries = new ArrayList<>();
-        StringTokenizer tokenizer = new StringTokenizer(rawClasspath, File.pathSeparator);
-        while (tokenizer.hasMoreTokens()) {
-            String entry = tokenizer.nextToken().trim();
-            if (!entry.isEmpty()) {
-                entries.add(Path.of(entry));
-            }
-        }
-        return List.copyOf(entries);
-    }
-
     private Path resolveAccessWidenerPath(Path outputDir) {
         // outputDir = .../src/main/generated/java/murat/simv2/simulation/sliced
         Path generatedDir = outputDir.getParent().getParent().getParent().getParent().getParent();
@@ -201,119 +179,46 @@ public class SpoonSlicePruner {
         return awSource.endsWith("\n") ? normalized + "\n" : normalized;
     }
 
-    private String[] buildSourceClasspath() throws IOException {
-        LinkedHashSet<String> validated = new LinkedHashSet<>();
+    private void extractModelSources(Path tempDir) throws IOException {
+        System.out.println("Extracting model sources from " + sourcesJar.getFileName() + "...");
 
-        Path normalizedMinecraftJar = minecraftJar.toAbsolutePath().normalize();
-        if (!Files.exists(normalizedMinecraftJar)) {
-            throw new IOException("Minecraft JAR not found for Spoon classpath: " + normalizedMinecraftJar);
-        }
-        validated.add(normalizedMinecraftJar.toString());
-
-        String runtimeClasspath = System.getProperty("java.class.path", "");
-        if (!runtimeClasspath.isBlank()) {
-            List<String> skippedRuntimeEntries = new ArrayList<>();
-            StringTokenizer runtimeEntries = new StringTokenizer(runtimeClasspath, File.pathSeparator);
-            while (runtimeEntries.hasMoreTokens()) {
-                String entry = runtimeEntries.nextToken().trim();
-                if (entry.isEmpty()) {
-                    continue;
-                }
-                Path normalized = Path.of(entry).toAbsolutePath().normalize();
-                if (Files.exists(normalized)) {
-                    validated.add(normalized.toString());
-                } else {
-                    skippedRuntimeEntries.add(normalized.toString());
-                }
-            }
-            if (!skippedRuntimeEntries.isEmpty()) {
-                System.out.println("Skipping " + skippedRuntimeEntries.size()
-                    + " missing runtime classpath entries for Spoon.");
-            }
+        Set<String> modelClassNames = new TreeSet<>(AnalysisConfig.TARGET_CLASSES_DOT);
+        Set<String> modelPaths = new HashSet<>();
+        for (String className : modelClassNames) {
+            modelPaths.add(className.replace('.', '/') + ".java");
         }
 
-        int discoveredCacheJars = 0;
-        for (Path entry : discoverGradleModuleCacheJars()) {
-            Path normalized = entry.toAbsolutePath().normalize();
-            if (validated.add(normalized.toString())) {
-                discoveredCacheJars++;
-            }
-        }
-        if (discoveredCacheJars > 0) {
-            System.out.println("Added " + discoveredCacheJars
-                + " Gradle module cache jars to Spoon classpath.");
-        }
-
-        List<String> missingOverrides = new ArrayList<>();
-        for (Path entry : extraClasspathOverride) {
-            Path normalized = entry.toAbsolutePath().normalize();
-            if (!Files.exists(normalized)) {
-                missingOverrides.add(normalized.toString());
-            } else {
-                validated.add(normalized.toString());
-            }
-        }
-        if (!missingOverrides.isEmpty()) {
-            throw new IOException("Spoon extra classpath override contains missing entries: "
-                + String.join(", ", missingOverrides));
-        }
-        if (validated.isEmpty()) {
-            throw new IOException("Spoon source classpath is empty after validation.");
-        }
-
-        return validated.toArray(String[]::new);
-    }
-
-    private List<Path> discoverGradleModuleCacheJars() throws IOException {
-        String gradleHomeEnv = System.getenv("GRADLE_USER_HOME");
-        Path gradleHome = (gradleHomeEnv == null || gradleHomeEnv.isBlank())
-            ? Path.of(System.getProperty("user.home"), ".gradle")
-            : Path.of(gradleHomeEnv);
-        Path moduleCache = gradleHome.resolve("caches").resolve("modules-2").resolve("files-2.1");
-        if (!Files.isDirectory(moduleCache)) {
-            return List.of();
-        }
-
-        List<Path> jars = new ArrayList<>();
-        try (var walk = Files.walk(moduleCache)) {
-            walk.filter(Files::isRegularFile)
-                .filter(this::isBinaryJar)
-                .forEach(jars::add);
-        }
-        return jars;
-    }
-
-    private boolean isBinaryJar(Path path) {
-        String fileName = path.getFileName().toString();
-        return fileName.endsWith(".jar")
-            && !fileName.endsWith("-sources.jar")
-            && !fileName.endsWith("-javadoc.jar");
-    }
-
-    private void extractTargetSources(Path tempDir) throws IOException {
-        System.out.println("Extracting target sources from " + sourcesJar.getFileName() + "...");
-
-        Set<String> targetPaths = new HashSet<>();
+        Set<String> requiredTargetPaths = new HashSet<>();
         for (String className : AnalysisConfig.TARGET_CLASSES_DOT) {
-            targetPaths.add(className.replace('.', '/') + ".java");
+            requiredTargetPaths.add(className.replace('.', '/') + ".java");
         }
 
+        Set<String> extractedPaths = new HashSet<>();
         try (JarFile jar = new JarFile(sourcesJar.toFile())) {
             Enumeration<JarEntry> entries = jar.entries();
             while (entries.hasMoreElements()) {
                 JarEntry entry = entries.nextElement();
                 if (entry.isDirectory()) continue;
+                if (!modelPaths.contains(entry.getName())) continue;
 
-                if (targetPaths.contains(entry.getName())) {
-                    Path outFile = tempDir.resolve(entry.getName());
-                    Files.createDirectories(outFile.getParent());
-                    try (var in = jar.getInputStream(entry)) {
-                        Files.copy(in, outFile);
-                    }
-                    System.out.println("  Extracted: " + entry.getName());
+                Path outFile = tempDir.resolve(entry.getName());
+                Files.createDirectories(outFile.getParent());
+                try (var in = jar.getInputStream(entry)) {
+                    Files.copy(in, outFile);
                 }
+                extractedPaths.add(entry.getName());
             }
         }
+
+        List<String> missingTargets = requiredTargetPaths.stream()
+            .filter(path -> !extractedPaths.contains(path))
+            .sorted()
+            .toList();
+        if (!missingTargets.isEmpty()) {
+            throw new IOException("Sources JAR is missing required target classes: "
+                + String.join(", ", missingTargets));
+        }
+        System.out.println("Extracted " + extractedPaths.size() + " source files for Spoon model.");
     }
 
     private String buildSlicedClass(CtType<?> type, Map<String, Set<Integer>> methodLines,
@@ -344,8 +249,8 @@ public class SpoonSlicePruner {
             String descriptor = methodSelector.substring(methodSelector.indexOf('('));
             CtMethod<?> original = findMethod(type, methodName, descriptor);
             if (original == null) {
-                System.out.println("  Method not found: " + methodName + " in " + simpleName);
-                continue;
+                throw new IllegalStateException("Strict WALA mode: method selector '" + methodSelector
+                    + "' was not found in " + type.getQualifiedName());
             }
 
             CtMethod<?> cloned = original.clone();
@@ -737,8 +642,8 @@ public class SpoonSlicePruner {
         for (CtStatement stmt : toDelete) {
             try {
                 stmt.delete();
-            } catch (Exception e) {
-                // Already removed
+            } catch (RuntimeException ex) {
+                throw new IllegalStateException("Failed to prune statement in method body.", ex);
             }
         }
     }
@@ -789,7 +694,12 @@ public class SpoonSlicePruner {
                     boolean elseEmpty = ctIf.getElseStatement() == null || isEmpty(ctIf.getElseStatement());
 
                     if (thenEmpty && elseEmpty) {
-                        try { ctIf.delete(); changed = true; } catch (Exception ignored) {}
+                        try {
+                            ctIf.delete();
+                            changed = true;
+                        } catch (RuntimeException ex) {
+                            throw new IllegalStateException("Failed to delete empty if-statement.", ex);
+                        }
                     } else if (elseEmpty && ctIf.getElseStatement() != null) {
                         ctIf.setElseStatement(null);
                         changed = true;
@@ -940,21 +850,11 @@ public class SpoonSlicePruner {
         if (methodName.equals("<init>")) {
             return findConstructorAsMethod(type, descriptor);
         }
-        int paramCount = countDescriptorParams(descriptor);
         for (CtMethod<?> m : type.getMethods()) {
-            if (m.getSimpleName().equals(methodName)) {
-                if (m.getParameters().size() == paramCount && getMethodDescriptor(m).equals(descriptor)) {
-                    return m;
-                }
-            }
-        }
-
-        for (CtMethod<?> m : type.getMethods()) {
-            if (m.getSimpleName().equals(methodName) && m.getParameters().size() == paramCount) {
+            if (m.getSimpleName().equals(methodName) && getMethodDescriptor(m).equals(descriptor)) {
                 return m;
             }
         }
-
         return null;
     }
 
@@ -964,28 +864,12 @@ public class SpoonSlicePruner {
      */
     private CtMethod<?> findConstructorAsMethod(CtType<?> type, String descriptor) {
         if (!(type instanceof CtClass<?> ctClass)) return null;
-        int paramCount = countDescriptorParams(descriptor);
-        CtConstructor<?> match = null;
-
-        // Try exact descriptor match first
         for (CtConstructor<?> ctor : ctClass.getConstructors()) {
-            if (ctor.getParameters().size() == paramCount && getConstructorDescriptor(ctor).equals(descriptor)) {
-                match = ctor;
-                break;
+            if (getConstructorDescriptor(ctor).equals(descriptor)) {
+                return wrapConstructorAsMethod(ctor, true);
             }
         }
-        // Fall back to param-count match
-        if (match == null) {
-            for (CtConstructor<?> ctor : ctClass.getConstructors()) {
-                if (ctor.getParameters().size() == paramCount) {
-                    match = ctor;
-                    break;
-                }
-            }
-        }
-        if (match == null) return null;
-
-        return wrapConstructorAsMethod(match, true);
+        return null;
     }
 
     private CtMethod<?> wrapConstructorAsMethod(CtConstructor<?> match, boolean includeFullBody) {
@@ -1020,26 +904,6 @@ public class SpoonSlicePruner {
         }
         sb.append(")V");
         return sb.toString();
-    }
-
-    private int countDescriptorParams(String descriptor) {
-        String params = descriptor.substring(1, descriptor.indexOf(')'));
-        if (params.isEmpty()) return 0;
-        int count = 0;
-        int i = 0;
-        while (i < params.length()) {
-            char c = params.charAt(i);
-            if (c == 'L') {
-                i = params.indexOf(';', i) + 1;
-                count++;
-            } else if (c == '[') {
-                i++;
-            } else {
-                i++;
-                count++;
-            }
-        }
-        return count;
     }
 
     // ── Field and import handling ──
@@ -1442,19 +1306,12 @@ public class SpoonSlicePruner {
     private void addClassAccessWidenerEntries(CtTypeReference<?> typeRef, Set<String> awEntries) {
         CtTypeReference<?> current = normalizeTypeReference(typeRef);
         while (current != null) {
-            CtType<?> type = current.getTypeDeclaration();
-            if (type == null) {
+            String qname = current.getQualifiedName();
+            if (qname == null || qname.isBlank() || qname.startsWith("murat.simv2.simulation.sliced.")) {
                 current = current.getDeclaringType();
                 continue;
             }
-            String qname = type.getQualifiedName();
-            if (qname == null || qname.startsWith("murat.simv2.simulation.sliced.")) {
-                current = current.getDeclaringType();
-                continue;
-            }
-            if (requiresAccessWidener(type)) {
-                awEntries.add("accessible class " + internalName(type));
-            }
+            awEntries.add("accessible class " + internalName(current));
             current = current.getDeclaringType();
         }
     }

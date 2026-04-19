@@ -4,15 +4,19 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -23,6 +27,8 @@ final class AnalysisArtifacts {
     static final int FIELD_MANIFEST_VERSION = 1;
     static final String MIRROR_CLOSURE_SCHEMA = "mirror-closure";
     static final int MIRROR_CLOSURE_VERSION = 1;
+    static final String ANALYSIS_INPUTS_SCHEMA = "analysis-inputs";
+    static final int ANALYSIS_INPUTS_VERSION = 1;
     static final Comparator<FieldResult> FIELD_MANIFEST_ORDER = Comparator
         .comparing(FieldResult::declaringClass)
         .thenComparing(FieldResult::fieldName)
@@ -50,11 +56,15 @@ final class AnalysisArtifacts {
         return outputDir.resolve("mirror-closure.json");
     }
 
-    static SpoonArtifacts loadForSpoon(Path outputDir) throws IOException {
-        List<FieldResult> fields = loadFieldManifest(fieldManifestPath(outputDir));
+    static Path analysisInputsPath(Path outputDir) {
+        return outputDir.resolve("analysis-inputs.json");
+    }
+
+    static SpoonArtifacts loadForSpoon(Path outputDir, AnalysisRunConfig runConfig) throws IOException {
+        validateAnalysisInputs(outputDir, runConfig);
         Map<String, Map<String, Set<Integer>>> sliceLines = loadSliceLines(sliceJsonPath(outputDir));
         MirrorClosure mirrorClosure = loadMirrorClosure(mirrorClosurePath(outputDir));
-        return new SpoonArtifacts(fields, sliceLines, mirrorClosure);
+        return new SpoonArtifacts(sliceLines, mirrorClosure);
     }
 
     static String expectedFieldManifestContractLine() {
@@ -226,6 +236,101 @@ final class AnalysisArtifacts {
         return MIRROR_CLOSURE_SCHEMA + "/v" + MIRROR_CLOSURE_VERSION;
     }
 
+    static String expectedAnalysisInputsContract() {
+        return ANALYSIS_INPUTS_SCHEMA + "/v" + ANALYSIS_INPUTS_VERSION;
+    }
+
+    static void writeAnalysisInputs(AnalysisRunConfig runConfig, Path analysisInputsPath) throws IOException {
+        AnalysisInputsPayload payload = new AnalysisInputsPayload();
+        payload.contract = expectedAnalysisInputsContract();
+        payload.minecraftJar = fingerprint(Path.of(runConfig.minecraftJar()), "minecraft jar");
+        payload.sourcesJar = runConfig.sourcesJar().isBlank()
+            ? null
+            : fingerprint(Path.of(runConfig.sourcesJar()), "sources jar");
+        Files.writeString(analysisInputsPath, PRETTY_GSON.toJson(payload));
+    }
+
+    private static void validateAnalysisInputs(Path outputDir, AnalysisRunConfig runConfig) throws IOException {
+        Path metadataPath = analysisInputsPath(outputDir);
+        if (!Files.exists(metadataPath)) {
+            throw new IllegalStateException("Missing analysis inputs metadata: " + metadataPath
+                + ". Run WALA phase (:analysis:runWala) to regenerate artifacts.");
+        }
+
+        AnalysisInputsPayload payload = new Gson().fromJson(Files.readString(metadataPath), AnalysisInputsPayload.class);
+        if (payload == null) {
+            throw new IllegalStateException("Analysis inputs metadata could not be parsed: " + metadataPath);
+        }
+        if (!expectedAnalysisInputsContract().equals(payload.contract)) {
+            throw new IllegalStateException("Analysis inputs contract mismatch in " + metadataPath
+                + ". Expected '" + expectedAnalysisInputsContract() + "', found '" + payload.contract
+                + "'. Run WALA phase (:analysis:runWala) to regenerate artifacts.");
+        }
+        if (payload.minecraftJar == null) {
+            throw new IllegalStateException("Analysis inputs metadata is missing minecraftJar fingerprint in "
+                + metadataPath + ". Regenerate artifacts with :analysis:runWala.");
+        }
+        if (payload.sourcesJar == null) {
+            throw new IllegalStateException("Analysis inputs metadata is missing sourcesJar fingerprint in "
+                + metadataPath + ". Regenerate artifacts with :analysis:runWala using a valid sources jar.");
+        }
+
+        InputFingerprint currentMinecraft = fingerprint(Path.of(runConfig.minecraftJar()), "minecraft jar");
+        InputFingerprint currentSources = fingerprint(Path.of(runConfig.sourcesJar()), "sources jar");
+        verifyMatchingInput("minecraft jar", payload.minecraftJar, currentMinecraft, metadataPath);
+        verifyMatchingInput("sources jar", payload.sourcesJar, currentSources, metadataPath);
+    }
+
+    private static void verifyMatchingInput(String label,
+                                            InputFingerprint expected,
+                                            InputFingerprint current,
+                                            Path metadataPath) {
+        if (!Objects.equals(expected.sha256, current.sha256)
+            || !Objects.equals(expected.sizeBytes, current.sizeBytes)) {
+            throw new IllegalStateException(
+                "Artifact input mismatch for " + label + ". "
+                    + "Stored fingerprint in " + metadataPath + " does not match current input. "
+                    + "Run :analysis:runWala to regenerate artifacts for the current inputs.");
+        }
+    }
+
+    private static InputFingerprint fingerprint(Path inputPath, String label) throws IOException {
+        Path normalized = inputPath.toAbsolutePath().normalize();
+        if (!Files.exists(normalized)) {
+            throw new IllegalStateException("Missing " + label + " for artifact validation: " + normalized);
+        }
+        InputFingerprint fingerprint = new InputFingerprint();
+        fingerprint.path = normalized.toString();
+        fingerprint.sizeBytes = Files.size(normalized);
+        fingerprint.lastModifiedEpochMillis = Files.getLastModifiedTime(normalized).toMillis();
+        fingerprint.sha256 = sha256(normalized);
+        return fingerprint;
+    }
+
+    private static String sha256(Path path) throws IOException {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 is unavailable in this JVM.", ex);
+        }
+        try (InputStream input = Files.newInputStream(path)) {
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = input.read(buffer)) >= 0) {
+                if (read > 0) {
+                    digest.update(buffer, 0, read);
+                }
+            }
+        }
+        byte[] hash = digest.digest();
+        StringBuilder sb = new StringBuilder(hash.length * 2);
+        for (byte value : hash) {
+            sb.append(String.format("%02x", value));
+        }
+        return sb.toString();
+    }
+
     static void writeMirrorClosure(MirrorClosure mirrorClosure, Path closurePath) throws IOException {
         MirrorClosure canonical = canonicalizeMirrorClosure(mirrorClosure);
         MirrorClosurePayload payload = new MirrorClosurePayload();
@@ -363,5 +468,18 @@ final class AnalysisArtifacts {
         String contract;
         List<String> classes;
         Map<String, List<String>> methodsByClass;
+    }
+
+    private static final class AnalysisInputsPayload {
+        String contract;
+        InputFingerprint minecraftJar;
+        InputFingerprint sourcesJar;
+    }
+
+    private static final class InputFingerprint {
+        String path;
+        Long sizeBytes;
+        Long lastModifiedEpochMillis;
+        String sha256;
     }
 }

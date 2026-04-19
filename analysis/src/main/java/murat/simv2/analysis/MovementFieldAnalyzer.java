@@ -2,7 +2,6 @@ package murat.simv2.analysis;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -34,17 +33,17 @@ public final class MovementFieldAnalyzer {
                     + " Action: rerun with inputs where pointer analysis succeeds, "
                     + "or run with mode=wala for WALA-only output.");
         }
-        runSpoonPhase(config, walaResult.classifiedFields(), walaResult.sliceLines(), walaResult.mirrorClosure());
+        runSpoonPhase(config, walaResult.sliceLines(), walaResult.mirrorClosure());
         System.out.println("\n=== Analysis complete ===");
     }
 
     private static void runSpoonOnly(AnalysisRunConfig config) throws Exception {
-        SpoonArtifacts artifacts = AnalysisArtifacts.loadForSpoon(config.outputDir());
-        runSpoonPhase(config, artifacts.fields(), artifacts.sliceLines(), artifacts.mirrorClosure());
+        requireSourcesJarForSpoon(config, AnalysisMode.SPOON_ONLY);
+        SpoonArtifacts artifacts = AnalysisArtifacts.loadForSpoon(config.outputDir(), config);
+        runSpoonPhase(config, artifacts.sliceLines(), artifacts.mirrorClosure());
     }
 
     private static void runSpoonPhase(AnalysisRunConfig config,
-                                      List<FieldResult> classified,
                                       Map<String, Map<String, Set<Integer>>> sliceLines,
                                       MirrorClosure mirrorClosure) throws Exception {
         Path sourcesJarPath = requireSourcesJarForSpoon(config, config.mode());
@@ -53,7 +52,6 @@ public final class MovementFieldAnalyzer {
         SpoonSlicePruner pruner = new SpoonSlicePruner(
             sourcesJarPath,
             Path.of(config.minecraftJar()),
-            config.extraSpoonClasspath(),
             sliceLines
         );
         Map<String, String> slicedPrimarySources = pruner.pruneAndCollect(

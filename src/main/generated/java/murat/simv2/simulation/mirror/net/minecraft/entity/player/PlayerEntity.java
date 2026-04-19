@@ -1,4 +1,5 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity.player;
+import murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis;
 import java.util.Optional;
 import murat.simv2.simulation.mirror.net.minecraft.block.BlockState;
 import murat.simv2.simulation.mirror.net.minecraft.entity.Entity;
@@ -33,7 +34,6 @@ import murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvents;
 import murat.simv2.simulation.mirror.net.minecraft.util.Hand;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.Box;
-import murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.MathHelper;
 import murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d;
 import murat.simv2.simulation.mirror.net.minecraft.world.Difficulty;

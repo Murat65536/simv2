@@ -17,8 +17,6 @@ public final class AnalysisConfig {
         "Lnet/minecraft/client/network/ClientPlayerEntity"
     );
 
-    public static final String ENTITY_CLASS = "Lnet/minecraft/entity/Entity";
-    public static final String LIVING_ENTITY_CLASS = "Lnet/minecraft/entity/LivingEntity";
     public static final String CLIENT_PLAYER_CLASS = "Lnet/minecraft/client/network/ClientPlayerEntity";
 
     public static final List<EntryMethod> ENTRY_METHODS = List.of(
@@ -26,11 +24,11 @@ public final class AnalysisConfig {
     );
 
     public static final Set<String> SEED_FIELDS = Set.of(
-        "pos", "velocity", "boundingBox", "onGround", "fallDistance"
+        "pos"
     );
 
     public static final Set<String> SEED_METHODS = Set.of(
-        "setPosition", "setVelocity", "setPos", "move"
+        "setPosition"
     );
 
     // Fields that WALA discovers as reachable but must not be synced.
@@ -86,70 +84,64 @@ public final class AnalysisConfig {
 
     public static final List<String> EXCLUSIONS = List.of(
         // Rendering
-        "net/minecraft/client/render/.*",
-        "net/minecraft/client/gui/.*",
-        "net/minecraft/client/font/.*",
-        "net/minecraft/client/texture/.*",
-        "net/minecraft/client/gl/.*",
-        "net/minecraft/client/particle/.*",
-        "net/minecraft/client/sound/.*",
-        "net/minecraft/client/realms/.*",
-        "net/minecraft/client/toast/.*",
-        "net/minecraft/client/tutorial/.*",
-        "net/minecraft/client/resource/.*",
-        "net/minecraft/client/search/.*",
-        "net/minecraft/client/option/.*",
-        // Server
-        "net/minecraft/server/.*",
-        "net/minecraft/dedicated/.*",
-        // Networking
-        "net/minecraft/network/.*",
-        // Data / non-movement systems
-        "net/minecraft/data/.*",
-        "net/minecraft/advancement/.*",
-        "net/minecraft/recipe/.*",
-        "net/minecraft/loot/.*",
-        "net/minecraft/command/.*",
-        "net/minecraft/scoreboard/.*",
-        "net/minecraft/text/.*",
-        "net/minecraft/nbt/.*",
-        "net/minecraft/datafixer/.*",
-        "net/minecraft/stat/.*",
-        "net/minecraft/village/.*",
-        "net/minecraft/structure/.*",
-        "net/minecraft/screen/.*",
-        "net/minecraft/inventory/.*",
-        "net/minecraft/enchantment/.*",
-        "net/minecraft/component/.*",
-        "net/minecraft/registry/.*",
-        "net/minecraft/resource/.*",
-        "net/minecraft/predicate/.*",
-        "net/minecraft/particle/.*",
-        "net/minecraft/sound/.*",
-        // Entity registries — truly irrelevant to movement
-        "net/minecraft/entity/EntityType",
-        "net/minecraft/entity/EntityType\\$.*",
-        "net/minecraft/entity/SpawnGroup",
-        "net/minecraft/entity/SpawnReason",
-        "net/minecraft/entity/ExperienceOrbEntity",
-        "net/minecraft/entity/damage/.*",
-        // World systems irrelevant to movement
-        "net/minecraft/world/chunk/.*",
-        "net/minecraft/world/biome/.*",
-        "net/minecraft/world/gen/.*",
-        "net/minecraft/world/dimension/.*",
-        "net/minecraft/world/event/GameEvent",
-        "net/minecraft/world/GameRules.*",
-        // Keep primordial JDK and common third-party libraries in scope.
-        // Excluding these breaks pointer analysis and often collapses the call graph.
+//        "net/minecraft/client/render/.*",
+//        "net/minecraft/client/gui/.*",
+//        "net/minecraft/client/font/.*",
+//        "net/minecraft/client/texture/.*",
+//        "net/minecraft/client/gl/.*",
+//        "net/minecraft/client/particle/.*",
+//        "net/minecraft/client/sound/.*",
+//        "net/minecraft/client/realms/.*",
+//        "net/minecraft/client/toast/.*",
+//        "net/minecraft/client/tutorial/.*",
+//        "net/minecraft/client/resource/.*",
+//        "net/minecraft/client/search/.*",
+//        "net/minecraft/client/option/.*",
+//        // Server
+//        "net/minecraft/server/.*",
+//        "net/minecraft/dedicated/.*",
+//        // Networking
+//        "net/minecraft/network/.*",
+//        // Data / non-movement systems
+//        "net/minecraft/data/.*",
+//        "net/minecraft/advancement/.*",
+//        "net/minecraft/recipe/.*",
+//        "net/minecraft/loot/.*",
+//        "net/minecraft/command/.*",
+//        "net/minecraft/scoreboard/.*",
+//        "net/minecraft/text/.*",
+//        "net/minecraft/nbt/.*",
+//        "net/minecraft/datafixer/.*",
+//        "net/minecraft/stat/.*",
+//        "net/minecraft/village/.*",
+//        "net/minecraft/structure/.*",
+//        "net/minecraft/screen/.*",
+//        "net/minecraft/inventory/.*",
+//        "net/minecraft/enchantment/.*",
+//        "net/minecraft/component/.*",
+//        "net/minecraft/registry/.*",
+//        "net/minecraft/resource/.*",
+//        "net/minecraft/predicate/.*",
+//        "net/minecraft/particle/.*",
+//        "net/minecraft/sound/.*",
+//        // Entity registries — truly irrelevant to movement
+//        "net/minecraft/entity/EntityType",
+//        "net/minecraft/entity/EntityType\\$.*",
+//        "net/minecraft/entity/SpawnGroup",
+//        "net/minecraft/entity/SpawnReason",
+//        "net/minecraft/entity/ExperienceOrbEntity",
+//        "net/minecraft/entity/damage/.*",
+//        // World systems irrelevant to movement
+//        "net/minecraft/world/chunk/.*",
+//        "net/minecraft/world/biome/.*",
+//        "net/minecraft/world/gen/.*",
+//        "net/minecraft/world/dimension/.*",
+//        "net/minecraft/world/event/GameEvent",
+//        "net/minecraft/world/GameRules.*",
+//        // Keep primordial JDK and common third-party libraries in scope.
+//        // Excluding these breaks pointer analysis and often collapses the call graph.
         "java/awt/.*",
         "javax/swing/.*"
-    );
-
-    // Methods to extract via backward slicing + Spoon pruning
-    public static final Set<String> TARGET_METHODS = Set.of(
-        "tickMovement",
-        "travel"
     );
 
     // Dot-notation class names for Spoon

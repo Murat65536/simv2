@@ -1,0 +1,15 @@
+{
+  "contract": "analysis-inputs/v1",
+  "minecraftJar": {
+    "path": "C:\\Users\\Murat\\Desktop\\programming\\java\\simv2\\.gradle\\loom-cache\\minecraftMaven\\net\\minecraft\\minecraft-merged-d9dc600b5b\\1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2\\minecraft-merged-d9dc600b5b-1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2.jar",
+    "sizeBytes": 32146860,
+    "lastModifiedEpochMillis": 1775767880143,
+    "sha256": "27f7d068e84a36a101994a2599f7d497c28d674a0650ac564d3716157a22f25d"
+  },
+  "sourcesJar": {
+    "path": "C:\\Users\\Murat\\Desktop\\programming\\java\\simv2\\.gradle\\loom-cache\\minecraftMaven\\net\\minecraft\\minecraft-merged-d9dc600b5b\\1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2\\minecraft-merged-d9dc600b5b-1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2-sources.jar",
+    "sizeBytes": 7548172,
+    "lastModifiedEpochMillis": 1775767865176,
+    "sha256": "571b7d1f08f42210c86e8aee3ba16ba97f7034daa7f43321efef2f78263550f9"
+  }
+}

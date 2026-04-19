@@ -63,7 +63,7 @@ def resolveAnalysisArgs = { String mode ->
             }
         }
     }
-    def defaultMcJar = linemappedJar ?: "${gradle.gradleUserHomeDir}/caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-merged/1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2/minecraft-merged-1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2.jar"
+    def defaultMcJar = linemappedJar
     def defaultOutputDir = file("${rootProject.projectDir}/src/main/generated").absolutePath
     def defaultSpoonClasspath = project.findProperty('spoonClasspath') ?: ""
 
@@ -80,17 +80,29 @@ def configureAnalysisExec = { JavaExec execTask, String mode ->
     execTask.jvmArgs = analysisJvmArgs
     execTask.doFirst {
         def resolvedArgs = resolveAnalysisArgs(mode)
+        def minecraftJarArg = (resolvedArgs[0] ?: "").toString()
+        if (minecraftJarArg.isBlank()) {
+            throw new GradleException(
+                "Could not resolve a Minecraft merged JAR for analysis. "
+                    + "Pass -PmcJar=<path-to-minecraft-merged.jar>.")
+        }
+        def minecraftJar = file(minecraftJarArg)
+        if (!minecraftJar.exists() || !minecraftJar.isFile()) {
+            throw new GradleException(
+                "Minecraft merged JAR not found: ${minecraftJar}. "
+                    + "Pass -PmcJar=<path-to-minecraft-merged.jar>.")
+        }
         if (mode == 'spoon') {
             def outputDir = file(resolvedArgs[1])
             def missingArtifacts = []
-            if (!outputDir.toPath().resolve('movement-fields.txt').toFile().exists()) {
-                missingArtifacts << 'movement-fields.txt'
-            }
             if (!outputDir.toPath().resolve('movement-slice.json').toFile().exists()) {
                 missingArtifacts << 'movement-slice.json'
             }
             if (!outputDir.toPath().resolve('mirror-closure.json').toFile().exists()) {
                 missingArtifacts << 'mirror-closure.json'
+            }
+            if (!outputDir.toPath().resolve('analysis-inputs.json').toFile().exists()) {
+                missingArtifacts << 'analysis-inputs.json'
             }
             if (!missingArtifacts.isEmpty()) {
                 throw new GradleException(

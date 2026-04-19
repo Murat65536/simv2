@@ -36,8 +36,13 @@ public class SliceAnalysis {
     }
 
     public Set<FieldInfo> analyze() {
-        // Always use IR walk — backward slicing OOMs on large call graphs.
-        // 0-CFA provides precise virtual dispatch which makes the IR walk accurate.
+        if (pa != null) {
+            Set<FieldInfo> sliced = analyzeWithSlicing();
+            if (!sliced.isEmpty()) {
+                return sliced;
+            }
+            System.out.println("Backward slicing yielded no fields; falling back to IR scan.");
+        }
         return analyzeWithIRScan();
     }
 

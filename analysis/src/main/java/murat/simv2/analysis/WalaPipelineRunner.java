@@ -79,7 +79,7 @@ final class WalaPipelineRunner {
             generator.generate(classified);
 
             SliceExportResult sliceExportResult = exportSliceLinesIfAvailable(
-                config.outputDir(), cg, pa, cha, classified);
+                config, cg, pa, cha, classified);
             return new WalaPipelineResult(
                 List.copyOf(classified),
                 sliceExportResult.sliceLines(),
@@ -163,15 +163,17 @@ final class WalaPipelineRunner {
         return new CallGraphState(cg, pa);
     }
 
-    private SliceExportResult exportSliceLinesIfAvailable(Path outputDir,
+    private SliceExportResult exportSliceLinesIfAvailable(AnalysisRunConfig config,
                                                           CallGraph cg,
                                                           PointerAnalysis<InstanceKey> pa,
                                                           IClassHierarchy cha,
                                                           List<FieldResult> classifiedFields) throws Exception {
+        Path outputDir = config.outputDir();
         Path sliceJsonPath = AnalysisArtifacts.sliceJsonPath(outputDir);
         Path mirrorClosurePath = AnalysisArtifacts.mirrorClosurePath(outputDir);
+        Path analysisInputsPath = AnalysisArtifacts.analysisInputsPath(outputDir);
         if (pa == null) {
-            removeStaleArtifacts(sliceJsonPath, mirrorClosurePath);
+            removeStaleArtifacts(sliceJsonPath, mirrorClosurePath, analysisInputsPath);
             System.out.println(
                 "\nBackward slice unavailable: pointer analysis is unavailable from call-graph build.");
             System.out.println("Spoon prerequisites are not satisfied for this run.");
@@ -184,7 +186,7 @@ final class WalaPipelineRunner {
         BackwardSliceExporter exporter = new BackwardSliceExporter(cg, pa, cha);
         Map<String, Map<String, Set<Integer>>> sliceLines = exporter.computeSliceLines();
         if (sliceLines == null || sliceLines.isEmpty()) {
-            removeStaleArtifacts(sliceJsonPath, mirrorClosurePath);
+            removeStaleArtifacts(sliceJsonPath, mirrorClosurePath, analysisInputsPath);
             System.out.println("Backward slice produced no source line mappings.");
             System.out.println("Spoon prerequisites are not satisfied for this run.");
             return new SliceExportResult(
@@ -195,6 +197,7 @@ final class WalaPipelineRunner {
         exporter.exportToJson(sliceLines, sliceJsonPath);
         MirrorClosure mirrorClosure = buildMirrorClosure(sliceLines, classifiedFields);
         AnalysisArtifacts.writeMirrorClosure(mirrorClosure, mirrorClosurePath);
+        AnalysisArtifacts.writeAnalysisInputs(config, analysisInputsPath);
         return new SliceExportResult(
             Map.copyOf(sliceLines),
             mirrorClosure,

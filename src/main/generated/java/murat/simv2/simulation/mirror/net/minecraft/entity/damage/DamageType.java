@@ -7,32 +7,32 @@ public class DamageType {
     public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageType> CODEC;
     public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageType>> ENTRY_CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<java.lang.Object, murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageType>> ENTRY_PACKET_CODEC;
-    public murat.simv2.simulation.mirror.net.minecraft.entity.damage.DeathMessageType deathMessageType;
-    public murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageEffects effects;
+    public java.lang.Object deathMessageType;
+    public java.lang.Object effects;
     public float exhaustion;
     public java.lang.String msgId;
-    public murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageScaling scaling;
+    public java.lang.Object scaling;
 
     public DamageType(java.lang.String p0, float p1) {
     }
 
-    public DamageType(java.lang.String p0, float p1, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageEffects p2) {
+    public DamageType(java.lang.String p0, float p1, java.lang.Object p2) {
     }
 
-    public DamageType(java.lang.String p0, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageScaling p1, float p2) {
+    public DamageType(java.lang.String p0, java.lang.Object p1, float p2) {
     }
 
-    public DamageType(java.lang.String p0, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageScaling p1, float p2, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageEffects p3) {
+    public DamageType(java.lang.String p0, java.lang.Object p1, float p2, java.lang.Object p3) {
     }
 
-    public DamageType(java.lang.String p0, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageScaling p1, float p2, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageEffects p3, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DeathMessageType p4) {
+    public DamageType(java.lang.String p0, java.lang.Object p1, float p2, java.lang.Object p3, java.lang.Object p4) {
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.entity.damage.DeathMessageType deathMessageType() {
+    public java.lang.Object deathMessageType() {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageEffects effects() {
+    public java.lang.Object effects() {
         return null;
     }
 
@@ -52,7 +52,7 @@ public class DamageType {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageScaling scaling() {
+    public java.lang.Object scaling() {
         return null;
     }
 
