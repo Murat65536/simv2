@@ -4,14 +4,14 @@ package murat.simv2.simulation.mirror.net.minecraft.component.type;
 public class BlocksAttacksComponent {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.Codec CODEC;
-    public static java.lang.Object PACKET_CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.component.type.BlocksAttacksComponent> CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<java.lang.Object, murat.simv2.simulation.mirror.net.minecraft.component.type.BlocksAttacksComponent> PACKET_CODEC;
     public float blockDelaySeconds;
-    public java.util.Optional blockSound;
-    public java.util.Optional bypassedBy;
-    public java.util.List damageReductions;
+    public java.util.Optional<murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent>> blockSound;
+    public java.util.Optional<murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey<murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageType>> bypassedBy;
+    public java.util.List<murat.simv2.simulation.mirror.net.minecraft.component.type.BlocksAttacksComponent.DamageReduction> damageReductions;
     public float disableCooldownScale;
-    public java.util.Optional disableSound;
+    public java.util.Optional<murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent>> disableSound;
     public murat.simv2.simulation.mirror.net.minecraft.component.type.BlocksAttacksComponent.ItemDamage itemDamage;
 
     public BlocksAttacksComponent(float p0, float p1, java.util.List p2, murat.simv2.simulation.mirror.net.minecraft.component.type.BlocksAttacksComponent.ItemDamage p3, java.util.Optional p4, java.util.Optional p5, java.util.Optional p6) {
@@ -82,12 +82,12 @@ public class BlocksAttacksComponent {
     }
 
     public static class DamageReduction {
-        public static com.mojang.serialization.Codec CODEC;
-        public static java.lang.Object PACKET_CODEC;
+        public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.component.type.BlocksAttacksComponent.DamageReduction> CODEC;
+        public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<java.lang.Object, murat.simv2.simulation.mirror.net.minecraft.component.type.BlocksAttacksComponent.DamageReduction> PACKET_CODEC;
         public float base;
         public float factor;
         public float horizontalBlockingAngle;
-        public java.util.Optional type;
+        public java.util.Optional<murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntryList<murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageType>> type;
 
         public DamageReduction(float p0, java.util.Optional p1, float p2, float p3) {
         }
@@ -130,9 +130,9 @@ public class BlocksAttacksComponent {
     }
 
     public static class ItemDamage {
-        public static com.mojang.serialization.Codec CODEC;
+        public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.component.type.BlocksAttacksComponent.ItemDamage> CODEC;
         public static murat.simv2.simulation.mirror.net.minecraft.component.type.BlocksAttacksComponent.ItemDamage DEFAULT;
-        public static java.lang.Object PACKET_CODEC;
+        public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<io.netty.buffer.ByteBuf, murat.simv2.simulation.mirror.net.minecraft.component.type.BlocksAttacksComponent.ItemDamage> PACKET_CODEC;
         public float base;
         public float factor;
         public float threshold;

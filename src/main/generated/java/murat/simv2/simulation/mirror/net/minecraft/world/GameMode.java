@@ -1,15 +1,15 @@
 package murat.simv2.simulation.mirror.net.minecraft.world;
 
 // Generated mirror stub for simulation closure.
-public class GameMode {
+public class GameMode implements murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.world.GameMode ADVENTURE;
-    public static java.lang.Object CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec<murat.simv2.simulation.mirror.net.minecraft.world.GameMode> CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.world.GameMode CREATIVE;
     public static murat.simv2.simulation.mirror.net.minecraft.world.GameMode DEFAULT;
-    public static com.mojang.serialization.Codec INDEX_CODEC;
-    public static java.util.function.IntFunction INDEX_MAPPER;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.world.GameMode> INDEX_CODEC;
+    public static java.util.function.IntFunction<murat.simv2.simulation.mirror.net.minecraft.world.GameMode> INDEX_MAPPER;
     public static murat.simv2.simulation.mirror.net.minecraft.world.GameMode SPECTATOR;
     public static murat.simv2.simulation.mirror.net.minecraft.world.GameMode SURVIVAL;
     public static int UNKNOWN;
@@ -42,15 +42,15 @@ public class GameMode {
         return null;
     }
 
-    public static java.lang.Object createCodec(java.util.function.Supplier p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0) {
         return null;
     }
 
-    public static java.lang.Object createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
         return null;
     }
 
-    public static java.util.function.Function createMapper(java.lang.Object[] p0, java.util.function.Function p1) {
+    public static java.util.function.Function createMapper(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0, java.util.function.Function p1) {
         return null;
     }
 
@@ -101,7 +101,7 @@ public class GameMode {
     public void setAbilities(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerAbilities p0) {
     }
 
-    public static com.mojang.serialization.Keyable toKeyable(java.lang.Object[] p0) {
+    public static com.mojang.serialization.Keyable toKeyable(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0) {
         return null;
     }
 

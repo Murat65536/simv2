@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.crash;
 
 // Generated mirror stub for simulation closure.
-public class CrashException {
+public class CrashException extends java.lang.RuntimeException {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashReport report;

@@ -1,16 +1,16 @@
 package murat.simv2.simulation.mirror.net.minecraft.util;
 
 // Generated mirror stub for simulation closure.
-public class Formatting {
+public class Formatting implements murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.util.Formatting AQUA;
     public static murat.simv2.simulation.mirror.net.minecraft.util.Formatting BLACK;
     public static murat.simv2.simulation.mirror.net.minecraft.util.Formatting BLUE;
     public static murat.simv2.simulation.mirror.net.minecraft.util.Formatting BOLD;
-    public static java.util.Map BY_NAME;
-    public static com.mojang.serialization.Codec CODEC;
-    public static com.mojang.serialization.Codec COLOR_CODEC;
+    public static java.util.Map<java.lang.String, murat.simv2.simulation.mirror.net.minecraft.util.Formatting> BY_NAME;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.util.Formatting> CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.util.Formatting> COLOR_CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.util.Formatting DARK_AQUA;
     public static murat.simv2.simulation.mirror.net.minecraft.util.Formatting DARK_BLUE;
     public static murat.simv2.simulation.mirror.net.minecraft.util.Formatting DARK_GRAY;
@@ -68,15 +68,15 @@ public class Formatting {
         return null;
     }
 
-    public static java.lang.Object createCodec(java.util.function.Supplier p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0) {
         return null;
     }
 
-    public static java.lang.Object createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
         return null;
     }
 
-    public static java.util.function.Function createMapper(java.lang.Object[] p0, java.util.function.Function p1) {
+    public static java.util.function.Function createMapper(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0, java.util.function.Function p1) {
         return null;
     }
 
@@ -120,7 +120,7 @@ public class Formatting {
         return null;
     }
 
-    public static com.mojang.serialization.Keyable toKeyable(java.lang.Object[] p0) {
+    public static com.mojang.serialization.Keyable toKeyable(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0) {
         return null;
     }
 

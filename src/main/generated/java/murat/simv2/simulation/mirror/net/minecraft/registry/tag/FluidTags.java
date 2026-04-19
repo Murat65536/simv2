@@ -1,11 +1,11 @@
 package murat.simv2.simulation.mirror.net.minecraft.registry.tag;
 
 // Generated mirror stub for simulation closure.
-public class FluidTags {
+public class FluidTags extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey LAVA;
-    public static murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey WATER;
+    public static murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey<murat.simv2.simulation.mirror.net.minecraft.fluid.Fluid> LAVA;
+    public static murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey<murat.simv2.simulation.mirror.net.minecraft.fluid.Fluid> WATER;
 
     public FluidTags() {
     }

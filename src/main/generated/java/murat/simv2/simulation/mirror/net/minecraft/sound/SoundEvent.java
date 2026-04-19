@@ -4,11 +4,11 @@ package murat.simv2.simulation.mirror.net.minecraft.sound;
 public class SoundEvent {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.Codec CODEC;
-    public static com.mojang.serialization.Codec ENTRY_CODEC;
-    public static java.lang.Object ENTRY_PACKET_CODEC;
-    public static java.lang.Object PACKET_CODEC;
-    public java.util.Optional fixedRange;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent> CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent>> ENTRY_CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<java.lang.Object, murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent>> ENTRY_PACKET_CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<io.netty.buffer.ByteBuf, murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent> PACKET_CODEC;
+    public java.util.Optional<java.lang.Float> fixedRange;
     public murat.simv2.simulation.mirror.net.minecraft.util.Identifier id;
 
     public SoundEvent(murat.simv2.simulation.mirror.net.minecraft.util.Identifier p0, java.util.Optional p1) {

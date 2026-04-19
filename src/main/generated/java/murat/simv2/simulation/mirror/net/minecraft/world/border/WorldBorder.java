@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.world.border;
 
 // Generated mirror stub for simulation closure.
-public class WorldBorder {
+public class WorldBorder extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.world.border.WorldBorder.Properties DEFAULT_BORDER;
@@ -11,7 +11,7 @@ public class WorldBorder {
     public double centerX;
     public double centerZ;
     public double damagePerBlock;
-    public java.util.List listeners;
+    public java.util.List<murat.simv2.simulation.mirror.net.minecraft.world.border.WorldBorderListener> listeners;
     public int maxRadius;
     public double safeZone;
     public int warningBlocks;
@@ -20,7 +20,7 @@ public class WorldBorder {
     public WorldBorder() {
     }
 
-    public void addListener(java.lang.Object p0) {
+    public void addListener(murat.simv2.simulation.mirror.net.minecraft.world.border.WorldBorderListener p0) {
     }
 
     public murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape asVoxelShape() {
@@ -147,7 +147,7 @@ public class WorldBorder {
         return 0.0D;
     }
 
-    public java.lang.Object getStage() {
+    public murat.simv2.simulation.mirror.net.minecraft.world.border.WorldBorderStage getStage() {
         return null;
     }
 
@@ -165,7 +165,7 @@ public class WorldBorder {
     public void load(murat.simv2.simulation.mirror.net.minecraft.world.border.WorldBorder.Properties p0) {
     }
 
-    public void removeListener(java.lang.Object p0) {
+    public void removeListener(murat.simv2.simulation.mirror.net.minecraft.world.border.WorldBorderListener p0) {
     }
 
     public void setCenter(double p0, double p1) {
@@ -217,7 +217,7 @@ public class WorldBorder {
 
         public double getSize();
 
-        public java.lang.Object getStage();
+        public murat.simv2.simulation.mirror.net.minecraft.world.border.WorldBorderStage getStage();
 
         public void onCenterChanged();
 
@@ -257,7 +257,7 @@ public class WorldBorder {
 
     }
 
-    public static class MovingArea implements murat.simv2.simulation.mirror.net.minecraft.world.border.WorldBorder.Area {
+    public static class MovingArea extends java.lang.Object implements murat.simv2.simulation.mirror.net.minecraft.world.border.WorldBorder.Area {
         public murat.simv2.simulation.mirror.net.minecraft.world.border.WorldBorder field_12743;
         public double newSize;
         public double oldSize;
@@ -308,7 +308,7 @@ public class WorldBorder {
             return 0.0D;
         }
 
-        public java.lang.Object getStage() {
+        public murat.simv2.simulation.mirror.net.minecraft.world.border.WorldBorderStage getStage() {
             return null;
         }
 
@@ -323,7 +323,7 @@ public class WorldBorder {
 
     }
 
-    public static class Properties {
+    public static class Properties extends java.lang.Object {
         public double centerX;
         public double centerZ;
         public double damagePerBlock;
@@ -388,7 +388,7 @@ public class WorldBorder {
 
     }
 
-    public static class StaticArea implements murat.simv2.simulation.mirror.net.minecraft.world.border.WorldBorder.Area {
+    public static class StaticArea extends java.lang.Object implements murat.simv2.simulation.mirror.net.minecraft.world.border.WorldBorder.Area {
         public double boundEast;
         public double boundNorth;
         public double boundSouth;
@@ -440,7 +440,7 @@ public class WorldBorder {
             return 0.0D;
         }
 
-        public java.lang.Object getStage() {
+        public murat.simv2.simulation.mirror.net.minecraft.world.border.WorldBorderStage getStage() {
             return null;
         }
 

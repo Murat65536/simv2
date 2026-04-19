@@ -1,10 +1,10 @@
 package murat.simv2.simulation.mirror.net.minecraft.registry;
 
 // Generated mirror stub for simulation closure.
-public class RegistryKey<T> {
+public class RegistryKey<T> extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static java.util.concurrent.ConcurrentMap INSTANCES;
+    public static java.util.concurrent.ConcurrentMap<murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey.RegistryIdPair, murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey<?>> INSTANCES;
     public murat.simv2.simulation.mirror.net.minecraft.util.Identifier registry;
     public murat.simv2.simulation.mirror.net.minecraft.util.Identifier value;
 
@@ -15,7 +15,7 @@ public class RegistryKey<T> {
         return null;
     }
 
-    public static java.lang.Object createPacketCodec(murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec createPacketCodec(murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p0) {
         return null;
     }
 

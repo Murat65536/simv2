@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.world;
 
 // Generated mirror stub for simulation closure.
-public class RaycastContext {
+public class RaycastContext extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d end;
@@ -41,7 +41,7 @@ public class RaycastContext {
         public static murat.simv2.simulation.mirror.net.minecraft.world.RaycastContext.FluidHandling SOURCE_ONLY;
         public static murat.simv2.simulation.mirror.net.minecraft.world.RaycastContext.FluidHandling WATER;
         public static murat.simv2.simulation.mirror.net.minecraft.world.RaycastContext.FluidHandling[] field_1349;
-        public java.util.function.Predicate predicate;
+        public java.util.function.Predicate<murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState> predicate;
 
         public FluidHandling(java.lang.String p0, int p1, java.util.function.Predicate p2) {
         }

@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.hit;
 
 // Generated mirror stub for simulation closure.
-public class HitResult {
+public class HitResult extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d pos;

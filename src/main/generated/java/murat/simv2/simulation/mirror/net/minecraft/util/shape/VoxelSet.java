@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.shape;
 
 // Generated mirror stub for simulation closure.
-public class VoxelSet {
+public class VoxelSet extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis[] AXES;
@@ -16,7 +16,7 @@ public class VoxelSet {
         return false;
     }
 
-    public boolean contains(java.lang.Object p0, int p1, int p2, int p3) {
+    public boolean contains(murat.simv2.simulation.mirror.net.minecraft.util.math.AxisCycleDirection p0, int p1, int p2, int p3) {
         return false;
     }
 
@@ -26,13 +26,13 @@ public class VoxelSet {
     public void forEachDirection(murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelSet.PositionConsumer p0) {
     }
 
-    public void forEachDirection(murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelSet.PositionConsumer p0, java.lang.Object p1) {
+    public void forEachDirection(murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelSet.PositionConsumer p0, murat.simv2.simulation.mirror.net.minecraft.util.math.AxisCycleDirection p1) {
     }
 
     public void forEachEdge(murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelSet.PositionBiConsumer p0, boolean p1) {
     }
 
-    public void forEachEdge(murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelSet.PositionBiConsumer p0, java.lang.Object p1, boolean p2) {
+    public void forEachEdge(murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelSet.PositionBiConsumer p0, murat.simv2.simulation.mirror.net.minecraft.util.math.AxisCycleDirection p1, boolean p2) {
     }
 
     public int getEndingAxisCoord(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis p0, int p1, int p2) {
@@ -71,7 +71,7 @@ public class VoxelSet {
         return false;
     }
 
-    public boolean inBoundsAndContains(java.lang.Object p0, int p1, int p2, int p3) {
+    public boolean inBoundsAndContains(murat.simv2.simulation.mirror.net.minecraft.util.math.AxisCycleDirection p0, int p1, int p2, int p3) {
         return false;
     }
 

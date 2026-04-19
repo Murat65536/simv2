@@ -19,7 +19,7 @@ public class ExperimentalMinecartShapeContext extends murat.simv2.simulation.mir
         return false;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape getCollisionShape(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape getCollisionShape(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.CollisionView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
         return null;
     }
 

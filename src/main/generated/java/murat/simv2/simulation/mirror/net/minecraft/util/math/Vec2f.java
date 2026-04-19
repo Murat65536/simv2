@@ -1,10 +1,10 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.math;
 
 // Generated mirror stub for simulation closure.
-public class Vec2f {
+public class Vec2f extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.Codec CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.util.math.Vec2f> CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec2f EAST_UNIT;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec2f MAX_SOUTH_EAST;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec2f MIN_SOUTH_EAST;

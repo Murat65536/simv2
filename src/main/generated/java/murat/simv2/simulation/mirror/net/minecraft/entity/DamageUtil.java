@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity;
 
 // Generated mirror stub for simulation closure.
-public class DamageUtil {
+public class DamageUtil extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static float field_29962;

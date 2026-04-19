@@ -1,29 +1,29 @@
 package murat.simv2.simulation.mirror.net.minecraft.item;
 
 // Generated mirror stub for simulation closure.
-public class Item {
+public class Item extends java.lang.Object implements murat.simv2.simulation.mirror.net.minecraft.item.ItemConvertible, murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.ToggleableFeature {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.util.Identifier BASE_ATTACK_DAMAGE_MODIFIER_ID;
     public static murat.simv2.simulation.mirror.net.minecraft.util.Identifier BASE_ATTACK_SPEED_MODIFIER_ID;
-    public static java.util.Map BLOCK_ITEMS;
+    public static java.util.Map<murat.simv2.simulation.mirror.net.minecraft.block.Block, murat.simv2.simulation.mirror.net.minecraft.item.Item> BLOCK_ITEMS;
     public static int DEFAULT_BLOCKS_ATTACKS_MAX_USE_TIME;
     public static int DEFAULT_MAX_COUNT;
-    public static com.mojang.serialization.Codec ENTRY_CODEC;
-    public static java.lang.Object ENTRY_PACKET_CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.item.Item>> ENTRY_CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<java.lang.Object, murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.item.Item>> ENTRY_PACKET_CODEC;
     public static int ITEM_BAR_STEPS;
     public static org.slf4j.Logger LOGGER;
     public static int MAX_MAX_COUNT;
-    public java.lang.Object components;
+    public murat.simv2.simulation.mirror.net.minecraft.component.ComponentMap components;
     public murat.simv2.simulation.mirror.net.minecraft.item.Item recipeRemainder;
-    public murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry.Reference registryEntry;
-    public java.lang.Object requiredFeatures;
+    public murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry.Reference<murat.simv2.simulation.mirror.net.minecraft.item.Item> registryEntry;
+    public murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet requiredFeatures;
     public java.lang.String translationKey;
 
     public Item(murat.simv2.simulation.mirror.net.minecraft.item.Item.Settings p0) {
     }
 
-    public void appendTooltip(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.item.Item.TooltipContext p1, java.lang.Object p2, java.util.function.Consumer p3, java.lang.Object p4) {
+    public void appendTooltip(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.item.Item.TooltipContext p1, murat.simv2.simulation.mirror.net.minecraft.component.type.TooltipDisplayComponent p2, java.util.function.Consumer p3, murat.simv2.simulation.mirror.net.minecraft.item.tooltip.TooltipType p4) {
     }
 
     public murat.simv2.simulation.mirror.net.minecraft.item.Item asItem() {
@@ -54,7 +54,7 @@ public class Item {
         return 0.0F;
     }
 
-    public java.lang.Object getComponents() {
+    public murat.simv2.simulation.mirror.net.minecraft.component.ComponentMap getComponents() {
         return null;
     }
 
@@ -106,7 +106,7 @@ public class Item {
         return null;
     }
 
-    public java.lang.Object getRequiredFeatures() {
+    public murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet getRequiredFeatures() {
         return null;
     }
 
@@ -118,7 +118,7 @@ public class Item {
         return null;
     }
 
-    public java.lang.Object getUseAction(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.item.consume.UseAction getUseAction(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0) {
         return null;
     }
 
@@ -133,7 +133,7 @@ public class Item {
         return false;
     }
 
-    public boolean isEnabled(java.lang.Object p0) {
+    public boolean isEnabled(murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet p0) {
         return false;
     }
 
@@ -145,7 +145,7 @@ public class Item {
         return false;
     }
 
-    public boolean onClicked(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p1, java.lang.Object p2, java.lang.Object p3, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p4, java.lang.Object p5) {
+    public boolean onClicked(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p1, murat.simv2.simulation.mirror.net.minecraft.screen.slot.Slot p2, murat.simv2.simulation.mirror.net.minecraft.util.ClickType p3, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p4, murat.simv2.simulation.mirror.net.minecraft.inventory.StackReference p5) {
         return false;
     }
 
@@ -158,7 +158,7 @@ public class Item {
     public void onItemEntityDestroyed(murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity p0) {
     }
 
-    public boolean onStackClicked(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, java.lang.Object p1, java.lang.Object p2, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p3) {
+    public boolean onStackClicked(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.screen.slot.Slot p1, murat.simv2.simulation.mirror.net.minecraft.util.ClickType p2, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p3) {
         return false;
     }
 
@@ -194,30 +194,30 @@ public class Item {
     public void usageTick(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p2, int p3) {
     }
 
-    public java.lang.Object useOnBlock(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult useOnBlock(murat.simv2.simulation.mirror.net.minecraft.item.ItemUsageContext p0) {
         return null;
     }
 
-    public java.lang.Object useOnEntity(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p2, murat.simv2.simulation.mirror.net.minecraft.util.Hand p3) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult useOnEntity(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p2, murat.simv2.simulation.mirror.net.minecraft.util.Hand p3) {
         return null;
     }
 
-    public java.lang.Object use(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.util.Hand p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult use(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.util.Hand p2) {
         return null;
     }
 
     public Item() {
     }
 
-    public static class Settings {
-        public static java.lang.Object BLOCK_PREFIXED_TRANSLATION_KEY;
-        public static java.lang.Object ITEM_PREFIXED_TRANSLATION_KEY;
-        public java.lang.Object components;
-        public java.lang.Object modelId;
+    public static class Settings extends java.lang.Object {
+        public static murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKeyedValue<murat.simv2.simulation.mirror.net.minecraft.item.Item, java.lang.String> BLOCK_PREFIXED_TRANSLATION_KEY;
+        public static murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKeyedValue<murat.simv2.simulation.mirror.net.minecraft.item.Item, java.lang.String> ITEM_PREFIXED_TRANSLATION_KEY;
+        public murat.simv2.simulation.mirror.net.minecraft.component.ComponentMap.Builder components;
+        public murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKeyedValue<murat.simv2.simulation.mirror.net.minecraft.item.Item, murat.simv2.simulation.mirror.net.minecraft.util.Identifier> modelId;
         public murat.simv2.simulation.mirror.net.minecraft.item.Item recipeRemainder;
-        public murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey registryKey;
-        public java.lang.Object requiredFeatures;
-        public java.lang.Object translationKey;
+        public murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey<murat.simv2.simulation.mirror.net.minecraft.item.Item> registryKey;
+        public murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet requiredFeatures;
+        public murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKeyedValue<murat.simv2.simulation.mirror.net.minecraft.item.Item, java.lang.String> translationKey;
 
         public Settings() {
         }
@@ -226,7 +226,7 @@ public class Item {
             return null;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.item.Item.Settings attributeModifiers(java.lang.Object p0) {
+        public murat.simv2.simulation.mirror.net.minecraft.item.Item.Settings attributeModifiers(murat.simv2.simulation.mirror.net.minecraft.component.type.AttributeModifiersComponent p0) {
             return null;
         }
 
@@ -234,7 +234,7 @@ public class Item {
             return null;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.item.Item.Settings component(java.lang.Object p0, java.lang.Object p1) {
+        public murat.simv2.simulation.mirror.net.minecraft.item.Item.Settings component(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1) {
             return null;
         }
 
@@ -254,11 +254,11 @@ public class Item {
             return null;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.item.Item.Settings food(java.lang.Object p0) {
+        public murat.simv2.simulation.mirror.net.minecraft.item.Item.Settings food(murat.simv2.simulation.mirror.net.minecraft.component.type.FoodComponent p0) {
             return null;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.item.Item.Settings food(java.lang.Object p0, java.lang.Object p1) {
+        public murat.simv2.simulation.mirror.net.minecraft.item.Item.Settings food(murat.simv2.simulation.mirror.net.minecraft.component.type.FoodComponent p0, murat.simv2.simulation.mirror.net.minecraft.component.type.ConsumableComponent p1) {
             return null;
         }
 
@@ -270,7 +270,7 @@ public class Item {
             return null;
         }
 
-        public java.lang.Object getValidatedComponents(murat.simv2.simulation.mirror.net.minecraft.text.Text p0, murat.simv2.simulation.mirror.net.minecraft.util.Identifier p1) {
+        public murat.simv2.simulation.mirror.net.minecraft.component.ComponentMap getValidatedComponents(murat.simv2.simulation.mirror.net.minecraft.text.Text p0, murat.simv2.simulation.mirror.net.minecraft.util.Identifier p1) {
             return null;
         }
 
@@ -298,7 +298,7 @@ public class Item {
             return null;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.item.Item.Settings rarity(java.lang.Object p0) {
+        public murat.simv2.simulation.mirror.net.minecraft.item.Item.Settings rarity(murat.simv2.simulation.mirror.net.minecraft.util.Rarity p0) {
             return null;
         }
 
@@ -318,7 +318,7 @@ public class Item {
             return null;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.item.Item.Settings requires(java.lang.Object[] p0) {
+        public murat.simv2.simulation.mirror.net.minecraft.item.Item.Settings requires(murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureFlag[] p0) {
             return null;
         }
 
@@ -367,7 +367,7 @@ public class Item {
     public static interface TooltipContext {
         public static final murat.simv2.simulation.mirror.net.minecraft.item.Item.TooltipContext DEFAULT = null;
 
-        public static murat.simv2.simulation.mirror.net.minecraft.item.Item.TooltipContext create(java.lang.Object p0) {
+        public static murat.simv2.simulation.mirror.net.minecraft.item.Item.TooltipContext create(murat.simv2.simulation.mirror.net.minecraft.registry.RegistryWrapper.WrapperLookup p0) {
             return null;
         }
 
@@ -375,9 +375,9 @@ public class Item {
             return null;
         }
 
-        public java.lang.Object getMapState(java.lang.Object p0);
+        public murat.simv2.simulation.mirror.net.minecraft.item.map.MapState getMapState(murat.simv2.simulation.mirror.net.minecraft.component.type.MapIdComponent p0);
 
-        public java.lang.Object getRegistryLookup();
+        public murat.simv2.simulation.mirror.net.minecraft.registry.RegistryWrapper.WrapperLookup getRegistryLookup();
 
         public float getUpdateTickRate();
 

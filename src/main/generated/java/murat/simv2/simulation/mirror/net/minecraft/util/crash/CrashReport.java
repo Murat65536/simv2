@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.crash;
 
 // Generated mirror stub for simulation closure.
-public class CrashReport {
+public class CrashReport extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static java.time.format.DateTimeFormatter DATE_TIME_FORMATTER;
@@ -10,9 +10,9 @@ public class CrashReport {
     public java.nio.file.Path file;
     public boolean hasStackTrace;
     public java.lang.String message;
-    public java.util.List otherSections;
+    public java.util.List<murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashReportSection> otherSections;
     public java.lang.StackTraceElement[] stackTrace;
-    public java.lang.Object systemDetailsSection;
+    public murat.simv2.simulation.mirror.net.minecraft.util.SystemDetails systemDetailsSection;
 
     public CrashReport(java.lang.String p0, java.lang.Throwable p1) {
     }
@@ -28,11 +28,11 @@ public class CrashReport {
         return null;
     }
 
-    public java.lang.String asString(java.lang.Object p0) {
+    public java.lang.String asString(murat.simv2.simulation.mirror.net.minecraft.util.crash.ReportType p0) {
         return null;
     }
 
-    public java.lang.String asString(java.lang.Object p0, java.util.List p1) {
+    public java.lang.String asString(murat.simv2.simulation.mirror.net.minecraft.util.crash.ReportType p0, java.util.List p1) {
         return null;
     }
 
@@ -60,18 +60,18 @@ public class CrashReport {
         return null;
     }
 
-    public java.lang.Object getSystemDetailsSection() {
+    public murat.simv2.simulation.mirror.net.minecraft.util.SystemDetails getSystemDetailsSection() {
         return null;
     }
 
     public static void initCrashReport() {
     }
 
-    public boolean writeToFile(java.nio.file.Path p0, java.lang.Object p1) {
+    public boolean writeToFile(java.nio.file.Path p0, murat.simv2.simulation.mirror.net.minecraft.util.crash.ReportType p1) {
         return false;
     }
 
-    public boolean writeToFile(java.nio.file.Path p0, java.lang.Object p1, java.util.List p2) {
+    public boolean writeToFile(java.nio.file.Path p0, murat.simv2.simulation.mirror.net.minecraft.util.crash.ReportType p1, java.util.List p2) {
         return false;
     }
 

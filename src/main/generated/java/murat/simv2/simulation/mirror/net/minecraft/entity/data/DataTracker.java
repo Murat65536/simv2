@@ -1,17 +1,17 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity.data;
 
 // Generated mirror stub for simulation closure.
-public class DataTracker {
+public class DataTracker extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.util.collection.Class2IntMap CLASS_TO_LAST_ID;
     public static org.slf4j.Logger LOGGER;
     public static int MAX_DATA_VALUE_ID;
     public boolean dirty;
-    public murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker.Entry[] entries;
-    public java.lang.Object trackedEntity;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker.Entry<?>[] entries;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracked trackedEntity;
 
-    public DataTracker(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker.Entry[] p1) {
+    public DataTracker(murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracked p0, murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker.Entry[] p1) {
     }
 
     public void copyToFrom(murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker.Entry p0, murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker.SerializedEntry p1) {
@@ -57,9 +57,9 @@ public class DataTracker {
     public DataTracker() {
     }
 
-    public static class Builder {
-        public java.lang.Object entity;
-        public murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker.Entry[] entries;
+    public static class Builder extends java.lang.Object {
+        public murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracked entity;
+        public murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker.Entry<?>[] entries;
 
         public Builder(java.lang.Object p0) {
         }
@@ -77,8 +77,8 @@ public class DataTracker {
 
     }
 
-    public static class Entry<T> {
-        public murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData data;
+    public static class Entry<T> extends java.lang.Object {
+        public murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Object> data;
         public boolean dirty;
         public java.lang.Object initialValue;
         public java.lang.Object value;
@@ -118,7 +118,7 @@ public class DataTracker {
     }
 
     public static class SerializedEntry<T> {
-        public murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedDataHandler handler;
+        public murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedDataHandler<java.lang.Object> handler;
         public int id;
         public java.lang.Object value;
 

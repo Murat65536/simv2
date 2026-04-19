@@ -1,15 +1,15 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity.effect;
 
 // Generated mirror stub for simulation closure.
-public class StatusEffectInstance {
+public class StatusEffectInstance extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.Codec CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffectInstance> CODEC;
     public static int INFINITE;
     public static org.slf4j.Logger LOGGER;
     public static int MAX_AMPLIFIER;
     public static int MIN_AMPLIFIER;
-    public static java.lang.Object PACKET_CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<java.lang.Object, murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffectInstance> PACKET_CODEC;
     public boolean ambient;
     public int amplifier;
     public int duration;
@@ -17,7 +17,7 @@ public class StatusEffectInstance {
     public murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffectInstance hiddenEffect;
     public boolean showIcon;
     public boolean showParticles;
-    public murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry type;
+    public murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffect> type;
 
     public StatusEffectInstance(murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffectInstance p0) {
     }
@@ -57,7 +57,7 @@ public class StatusEffectInstance {
     public void copyFrom(murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffectInstance p0) {
     }
 
-    public java.lang.Object createParticle() {
+    public murat.simv2.simulation.mirror.net.minecraft.particle.ParticleEffect createParticle() {
         return null;
     }
 
@@ -173,7 +173,7 @@ public class StatusEffectInstance {
     public StatusEffectInstance() {
     }
 
-    public static class Fading {
+    public static class Fading extends java.lang.Object {
         public float factor;
         public float lastFactor;
 
@@ -200,12 +200,12 @@ public class StatusEffectInstance {
     }
 
     public static class Parameters {
-        public static com.mojang.serialization.MapCodec CODEC;
-        public static java.lang.Object PACKET_CODEC;
+        public static com.mojang.serialization.MapCodec<murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffectInstance.Parameters> CODEC;
+        public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<io.netty.buffer.ByteBuf, murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffectInstance.Parameters> PACKET_CODEC;
         public boolean ambient;
         public int amplifier;
         public int duration;
-        public java.util.Optional hiddenEffect;
+        public java.util.Optional<murat.simv2.simulation.mirror.net.minecraft.entity.effect.StatusEffectInstance.Parameters> hiddenEffect;
         public boolean showIcon;
         public boolean showParticles;
 

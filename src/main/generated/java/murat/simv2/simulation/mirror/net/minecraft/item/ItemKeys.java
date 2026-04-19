@@ -1,11 +1,11 @@
 package murat.simv2.simulation.mirror.net.minecraft.item;
 
 // Generated mirror stub for simulation closure.
-public class ItemKeys {
+public class ItemKeys extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey MELON_SEEDS;
-    public static murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey PUMPKIN_SEEDS;
+    public static murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey<murat.simv2.simulation.mirror.net.minecraft.item.Item> MELON_SEEDS;
+    public static murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey<murat.simv2.simulation.mirror.net.minecraft.item.Item> PUMPKIN_SEEDS;
 
     public ItemKeys() {
     }

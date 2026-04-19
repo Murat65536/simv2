@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.sound;
 
 // Generated mirror stub for simulation closure.
-public class BlockSoundGroup {
+public class BlockSoundGroup extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.sound.BlockSoundGroup AMETHYST_BLOCK;

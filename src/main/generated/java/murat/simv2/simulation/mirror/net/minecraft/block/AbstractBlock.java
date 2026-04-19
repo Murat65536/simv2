@@ -1,16 +1,16 @@
 package murat.simv2.simulation.mirror.net.minecraft.block;
 
 // Generated mirror stub for simulation closure.
-public class AbstractBlock {
+public class AbstractBlock extends java.lang.Object implements murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.ToggleableFeature {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction[] DIRECTIONS;
     public boolean collidable;
     public boolean dynamicBounds;
     public float jumpVelocityMultiplier;
-    public java.util.Optional lootTableKey;
+    public java.util.Optional<murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey<murat.simv2.simulation.mirror.net.minecraft.loot.LootTable>> lootTableKey;
     public boolean randomTicks;
-    public java.lang.Object requiredFeatures;
+    public murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet requiredFeatures;
     public float resistance;
     public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.Settings settings;
     public float slipperiness;
@@ -37,15 +37,15 @@ public class AbstractBlock {
         return false;
     }
 
-    public boolean canPathfindThrough(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1) {
+    public boolean canPathfindThrough(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.entity.ai.pathing.NavigationType p1) {
         return false;
     }
 
-    public boolean canPlaceAt(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
+    public boolean canPlaceAt(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.WorldView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
         return false;
     }
 
-    public boolean canReplace(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1) {
+    public boolean canReplace(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemPlacementContext p1) {
         return false;
     }
 
@@ -53,7 +53,7 @@ public class AbstractBlock {
         return null;
     }
 
-    public java.lang.Object createScreenHandlerFactory(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.screen.NamedScreenHandlerFactory createScreenHandlerFactory(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
         return null;
     }
 
@@ -125,7 +125,7 @@ public class AbstractBlock {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getPickStack(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2, boolean p3) {
+    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getPickStack(murat.simv2.simulation.mirror.net.minecraft.world.WorldView p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2, boolean p3) {
         return null;
     }
 
@@ -133,7 +133,7 @@ public class AbstractBlock {
         return null;
     }
 
-    public java.lang.Object getRenderType(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.block.BlockRenderType getRenderType(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0) {
         return null;
     }
 
@@ -141,7 +141,7 @@ public class AbstractBlock {
         return 0L;
     }
 
-    public java.lang.Object getRequiredFeatures() {
+    public murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet getRequiredFeatures() {
         return null;
     }
 
@@ -157,7 +157,7 @@ public class AbstractBlock {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.block.BlockState getStateForNeighborUpdate(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1, java.lang.Object p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p4, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p5, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p6, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p7) {
+    public murat.simv2.simulation.mirror.net.minecraft.block.BlockState getStateForNeighborUpdate(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.WorldView p1, murat.simv2.simulation.mirror.net.minecraft.world.tick.ScheduledTickView p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p4, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p5, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p6, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p7) {
         return null;
     }
 
@@ -189,7 +189,7 @@ public class AbstractBlock {
         return false;
     }
 
-    public boolean isEnabled(java.lang.Object p0) {
+    public boolean isEnabled(murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet p0) {
         return false;
     }
 
@@ -205,11 +205,11 @@ public class AbstractBlock {
         return false;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.block.BlockState mirror(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.block.BlockState mirror(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.util.BlockMirror p1) {
         return null;
     }
 
-    public void neighborUpdate(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.Block p3, java.lang.Object p4, boolean p5) {
+    public void neighborUpdate(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.Block p3, murat.simv2.simulation.mirror.net.minecraft.world.block.WireOrientation p4, boolean p5) {
     }
 
     public void onBlockAdded(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, boolean p4) {
@@ -221,7 +221,7 @@ public class AbstractBlock {
     public void onEntityCollision(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p3, murat.simv2.simulation.mirror.net.minecraft.entity.EntityCollisionHandler p4) {
     }
 
-    public void onExploded(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, java.lang.Object p3, java.util.function.BiConsumer p4) {
+    public void onExploded(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.world.explosion.Explosion p3, java.util.function.BiConsumer p4) {
     }
 
     public void onProjectileHit(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult p2, murat.simv2.simulation.mirror.net.minecraft.entity.projectile.ProjectileEntity p3) {
@@ -237,21 +237,21 @@ public class AbstractBlock {
         return false;
     }
 
-    public java.lang.Object onUseWithItem(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, murat.simv2.simulation.mirror.net.minecraft.world.World p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p4, murat.simv2.simulation.mirror.net.minecraft.util.Hand p5, murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult p6) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult onUseWithItem(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, murat.simv2.simulation.mirror.net.minecraft.world.World p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p4, murat.simv2.simulation.mirror.net.minecraft.util.Hand p5, murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult p6) {
         return null;
     }
 
-    public java.lang.Object onUse(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p3, murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult p4) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult onUse(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p3, murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult p4) {
         return null;
     }
 
-    public void prepare(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, int p3, int p4) {
+    public void prepare(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, int p3, int p4) {
     }
 
     public void randomTick(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p3) {
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.block.BlockState rotate(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.block.BlockState rotate(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.util.BlockRotation p1) {
         return null;
     }
 
@@ -261,7 +261,7 @@ public class AbstractBlock {
     public AbstractBlock() {
     }
 
-    public static class AbstractBlockState {
+    public static class AbstractBlockState extends murat.simv2.simulation.mirror.net.minecraft.state.State {
         public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction[] DIRECTIONS;
         public static murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape[] EMPTY_CULLING_FACES;
         public static murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape[] FULL_CULLING_FACES;
@@ -270,14 +270,14 @@ public class AbstractBlock {
         public boolean blockBreakParticles;
         public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.ContextPredicate blockVisionPredicate;
         public boolean burnable;
-        public com.mojang.serialization.MapCodec codec;
+        public com.mojang.serialization.MapCodec<java.lang.Object> codec;
         public murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape[] cullingFaces;
         public murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape cullingShape;
         public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.ContextPredicate emissiveLightingPredicate;
         public murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState fluidState;
         public float hardness;
         public boolean hasSidedTransparency;
-        public java.lang.Object instrument;
+        public murat.simv2.simulation.mirror.net.minecraft.block.enums.NoteBlockInstrument instrument;
         public boolean isAir;
         public boolean liquid;
         public int luminance;
@@ -287,7 +287,7 @@ public class AbstractBlock {
         public boolean opaque;
         public boolean opaqueFullCube;
         public java.lang.Object owner;
-        public java.lang.Object pistonBehavior;
+        public murat.simv2.simulation.mirror.net.minecraft.block.piston.PistonBehavior pistonBehavior;
         public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.ContextPredicate postProcessPredicate;
         public boolean replaceable;
         public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.AbstractBlockState.ShapeCache shapeCache;
@@ -321,19 +321,19 @@ public class AbstractBlock {
             return false;
         }
 
-        public boolean canPathfindThrough(java.lang.Object p0) {
+        public boolean canPathfindThrough(murat.simv2.simulation.mirror.net.minecraft.entity.ai.pathing.NavigationType p0) {
             return false;
         }
 
-        public boolean canPlaceAt(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
+        public boolean canPlaceAt(murat.simv2.simulation.mirror.net.minecraft.world.WorldView p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
             return false;
         }
 
-        public boolean canReplace(java.lang.Object p0) {
+        public boolean canReplace(murat.simv2.simulation.mirror.net.minecraft.item.ItemPlacementContext p0) {
             return false;
         }
 
-        public boolean contains(java.lang.Object p0) {
+        public boolean contains(murat.simv2.simulation.mirror.net.minecraft.state.property.Property p0) {
             return false;
         }
 
@@ -341,14 +341,14 @@ public class AbstractBlock {
             return null;
         }
 
-        public java.lang.Object createScreenHandlerFactory(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
+        public murat.simv2.simulation.mirror.net.minecraft.screen.NamedScreenHandlerFactory createScreenHandlerFactory(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
             return null;
         }
 
         public void createWithMap(java.util.Map p0) {
         }
 
-        public java.lang.Object cycle(java.lang.Object p0) {
+        public java.lang.Object cycle(murat.simv2.simulation.mirror.net.minecraft.state.property.Property p0) {
             return null;
         }
 
@@ -368,7 +368,7 @@ public class AbstractBlock {
             return 0.0F;
         }
 
-        public java.lang.Object getBlockEntityTicker(murat.simv2.simulation.mirror.net.minecraft.world.World p0, java.lang.Object p1) {
+        public murat.simv2.simulation.mirror.net.minecraft.block.entity.BlockEntityTicker getBlockEntityTicker(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.block.entity.BlockEntityType p1) {
             return null;
         }
 
@@ -420,7 +420,7 @@ public class AbstractBlock {
             return null;
         }
 
-        public java.lang.Object getInstrument() {
+        public murat.simv2.simulation.mirror.net.minecraft.block.enums.NoteBlockInstrument getInstrument() {
             return null;
         }
 
@@ -444,7 +444,7 @@ public class AbstractBlock {
             return 0;
         }
 
-        public java.util.Optional getOrEmpty(java.lang.Object p0) {
+        public java.util.Optional getOrEmpty(murat.simv2.simulation.mirror.net.minecraft.state.property.Property p0) {
             return null;
         }
 
@@ -456,11 +456,11 @@ public class AbstractBlock {
             return null;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getPickStack(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, boolean p2) {
+        public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getPickStack(murat.simv2.simulation.mirror.net.minecraft.world.WorldView p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, boolean p2) {
             return null;
         }
 
-        public java.lang.Object getPistonBehavior() {
+        public murat.simv2.simulation.mirror.net.minecraft.block.piston.PistonBehavior getPistonBehavior() {
             return null;
         }
 
@@ -476,7 +476,7 @@ public class AbstractBlock {
             return null;
         }
 
-        public java.lang.Object getRenderType() {
+        public murat.simv2.simulation.mirror.net.minecraft.block.BlockRenderType getRenderType() {
             return null;
         }
 
@@ -492,7 +492,7 @@ public class AbstractBlock {
             return null;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.block.BlockState getStateForNeighborUpdate(java.lang.Object p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p3, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p4, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p5, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p6) {
+        public murat.simv2.simulation.mirror.net.minecraft.block.BlockState getStateForNeighborUpdate(murat.simv2.simulation.mirror.net.minecraft.world.WorldView p0, murat.simv2.simulation.mirror.net.minecraft.world.tick.ScheduledTickView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p3, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p4, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p5, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p6) {
             return null;
         }
 
@@ -504,11 +504,11 @@ public class AbstractBlock {
             return 0;
         }
 
-        public java.lang.Comparable get(java.lang.Object p0) {
+        public java.lang.Comparable get(murat.simv2.simulation.mirror.net.minecraft.state.property.Property p0) {
             return null;
         }
 
-        public java.lang.Comparable get(java.lang.Object p0, java.lang.Comparable p1) {
+        public java.lang.Comparable get(murat.simv2.simulation.mirror.net.minecraft.state.property.Property p0, java.lang.Comparable p1) {
             return null;
         }
 
@@ -563,7 +563,7 @@ public class AbstractBlock {
             return false;
         }
 
-        public boolean isIn(java.lang.Object p0) {
+        public boolean isIn(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntryList p0) {
             return false;
         }
 
@@ -607,7 +607,7 @@ public class AbstractBlock {
             return false;
         }
 
-        public boolean isSideSolid(murat.simv2.simulation.mirror.net.minecraft.world.BlockView p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p2, java.lang.Object p3) {
+        public boolean isSideSolid(murat.simv2.simulation.mirror.net.minecraft.world.BlockView p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p2, murat.simv2.simulation.mirror.net.minecraft.block.SideShapeType p3) {
             return false;
         }
 
@@ -635,11 +635,11 @@ public class AbstractBlock {
             return false;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.block.BlockState mirror(java.lang.Object p0) {
+        public murat.simv2.simulation.mirror.net.minecraft.block.BlockState mirror(murat.simv2.simulation.mirror.net.minecraft.util.BlockMirror p0) {
             return null;
         }
 
-        public void neighborUpdate(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.Block p2, java.lang.Object p3, boolean p4) {
+        public void neighborUpdate(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.Block p2, murat.simv2.simulation.mirror.net.minecraft.world.block.WireOrientation p3, boolean p4) {
         }
 
         public void onBlockAdded(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2, boolean p3) {
@@ -651,7 +651,7 @@ public class AbstractBlock {
         public void onEntityCollision(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p2, murat.simv2.simulation.mirror.net.minecraft.entity.EntityCollisionHandler p3) {
         }
 
-        public void onExploded(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, java.lang.Object p2, java.util.function.BiConsumer p3) {
+        public void onExploded(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.world.explosion.Explosion p2, java.util.function.BiConsumer p3) {
         }
 
         public void onProjectileHit(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult p2, murat.simv2.simulation.mirror.net.minecraft.entity.projectile.ProjectileEntity p3) {
@@ -667,24 +667,24 @@ public class AbstractBlock {
             return false;
         }
 
-        public java.lang.Object onUseWithItem(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p2, murat.simv2.simulation.mirror.net.minecraft.util.Hand p3, murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult p4) {
+        public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult onUseWithItem(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p2, murat.simv2.simulation.mirror.net.minecraft.util.Hand p3, murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult p4) {
             return null;
         }
 
-        public java.lang.Object onUse(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult p2) {
+        public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult onUse(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult p2) {
             return null;
         }
 
-        public void prepare(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, int p2) {
+        public void prepare(murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, int p2) {
         }
 
-        public void prepare(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, int p2, int p3) {
+        public void prepare(murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, int p2, int p3) {
         }
 
         public void randomTick(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p2) {
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.block.BlockState rotate(java.lang.Object p0) {
+        public murat.simv2.simulation.mirror.net.minecraft.block.BlockState rotate(murat.simv2.simulation.mirror.net.minecraft.util.BlockRotation p0) {
             return null;
         }
 
@@ -715,24 +715,24 @@ public class AbstractBlock {
             return null;
         }
 
-        public void updateNeighbors(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, int p2) {
+        public void updateNeighbors(murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, int p2) {
         }
 
-        public void updateNeighbors(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, int p2, int p3) {
+        public void updateNeighbors(murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, int p2, int p3) {
         }
 
-        public java.lang.Object withIfExists(java.lang.Object p0, java.lang.Comparable p1) {
+        public java.lang.Object withIfExists(murat.simv2.simulation.mirror.net.minecraft.state.property.Property p0, java.lang.Comparable p1) {
             return null;
         }
 
-        public java.lang.Object with(java.lang.Object p0, java.lang.Comparable p1) {
+        public java.lang.Object with(murat.simv2.simulation.mirror.net.minecraft.state.property.Property p0, java.lang.Comparable p1) {
             return null;
         }
 
         public AbstractBlockState() {
         }
 
-        public static class ShapeCache {
+        public static class ShapeCache extends java.lang.Object {
             public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction[] DIRECTIONS;
             public static int SHAPE_TYPE_LENGTH;
             public murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape collisionShape;
@@ -743,11 +743,11 @@ public class AbstractBlock {
             public ShapeCache(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0) {
             }
 
-            public static int indexSolidSide(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p0, java.lang.Object p1) {
+            public static int indexSolidSide(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p0, murat.simv2.simulation.mirror.net.minecraft.block.SideShapeType p1) {
                 return 0;
             }
 
-            public boolean isSideSolid(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p0, java.lang.Object p1) {
+            public boolean isSideSolid(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p0, murat.simv2.simulation.mirror.net.minecraft.block.SideShapeType p1) {
                 return false;
             }
 
@@ -794,9 +794,9 @@ public class AbstractBlock {
 
     }
 
-    public static class Settings {
-        public static com.mojang.serialization.Codec CODEC;
-        public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.TypedContextPredicate allowsSpawningPredicate;
+    public static class Settings extends java.lang.Object {
+        public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.Settings> CODEC;
+        public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.TypedContextPredicate<murat.simv2.simulation.mirror.net.minecraft.entity.EntityType<?>> allowsSpawningPredicate;
         public boolean blockBreakParticles;
         public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.ContextPredicate blockVisionPredicate;
         public boolean burnable;
@@ -806,28 +806,28 @@ public class AbstractBlock {
         public boolean forceNotSolid;
         public boolean forceSolid;
         public float hardness;
-        public java.lang.Object instrument;
+        public murat.simv2.simulation.mirror.net.minecraft.block.enums.NoteBlockInstrument instrument;
         public boolean isAir;
         public float jumpVelocityMultiplier;
         public boolean liquid;
-        public java.lang.Object lootTable;
-        public java.util.function.ToIntFunction luminance;
-        public java.util.function.Function mapColorProvider;
+        public murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKeyedValue<murat.simv2.simulation.mirror.net.minecraft.block.Block, java.util.Optional<murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey<murat.simv2.simulation.mirror.net.minecraft.loot.LootTable>>> lootTable;
+        public java.util.function.ToIntFunction<murat.simv2.simulation.mirror.net.minecraft.block.BlockState> luminance;
+        public java.util.function.Function<murat.simv2.simulation.mirror.net.minecraft.block.BlockState, murat.simv2.simulation.mirror.net.minecraft.block.MapColor> mapColorProvider;
         public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.Offsetter offsetter;
         public boolean opaque;
-        public java.lang.Object pistonBehavior;
+        public murat.simv2.simulation.mirror.net.minecraft.block.piston.PistonBehavior pistonBehavior;
         public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.ContextPredicate postProcessPredicate;
         public boolean randomTicks;
-        public murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey registryKey;
+        public murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey<murat.simv2.simulation.mirror.net.minecraft.block.Block> registryKey;
         public boolean replaceable;
-        public java.lang.Object requiredFeatures;
+        public murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet requiredFeatures;
         public float resistance;
         public float slipperiness;
         public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.ContextPredicate solidBlockPredicate;
         public murat.simv2.simulation.mirror.net.minecraft.sound.BlockSoundGroup soundGroup;
         public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.ContextPredicate suffocationPredicate;
         public boolean toolRequired;
-        public java.lang.Object translationKey;
+        public murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKeyedValue<murat.simv2.simulation.mirror.net.minecraft.block.Block, java.lang.String> translationKey;
         public float velocityMultiplier;
 
         public Settings() {
@@ -889,7 +889,7 @@ public class AbstractBlock {
             return null;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.Settings instrument(java.lang.Object p0) {
+        public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.Settings instrument(murat.simv2.simulation.mirror.net.minecraft.block.enums.NoteBlockInstrument p0) {
             return null;
         }
 
@@ -909,15 +909,15 @@ public class AbstractBlock {
             return null;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.Settings mapColor(java.lang.Object p0) {
-            return null;
-        }
-
         public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.Settings mapColor(java.util.function.Function p0) {
             return null;
         }
 
         public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.Settings mapColor(murat.simv2.simulation.mirror.net.minecraft.block.MapColor p0) {
+            return null;
+        }
+
+        public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.Settings mapColor(murat.simv2.simulation.mirror.net.minecraft.util.DyeColor p0) {
             return null;
         }
 
@@ -945,7 +945,7 @@ public class AbstractBlock {
             return null;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.Settings pistonBehavior(java.lang.Object p0) {
+        public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.Settings pistonBehavior(murat.simv2.simulation.mirror.net.minecraft.block.piston.PistonBehavior p0) {
             return null;
         }
 
@@ -965,7 +965,7 @@ public class AbstractBlock {
             return null;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.Settings requires(java.lang.Object[] p0) {
+        public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.Settings requires(murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureFlag[] p0) {
             return null;
         }
 

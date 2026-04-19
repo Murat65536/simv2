@@ -1,13 +1,13 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity.damage;
 
 // Generated mirror stub for simulation closure.
-public class DamageSource {
+public class DamageSource extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public murat.simv2.simulation.mirror.net.minecraft.entity.Entity attacker;
     public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d position;
     public murat.simv2.simulation.mirror.net.minecraft.entity.Entity source;
-    public murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry type;
+    public murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageType> type;
 
     public DamageSource(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0) {
     }

@@ -1,10 +1,10 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity;
 
 // Generated mirror stub for simulation closure.
-public class EntityAttachments {
+public class EntityAttachments extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public java.util.Map points;
+    public java.util.Map<murat.simv2.simulation.mirror.net.minecraft.entity.EntityAttachmentType, java.util.List<murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d>> points;
 
     public EntityAttachments(java.util.Map p0) {
     }
@@ -13,15 +13,15 @@ public class EntityAttachments {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getPointNullable(java.lang.Object p0, int p1, float p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getPointNullable(murat.simv2.simulation.mirror.net.minecraft.entity.EntityAttachmentType p0, int p1, float p2) {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getPointOrDefault(java.lang.Object p0, int p1, float p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getPointOrDefault(murat.simv2.simulation.mirror.net.minecraft.entity.EntityAttachmentType p0, int p1, float p2) {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getPoint(java.lang.Object p0, int p1, float p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d getPoint(murat.simv2.simulation.mirror.net.minecraft.entity.EntityAttachmentType p0, int p1, float p2) {
         return null;
     }
 
@@ -40,17 +40,17 @@ public class EntityAttachments {
     public EntityAttachments() {
     }
 
-    public static class Builder {
-        public java.util.Map points;
+    public static class Builder extends java.lang.Object {
+        public java.util.Map<murat.simv2.simulation.mirror.net.minecraft.entity.EntityAttachmentType, java.util.List<murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d>> points;
 
         public Builder() {
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.entity.EntityAttachments.Builder add(java.lang.Object p0, float p1, float p2, float p3) {
+        public murat.simv2.simulation.mirror.net.minecraft.entity.EntityAttachments.Builder add(murat.simv2.simulation.mirror.net.minecraft.entity.EntityAttachmentType p0, float p1, float p2, float p3) {
             return null;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.entity.EntityAttachments.Builder add(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
+        public murat.simv2.simulation.mirror.net.minecraft.entity.EntityAttachments.Builder add(murat.simv2.simulation.mirror.net.minecraft.entity.EntityAttachmentType p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
             return null;
         }
 

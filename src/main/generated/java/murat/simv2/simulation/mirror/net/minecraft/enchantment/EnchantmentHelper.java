@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.enchantment;
 
 // Generated mirror stub for simulation closure.
-public class EnchantmentHelper {
+public class EnchantmentHelper extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public EnchantmentHelper() {
@@ -13,7 +13,7 @@ public class EnchantmentHelper {
     public static void applyAttributeModifiers(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot p1, java.util.function.BiConsumer p2) {
     }
 
-    public static void applyEnchantmentProvider(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p2, java.lang.Object p3, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p4) {
+    public static void applyEnchantmentProvider(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.registry.DynamicRegistryManager p1, murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p2, murat.simv2.simulation.mirror.net.minecraft.world.LocalDifficulty p3, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p4) {
     }
 
     public static void applyLocationBasedEffects(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1) {
@@ -22,7 +22,7 @@ public class EnchantmentHelper {
     public static void applyLocationBasedEffects(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p1, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p2, murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot p3) {
     }
 
-    public static java.lang.Object apply(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, java.util.function.Consumer p1) {
+    public static murat.simv2.simulation.mirror.net.minecraft.component.type.ItemEnchantmentsComponent apply(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, java.util.function.Consumer p1) {
         return null;
     }
 
@@ -34,15 +34,15 @@ public class EnchantmentHelper {
         return false;
     }
 
-    public static java.util.Optional chooseEquipmentWith(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1, java.util.function.Predicate p2) {
-        return null;
-    }
-
-    public static murat.simv2.simulation.mirror.net.minecraft.item.ItemStack enchant(murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p1, int p2, java.lang.Object p3, java.util.Optional p4) {
+    public static java.util.Optional chooseEquipmentWith(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1, java.util.function.Predicate p2) {
         return null;
     }
 
     public static murat.simv2.simulation.mirror.net.minecraft.item.ItemStack enchant(murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p1, int p2, java.util.stream.Stream p3) {
+        return null;
+    }
+
+    public static murat.simv2.simulation.mirror.net.minecraft.item.ItemStack enchant(murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p1, int p2, murat.simv2.simulation.mirror.net.minecraft.registry.DynamicRegistryManager p3, java.util.Optional p4) {
         return null;
     }
 
@@ -79,19 +79,19 @@ public class EnchantmentHelper {
         return 0.0F;
     }
 
-    public static java.util.Optional getEffect(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, java.lang.Object p1) {
+    public static java.util.Optional getEffect(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p1) {
         return null;
     }
 
-    public static murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getEnchantedBookWith(java.lang.Object p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getEnchantedBookWith(murat.simv2.simulation.mirror.net.minecraft.enchantment.EnchantmentLevelEntry p0) {
         return null;
     }
 
-    public static java.lang.Object getEnchantmentsComponentType(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.component.ComponentType getEnchantmentsComponentType(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0) {
         return null;
     }
 
-    public static java.lang.Object getEnchantments(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.component.type.ItemEnchantmentsComponent getEnchantments(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0) {
         return null;
     }
 
@@ -111,7 +111,7 @@ public class EnchantmentHelper {
         return 0.0F;
     }
 
-    public static com.mojang.datafixers.util.Pair getHighestLevelEffect(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, java.lang.Object p1) {
+    public static com.mojang.datafixers.util.Pair getHighestLevelEffect(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p1) {
         return null;
     }
 
@@ -167,7 +167,7 @@ public class EnchantmentHelper {
         return false;
     }
 
-    public static boolean hasAnyEnchantmentsWith(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, java.lang.Object p1) {
+    public static boolean hasAnyEnchantmentsWith(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p1) {
         return false;
     }
 
@@ -205,7 +205,7 @@ public class EnchantmentHelper {
     public static void onTick(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1) {
     }
 
-    public static void removeConflicts(java.util.List p0, java.lang.Object p1) {
+    public static void removeConflicts(java.util.List p0, murat.simv2.simulation.mirror.net.minecraft.enchantment.EnchantmentLevelEntry p1) {
     }
 
     public static void removeLocationBasedEffects(murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p0) {
@@ -214,7 +214,7 @@ public class EnchantmentHelper {
     public static void removeLocationBasedEffects(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1, murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot p2) {
     }
 
-    public static void set(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, java.lang.Object p1) {
+    public static void set(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.component.type.ItemEnchantmentsComponent p1) {
     }
 
     public static interface Consumer {
@@ -223,7 +223,7 @@ public class EnchantmentHelper {
     }
 
     public static interface ContextAwareConsumer {
-        public void accept(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0, int p1, java.lang.Object p2);
+        public void accept(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0, int p1, murat.simv2.simulation.mirror.net.minecraft.enchantment.EnchantmentEffectContext p2);
 
     }
 

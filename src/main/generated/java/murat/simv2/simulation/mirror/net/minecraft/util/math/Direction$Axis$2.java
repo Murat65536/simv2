@@ -3,7 +3,7 @@ package murat.simv2.simulation.mirror.net.minecraft.util.math;
 // Generated mirror stub for simulation closure.
 public class Direction$Axis$2 extends murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis {
 
-    public static java.lang.Object CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec<murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis> CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis[] VALUES;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis X;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis Y;
@@ -32,15 +32,15 @@ public class Direction$Axis$2 extends murat.simv2.simulation.mirror.net.minecraf
         return null;
     }
 
-    public static java.lang.Object createCodec(java.util.function.Supplier p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0) {
         return null;
     }
 
-    public static java.lang.Object createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
         return null;
     }
 
-    public static java.util.function.Function createMapper(java.lang.Object[] p0, java.util.function.Function p1) {
+    public static java.util.function.Function createMapper(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0, java.util.function.Function p1) {
         return null;
     }
 
@@ -88,7 +88,7 @@ public class Direction$Axis$2 extends murat.simv2.simulation.mirror.net.minecraf
         return false;
     }
 
-    public static com.mojang.serialization.Keyable toKeyable(java.lang.Object[] p0) {
+    public static com.mojang.serialization.Keyable toKeyable(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0) {
         return null;
     }
 

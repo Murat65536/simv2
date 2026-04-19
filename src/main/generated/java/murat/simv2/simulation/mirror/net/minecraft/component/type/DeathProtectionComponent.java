@@ -4,10 +4,10 @@ package murat.simv2.simulation.mirror.net.minecraft.component.type;
 public class DeathProtectionComponent {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.Codec CODEC;
-    public static java.lang.Object PACKET_CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.component.type.DeathProtectionComponent> CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<java.lang.Object, murat.simv2.simulation.mirror.net.minecraft.component.type.DeathProtectionComponent> PACKET_CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.component.type.DeathProtectionComponent TOTEM_OF_UNDYING;
-    public java.util.List deathEffects;
+    public java.util.List<java.lang.Object> deathEffects;
 
     public DeathProtectionComponent(java.util.List p0) {
     }

@@ -8,11 +8,11 @@ public class MaceItem extends murat.simv2.simulation.mirror.net.minecraft.item.I
     public static float ATTACK_SPEED_MODIFIER_VALUE;
     public static murat.simv2.simulation.mirror.net.minecraft.util.Identifier BASE_ATTACK_DAMAGE_MODIFIER_ID;
     public static murat.simv2.simulation.mirror.net.minecraft.util.Identifier BASE_ATTACK_SPEED_MODIFIER_ID;
-    public static java.util.Map BLOCK_ITEMS;
+    public static java.util.Map<murat.simv2.simulation.mirror.net.minecraft.block.Block, murat.simv2.simulation.mirror.net.minecraft.item.Item> BLOCK_ITEMS;
     public static int DEFAULT_BLOCKS_ATTACKS_MAX_USE_TIME;
     public static int DEFAULT_MAX_COUNT;
-    public static com.mojang.serialization.Codec ENTRY_CODEC;
-    public static java.lang.Object ENTRY_PACKET_CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.item.Item>> ENTRY_CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<java.lang.Object, murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.item.Item>> ENTRY_PACKET_CODEC;
     public static float HEAVY_SMASH_SOUND_FALL_DISTANCE_THRESHOLD;
     public static int ITEM_BAR_STEPS;
     public static float KNOCKBACK_POWER;
@@ -24,7 +24,7 @@ public class MaceItem extends murat.simv2.simulation.mirror.net.minecraft.item.I
     public MaceItem(murat.simv2.simulation.mirror.net.minecraft.item.Item.Settings p0) {
     }
 
-    public void appendTooltip(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.item.Item.TooltipContext p1, java.lang.Object p2, java.util.function.Consumer p3, java.lang.Object p4) {
+    public void appendTooltip(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.item.Item.TooltipContext p1, murat.simv2.simulation.mirror.net.minecraft.component.type.TooltipDisplayComponent p2, java.util.function.Consumer p3, murat.simv2.simulation.mirror.net.minecraft.item.tooltip.TooltipType p4) {
     }
 
     public murat.simv2.simulation.mirror.net.minecraft.item.Item asItem() {
@@ -43,11 +43,11 @@ public class MaceItem extends murat.simv2.simulation.mirror.net.minecraft.item.I
         return false;
     }
 
-    public static java.lang.Object createAttributeModifiers() {
+    public static murat.simv2.simulation.mirror.net.minecraft.component.type.AttributeModifiersComponent createAttributeModifiers() {
         return null;
     }
 
-    public static java.lang.Object createToolComponent() {
+    public static murat.simv2.simulation.mirror.net.minecraft.component.type.ToolComponent createToolComponent() {
         return null;
     }
 
@@ -63,7 +63,7 @@ public class MaceItem extends murat.simv2.simulation.mirror.net.minecraft.item.I
         return 0.0F;
     }
 
-    public java.lang.Object getComponents() {
+    public murat.simv2.simulation.mirror.net.minecraft.component.ComponentMap getComponents() {
         return null;
     }
 
@@ -127,7 +127,7 @@ public class MaceItem extends murat.simv2.simulation.mirror.net.minecraft.item.I
         return null;
     }
 
-    public java.lang.Object getRequiredFeatures() {
+    public murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet getRequiredFeatures() {
         return null;
     }
 
@@ -139,7 +139,7 @@ public class MaceItem extends murat.simv2.simulation.mirror.net.minecraft.item.I
         return null;
     }
 
-    public java.lang.Object getUseAction(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.item.consume.UseAction getUseAction(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0) {
         return null;
     }
 
@@ -154,7 +154,7 @@ public class MaceItem extends murat.simv2.simulation.mirror.net.minecraft.item.I
         return false;
     }
 
-    public boolean isEnabled(java.lang.Object p0) {
+    public boolean isEnabled(murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet p0) {
         return false;
     }
 
@@ -169,7 +169,7 @@ public class MaceItem extends murat.simv2.simulation.mirror.net.minecraft.item.I
     public static void knockbackNearbyEntities(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p1, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p2) {
     }
 
-    public boolean onClicked(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p1, java.lang.Object p2, java.lang.Object p3, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p4, java.lang.Object p5) {
+    public boolean onClicked(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p1, murat.simv2.simulation.mirror.net.minecraft.screen.slot.Slot p2, murat.simv2.simulation.mirror.net.minecraft.util.ClickType p3, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p4, murat.simv2.simulation.mirror.net.minecraft.inventory.StackReference p5) {
         return false;
     }
 
@@ -182,7 +182,7 @@ public class MaceItem extends murat.simv2.simulation.mirror.net.minecraft.item.I
     public void onItemEntityDestroyed(murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity p0) {
     }
 
-    public boolean onStackClicked(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, java.lang.Object p1, java.lang.Object p2, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p3) {
+    public boolean onStackClicked(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.screen.slot.Slot p1, murat.simv2.simulation.mirror.net.minecraft.util.ClickType p2, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p3) {
         return false;
     }
 
@@ -222,15 +222,15 @@ public class MaceItem extends murat.simv2.simulation.mirror.net.minecraft.item.I
     public void usageTick(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p2, int p3) {
     }
 
-    public java.lang.Object useOnBlock(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult useOnBlock(murat.simv2.simulation.mirror.net.minecraft.item.ItemUsageContext p0) {
         return null;
     }
 
-    public java.lang.Object useOnEntity(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p2, murat.simv2.simulation.mirror.net.minecraft.util.Hand p3) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult useOnEntity(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p2, murat.simv2.simulation.mirror.net.minecraft.util.Hand p3) {
         return null;
     }
 
-    public java.lang.Object use(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.util.Hand p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult use(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.util.Hand p2) {
         return null;
     }
 

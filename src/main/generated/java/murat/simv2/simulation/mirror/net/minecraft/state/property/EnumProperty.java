@@ -1,12 +1,12 @@
 package murat.simv2.simulation.mirror.net.minecraft.state.property;
 
 // Generated mirror stub for simulation closure.
-public class EnumProperty<T> {
+public class EnumProperty<T> extends murat.simv2.simulation.mirror.net.minecraft.state.property.Property {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public java.util.Map byName;
+    public java.util.Map<java.lang.String, java.lang.Object> byName;
     public int[] enumOrdinalToPropertyOrdinal;
-    public java.util.List values;
+    public java.util.List<java.lang.Object> values;
 
     public EnumProperty(java.lang.String p0, java.lang.Class p1, java.util.List p2) {
     }
@@ -15,11 +15,11 @@ public class EnumProperty<T> {
         return 0;
     }
 
-    public java.lang.Object createValue(java.lang.Comparable p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.state.property.Property.Value createValue(java.lang.Comparable p0) {
         return null;
     }
 
-    public java.lang.Object createValue(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.state.property.Property.Value createValue(murat.simv2.simulation.mirror.net.minecraft.state.State p0) {
         return null;
     }
 
@@ -83,7 +83,7 @@ public class EnumProperty<T> {
         return 0;
     }
 
-    public com.mojang.serialization.DataResult parse(com.mojang.serialization.DynamicOps p0, java.lang.Object p1, java.lang.Object p2) {
+    public com.mojang.serialization.DataResult parse(com.mojang.serialization.DynamicOps p0, murat.simv2.simulation.mirror.net.minecraft.state.State p1, java.lang.Object p2) {
         return null;
     }
 

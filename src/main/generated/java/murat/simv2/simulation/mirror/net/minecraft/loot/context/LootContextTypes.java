@@ -1,39 +1,39 @@
 package murat.simv2.simulation.mirror.net.minecraft.loot.context;
 
 // Generated mirror stub for simulation closure.
-public class LootContextTypes {
+public class LootContextTypes extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static java.lang.Object ADVANCEMENT_ENTITY;
-    public static java.lang.Object ADVANCEMENT_LOCATION;
-    public static java.lang.Object ADVANCEMENT_REWARD;
-    public static java.lang.Object ARCHAEOLOGY;
-    public static java.lang.Object BARTER;
-    public static java.lang.Object BLOCK;
-    public static java.lang.Object BLOCK_USE;
-    public static java.lang.Object CHEST;
-    public static com.mojang.serialization.Codec CODEC;
-    public static java.lang.Object COMMAND;
-    public static java.lang.Object EMPTY;
-    public static java.lang.Object ENCHANTED_DAMAGE;
-    public static java.lang.Object ENCHANTED_ENTITY;
-    public static java.lang.Object ENCHANTED_ITEM;
-    public static java.lang.Object ENCHANTED_LOCATION;
-    public static java.lang.Object ENTITY;
-    public static java.lang.Object EQUIPMENT;
-    public static java.lang.Object FISHING;
-    public static java.lang.Object GENERIC;
-    public static java.lang.Object GIFT;
-    public static java.lang.Object HIT_BLOCK;
-    public static com.google.common.collect.BiMap MAP;
-    public static java.lang.Object SELECTOR;
-    public static java.lang.Object SHEARING;
-    public static java.lang.Object VAULT;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType ADVANCEMENT_ENTITY;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType ADVANCEMENT_LOCATION;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType ADVANCEMENT_REWARD;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType ARCHAEOLOGY;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType BARTER;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType BLOCK;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType BLOCK_USE;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType CHEST;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType> CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType COMMAND;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType EMPTY;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType ENCHANTED_DAMAGE;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType ENCHANTED_ENTITY;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType ENCHANTED_ITEM;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType ENCHANTED_LOCATION;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType ENTITY;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType EQUIPMENT;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType FISHING;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType GENERIC;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType GIFT;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType HIT_BLOCK;
+    public static com.google.common.collect.BiMap<murat.simv2.simulation.mirror.net.minecraft.util.Identifier, murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType> MAP;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType SELECTOR;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType SHEARING;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType VAULT;
 
     public LootContextTypes() {
     }
 
-    public static java.lang.Object register(java.lang.String p0, java.util.function.Consumer p1) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.context.ContextType register(java.lang.String p0, java.util.function.Consumer p1) {
         return null;
     }
 

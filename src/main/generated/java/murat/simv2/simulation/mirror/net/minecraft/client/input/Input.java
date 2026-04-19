@@ -1,11 +1,11 @@
 package murat.simv2.simulation.mirror.net.minecraft.client.input;
 
 // Generated mirror stub for simulation closure.
-public class Input {
+public class Input extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec2f movementVector;
-    public java.lang.Object playerInput;
+    public murat.simv2.simulation.mirror.net.minecraft.util.PlayerInput playerInput;
 
     public Input() {
     }

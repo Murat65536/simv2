@@ -155,7 +155,8 @@ final class MirrorClassEmitter {
         if ("net.minecraft.entity.LivingEntity".equals(fqcn)) {
             transformed = normalizeLivingEntityPrimarySignatures(transformed);
         }
-        if ("net.minecraft.entity.Entity".equals(fqcn)) {
+        if ("net.minecraft.entity.Entity".equals(fqcn)
+            || "net.minecraft.entity.LivingEntity".equals(fqcn)) {
             transformed = upsertPrimaryContractBlock(transformed, fqcn);
         }
         transformed = injectPrimaryNoArgConstructor(transformed, fqcn);
@@ -394,6 +395,8 @@ final class MirrorClassEmitter {
             }
         }
 
+        closureClasses = new TreeSet<>(augmentClosureClassesWithHierarchy(closureClasses));
+        closureClasses = new TreeSet<>(augmentClosureClassesWithMemberDescriptorTypes(closureClasses));
         closureClasses = new TreeSet<>(augmentClosureClassesWithNamedNestedTypes(closureClasses));
 
         return Set.copyOf(closureClasses);
@@ -815,9 +818,12 @@ final class MirrorClassEmitter {
             if (!includePrivate && (field.access() & ACC_PRIVATE) != 0) {
                 continue;
             }
-            String fieldType = normalizeStubType(javaTypeFromFieldDescriptor(field.descriptor()));
+            String fieldType = normalizeStubType(javaTypeFromFieldDescriptor(field.descriptor(), field.signature()));
             boolean isStatic = (field.access() & ACC_STATIC) != 0;
-            fieldStubs.add(new FieldStub(field.name(), fieldType, isStatic));
+            boolean alreadyDeclared = fieldStubs.stream().anyMatch(existing -> existing.fieldName().equals(field.name()));
+            if (!alreadyDeclared) {
+                fieldStubs.add(new FieldStub(field.name(), fieldType, isStatic));
+            }
         }
         String superClass = classInfo.superClassName();
         if (superClass != null && superClass.startsWith("net.minecraft.")) {
@@ -825,12 +831,152 @@ final class MirrorClassEmitter {
         }
     }
 
-    private String javaTypeFromFieldDescriptor(String descriptor) {
+    private String javaTypeFromFieldDescriptor(String descriptor, String signature) {
+        if (signature != null && !signature.isBlank()) {
+            String fromSignature = javaTypeFromFieldSignature(signature);
+            if (fromSignature != null && !fromSignature.isBlank()) {
+                return fromSignature;
+            }
+        }
         TypeDescriptor typeDescriptor = parseTypeDescriptor(descriptor, 0);
         if (typeDescriptor == null || typeDescriptor.nextIndex() != descriptor.length()) {
             return "java.lang.Object";
         }
         return typeDescriptor.javaType();
+    }
+
+    private String javaTypeFromFieldSignature(String signature) {
+        int[] index = new int[]{0};
+        String parsed = parseGenericSignatureType(signature, index);
+        if (parsed == null || index[0] != signature.length()) {
+            return null;
+        }
+        return parsed;
+    }
+
+    private String parseGenericSignatureType(String signature, int[] index) {
+        if (signature == null || index[0] >= signature.length()) {
+            return null;
+        }
+        char code = signature.charAt(index[0]++);
+        return switch (code) {
+            case 'B' -> "byte";
+            case 'C' -> "char";
+            case 'D' -> "double";
+            case 'F' -> "float";
+            case 'I' -> "int";
+            case 'J' -> "long";
+            case 'S' -> "short";
+            case 'Z' -> "boolean";
+            case 'V' -> "void";
+            case '[' -> {
+                String component = parseGenericSignatureType(signature, index);
+                yield component == null ? null : component + "[]";
+            }
+            case 'T' -> {
+                int end = signature.indexOf(';', index[0]);
+                if (end < 0) {
+                    yield null;
+                }
+                index[0] = end + 1;
+                yield "java.lang.Object";
+            }
+            case 'L' -> parseClassTypeSignature(signature, index);
+            default -> null;
+        };
+    }
+
+    private String parseClassTypeSignature(String signature, int[] index) {
+        StringBuilder out = new StringBuilder();
+        StringBuilder name = new StringBuilder();
+        while (index[0] < signature.length()) {
+            char ch = signature.charAt(index[0]);
+            if (ch == '<' || ch == ';' || ch == '.') {
+                break;
+            }
+            name.append(ch);
+            index[0]++;
+        }
+        String base = toSourceTypeName(name.toString());
+        String rewrittenBase = rewriteTypeReference(base);
+        if (rewrittenBase.startsWith("net.minecraft.")) {
+            rewrittenBase = "java.lang.Object";
+        }
+        out.append(rewrittenBase);
+        boolean collapsedToObject = "java.lang.Object".equals(rewrittenBase);
+        if (index[0] < signature.length() && signature.charAt(index[0]) == '<') {
+            String args = parseGenericSignatureArgs(signature, index);
+            if (args == null) {
+                return null;
+            }
+            if (!collapsedToObject) {
+                out.append(args);
+            }
+        }
+        while (index[0] < signature.length() && signature.charAt(index[0]) == '.') {
+            index[0]++;
+            StringBuilder inner = new StringBuilder();
+            while (index[0] < signature.length()) {
+                char ch = signature.charAt(index[0]);
+                if (ch == '<' || ch == ';' || ch == '.') {
+                    break;
+                }
+                inner.append(ch);
+                index[0]++;
+            }
+            if (!collapsedToObject) {
+                out.append(".").append(inner);
+            }
+            if (index[0] < signature.length() && signature.charAt(index[0]) == '<') {
+                String args = parseGenericSignatureArgs(signature, index);
+                if (args == null) {
+                    return null;
+                }
+                if (!collapsedToObject) {
+                    out.append(args);
+                }
+            }
+        }
+        if (index[0] >= signature.length() || signature.charAt(index[0]) != ';') {
+            return null;
+        }
+        index[0]++;
+        return out.toString();
+    }
+
+    private String parseGenericSignatureArgs(String signature, int[] index) {
+        if (index[0] >= signature.length() || signature.charAt(index[0]) != '<') {
+            return null;
+        }
+        index[0]++;
+        List<String> args = new ArrayList<>();
+        while (index[0] < signature.length() && signature.charAt(index[0]) != '>') {
+            char wildcard = signature.charAt(index[0]);
+            if (wildcard == '*') {
+                index[0]++;
+                args.add("?");
+                continue;
+            }
+            if (wildcard == '+' || wildcard == '-') {
+                index[0]++;
+                String bound = parseGenericSignatureType(signature, index);
+                if (bound == null) {
+                    return null;
+                }
+                args.add((wildcard == '+') ? "? extends " + bound : "? super " + bound);
+                continue;
+            }
+            String arg = parseGenericSignatureType(signature, index);
+            if (arg == null) {
+                return null;
+            }
+            args.add(arg);
+        }
+        if (index[0] >= signature.length() || signature.charAt(index[0]) != '>') {
+            return null;
+        }
+        index[0]++;
+        return "<" + String.join(", ", args) + ">";
     }
 
     private Map<String, BytecodeClass> loadMinecraftClassIndex() {
@@ -943,13 +1089,28 @@ final class MirrorClassEmitter {
             int access = input.readUnsignedShort();
             String name = resolveUtf8(cp, input.readUnsignedShort());
             String descriptor = resolveUtf8(cp, input.readUnsignedShort());
-            skipAttributes(input);
+            String signature = readMemberSignature(input, cp);
             if (name == null || descriptor == null) {
                 continue;
             }
-            members.add(new BytecodeMember(name, descriptor, access));
+            members.add(new BytecodeMember(name, descriptor, access, signature));
         }
         return members;
+    }
+
+    private String readMemberSignature(DataInputStream input, Object[] cp) throws IOException {
+        int attrs = input.readUnsignedShort();
+        String signature = null;
+        for (int i = 0; i < attrs; i++) {
+            String attrName = resolveUtf8(cp, input.readUnsignedShort());
+            int len = input.readInt();
+            if ("Signature".equals(attrName) && len == 2) {
+                signature = resolveUtf8(cp, input.readUnsignedShort());
+            } else {
+                skipFully(input, len);
+            }
+        }
+        return signature;
     }
 
     private void skipAttributes(DataInputStream input) throws IOException {
@@ -1209,15 +1370,21 @@ final class MirrorClassEmitter {
             return null;
         }
         String superClass = classInfo.superClassName();
-        if (superClass == null || !superClass.startsWith("net.minecraft.")) {
+        if (superClass == null) {
             return null;
         }
         String sourceName = toSourceTypeName(superClass);
-        String rewritten = rewriteTypeReference(sourceName);
-        if (rewritten.startsWith("net.minecraft.")) {
+        if ("java.lang.Record".equals(sourceName) || "java.lang.Enum".equals(sourceName)) {
             return null;
         }
-        return rewritten;
+        if (superClass.startsWith("net.minecraft.")) {
+            String rewritten = rewriteTypeReference(sourceName);
+            if (rewritten.startsWith("net.minecraft.")) {
+                return null;
+            }
+            return rewritten;
+        }
+        return sourceName;
     }
 
     private String resolveImplementedInterfaces(String fqcn) {
@@ -1227,13 +1394,15 @@ final class MirrorClassEmitter {
         }
         TreeSet<String> interfaces = new TreeSet<>();
         for (String interfaceName : classInfo.interfaceNames()) {
-            if (interfaceName == null || !interfaceName.startsWith("net.minecraft.")) {
+            if (interfaceName == null) {
                 continue;
             }
             String sourceName = toSourceTypeName(interfaceName);
-            String rewritten = rewriteTypeReference(sourceName);
-            if (!rewritten.startsWith("net.minecraft.")) {
-                interfaces.add(rewritten);
+            if (interfaceName.startsWith("net.minecraft.")) {
+                String rewritten = rewriteTypeReference(sourceName);
+                if (!rewritten.startsWith("net.minecraft.")) {
+                    interfaces.add(rewritten);
+                }
             }
         }
         if (interfaces.isEmpty()) {
@@ -1347,6 +1516,9 @@ final class MirrorClassEmitter {
             : plan.packageName + "." + plan.topLevelSimpleName;
         Path outputFile = mirrorRootDir.resolve(topLevelFqcn.replace('.', '/') + ".java");
         boolean isPrimaryTopLevel = primaryClassesBySimpleName.containsValue(topLevelFqcn);
+        if (isPrimaryTopLevel && Files.exists(outputFile)) {
+            populateReferencedNestedStubs(plan, topLevelFqcn, Files.readString(outputFile));
+        }
 
         String topLevelFieldStubs = renderFieldStubs(plan.fieldStubs, 1, plan.isInterface);
         String topLevelMethodStubs = renderMethodStubs(
@@ -1447,11 +1619,7 @@ final class MirrorClassEmitter {
             if (primaryClassesBySimpleName.containsValue(fqcn)) {
                 continue;
             }
-            Set<String> methodSelectors = methodsByClass.getOrDefault(fqcn, Set.of());
-            Set<FieldStub> fieldStubs = fieldsByClass.getOrDefault(fqcn, Set.of());
-            if (hasRenderableMethods(methodSelectors) || !fieldStubs.isEmpty()) {
-                addClosureClass(emitClasses, fqcn);
-            }
+            addClosureClass(emitClasses, fqcn);
         }
 
         Set<String> sorted = new TreeSet<>(emitClasses);
@@ -2124,7 +2292,10 @@ final class MirrorClassEmitter {
             dims++;
         }
         if (normalized.startsWith("net.minecraft.")) {
-            normalized = "java.lang.Object";
+            normalized = rewriteTypeReference(normalized);
+            if (normalized.startsWith("net.minecraft.")) {
+                normalized = "java.lang.Object";
+            }
         }
         String result = normalized;
         for (int i = 0; i < dims; i++) {
@@ -2377,7 +2548,7 @@ final class MirrorClassEmitter {
             if (methodStub.isStatic()) {
                 sb.append("public static ");
             } else {
-                sb.append("protected ");
+                sb.append("public ");
             }
             sb.append(methodStub.returnType())
                 .append(" ").append(methodStub.methodName())
@@ -2597,6 +2768,14 @@ final class MirrorClassEmitter {
             }
         }
         normalized = normalized.replace(
+            "return EnchantmentHelper.getMobExperience(world, attacker, this, this.getExperienceToDrop(world));",
+            "return EnchantmentHelper.getMobExperience(world, attacker, this, 0);"
+        );
+        normalized = normalized.replace(
+            "murat.simv2.simulation.mirror.net.minecraft.component.type.EquippableComponent equippableComponent = newStack.get(",
+            "murat.simv2.simulation.mirror.net.minecraft.component.type.EquippableComponent equippableComponent = (murat.simv2.simulation.mirror.net.minecraft.component.type.EquippableComponent) newStack.get("
+        );
+        normalized = normalized.replace(
             "murat.simv2.simulation.mirror.net.minecraft.component.type.BlocksAttacksComponent blocksAttacksComponent = this.getActiveItem().get(",
             "murat.simv2.simulation.mirror.net.minecraft.component.type.BlocksAttacksComponent blocksAttacksComponent = (murat.simv2.simulation.mirror.net.minecraft.component.type.BlocksAttacksComponent) this.getActiveItem().get("
         );
@@ -2707,7 +2886,7 @@ final class MirrorClassEmitter {
     private record CpClassRef(int nameIndex) {
     }
 
-    private record BytecodeMember(String name, String descriptor, int access) {
+    private record BytecodeMember(String name, String descriptor, int access, String signature) {
     }
 
     private record BytecodeClass(String className,

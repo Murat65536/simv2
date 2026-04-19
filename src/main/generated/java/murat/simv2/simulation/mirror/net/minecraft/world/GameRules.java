@@ -1,77 +1,77 @@
 package murat.simv2.simulation.mirror.net.minecraft.world;
 
 // Generated mirror stub for simulation closure.
-public class GameRules {
+public class GameRules extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key ALLOW_FIRE_TICKS_AWAY_FROM_PLAYER;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key ANNOUNCE_ADVANCEMENTS;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key BLOCK_EXPLOSION_DROP_DECAY;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key COMMAND_BLOCK_OUTPUT;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key COMMAND_MODIFICATION_BLOCK_LIMIT;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> ALLOW_FIRE_TICKS_AWAY_FROM_PLAYER;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> ANNOUNCE_ADVANCEMENTS;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> BLOCK_EXPLOSION_DROP_DECAY;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> COMMAND_BLOCK_OUTPUT;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.IntRule> COMMAND_MODIFICATION_BLOCK_LIMIT;
     public static int DEFAULT_RANDOM_TICK_SPEED;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DISABLE_ELYTRA_MOVEMENT_CHECK;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DISABLE_PLAYER_MOVEMENT_CHECK;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DISABLE_RAIDS;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DO_DAYLIGHT_CYCLE;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DO_ENTITY_DROPS;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DO_FIRE_TICK;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DO_IMMEDIATE_RESPAWN;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DO_INSOMNIA;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DO_LIMITED_CRAFTING;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DO_MOB_GRIEFING;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DO_MOB_LOOT;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DO_MOB_SPAWNING;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DO_PATROL_SPAWNING;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DO_TILE_DROPS;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DO_TRADER_SPAWNING;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DO_VINES_SPREAD;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DO_WARDEN_SPAWNING;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DO_WEATHER_CYCLE;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key DROWNING_DAMAGE;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key ENDER_PEARLS_VANISH_ON_DEATH;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key FALL_DAMAGE;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key FIRE_DAMAGE;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key FORGIVE_DEAD_PLAYERS;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key FREEZE_DAMAGE;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key GLOBAL_SOUND_EVENTS;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key KEEP_INVENTORY;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key LAVA_SOURCE_CONVERSION;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DISABLE_ELYTRA_MOVEMENT_CHECK;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DISABLE_PLAYER_MOVEMENT_CHECK;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DISABLE_RAIDS;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DO_DAYLIGHT_CYCLE;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DO_ENTITY_DROPS;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DO_FIRE_TICK;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DO_IMMEDIATE_RESPAWN;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DO_INSOMNIA;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DO_LIMITED_CRAFTING;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DO_MOB_GRIEFING;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DO_MOB_LOOT;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DO_MOB_SPAWNING;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DO_PATROL_SPAWNING;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DO_TILE_DROPS;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DO_TRADER_SPAWNING;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DO_VINES_SPREAD;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DO_WARDEN_SPAWNING;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DO_WEATHER_CYCLE;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> DROWNING_DAMAGE;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> ENDER_PEARLS_VANISH_ON_DEATH;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> FALL_DAMAGE;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> FIRE_DAMAGE;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> FORGIVE_DEAD_PLAYERS;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> FREEZE_DAMAGE;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> GLOBAL_SOUND_EVENTS;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> KEEP_INVENTORY;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> LAVA_SOURCE_CONVERSION;
     public static org.slf4j.Logger LOGGER;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key LOG_ADMIN_COMMANDS;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key MAX_COMMAND_CHAIN_LENGTH;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key MAX_COMMAND_FORK_COUNT;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key MAX_ENTITY_CRAMMING;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key MINECART_MAX_SPEED;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key MOB_EXPLOSION_DROP_DECAY;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key NATURAL_REGENERATION;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key PLAYERS_NETHER_PORTAL_CREATIVE_DELAY;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key PLAYERS_NETHER_PORTAL_DEFAULT_DELAY;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key PLAYERS_SLEEPING_PERCENTAGE;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key PROJECTILES_CAN_BREAK_BLOCKS;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key RANDOM_TICK_SPEED;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key REDUCED_DEBUG_INFO;
-    public static java.util.Map RULE_TYPES;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key SEND_COMMAND_FEEDBACK;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key SHOW_DEATH_MESSAGES;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key SNOW_ACCUMULATION_HEIGHT;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key SPAWN_CHUNK_RADIUS;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key SPAWN_RADIUS;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key SPECTATORS_GENERATE_CHUNKS;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key TNT_EXPLODES;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key TNT_EXPLOSION_DROP_DECAY;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key UNIVERSAL_ANGER;
-    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key WATER_SOURCE_CONVERSION;
-    public java.lang.Object enabledFeatures;
-    public java.util.Map rules;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> LOG_ADMIN_COMMANDS;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.IntRule> MAX_COMMAND_CHAIN_LENGTH;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.IntRule> MAX_COMMAND_FORK_COUNT;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.IntRule> MAX_ENTITY_CRAMMING;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.IntRule> MINECART_MAX_SPEED;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> MOB_EXPLOSION_DROP_DECAY;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> NATURAL_REGENERATION;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.IntRule> PLAYERS_NETHER_PORTAL_CREATIVE_DELAY;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.IntRule> PLAYERS_NETHER_PORTAL_DEFAULT_DELAY;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.IntRule> PLAYERS_SLEEPING_PERCENTAGE;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> PROJECTILES_CAN_BREAK_BLOCKS;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.IntRule> RANDOM_TICK_SPEED;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> REDUCED_DEBUG_INFO;
+    public static java.util.Map<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<?>, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type<?>> RULE_TYPES;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> SEND_COMMAND_FEEDBACK;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> SHOW_DEATH_MESSAGES;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.IntRule> SNOW_ACCUMULATION_HEIGHT;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.IntRule> SPAWN_CHUNK_RADIUS;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.IntRule> SPAWN_RADIUS;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> SPECTATORS_GENERATE_CHUNKS;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> TNT_EXPLODES;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> TNT_EXPLOSION_DROP_DECAY;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> UNIVERSAL_ANGER;
+    public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule> WATER_SOURCE_CONVERSION;
+    public murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet enabledFeatures;
+    public java.util.Map<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key<?>, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Rule<?>> rules;
 
-    public GameRules(java.lang.Object p0) {
+    public GameRules(java.util.Map p0, murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet p1) {
     }
 
-    public GameRules(java.lang.Object p0, com.mojang.serialization.DynamicLike p1) {
+    public GameRules(murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet p0) {
     }
 
-    public GameRules(java.util.Map p0, java.lang.Object p1) {
+    public GameRules(murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet p0, com.mojang.serialization.DynamicLike p1) {
     }
 
     public void accept(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Visitor p0) {
@@ -80,7 +80,7 @@ public class GameRules {
     public void accept(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Visitor p0, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key p1, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type p2) {
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.world.GameRules copy(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.world.GameRules copy(murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet p0) {
         return null;
     }
 
@@ -111,13 +111,13 @@ public class GameRules {
         return null;
     }
 
-    public void setAllValues(murat.simv2.simulation.mirror.net.minecraft.world.GameRules p0, java.lang.Object p1) {
+    public void setAllValues(murat.simv2.simulation.mirror.net.minecraft.world.GameRules p0, murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer p1) {
     }
 
-    public void setValue(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key p0, murat.simv2.simulation.mirror.net.minecraft.world.GameRules p1, java.lang.Object p2) {
+    public void setValue(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key p0, murat.simv2.simulation.mirror.net.minecraft.world.GameRules p1, murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer p2) {
     }
 
-    public static java.util.stream.Stream streamAllRules(java.lang.Object p0) {
+    public static java.util.stream.Stream streamAllRules(murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet p0) {
         return null;
     }
 
@@ -134,13 +134,13 @@ public class GameRules {
     }
 
     public static class BooleanRule extends murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Rule {
-        public murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type type;
+        public murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type<java.lang.Object> type;
         public boolean value;
 
         public BooleanRule(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type p0, boolean p1) {
         }
 
-        public void changed(java.lang.Object p0) {
+        public void changed(murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer p0) {
         }
 
         public murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule copy() {
@@ -177,13 +177,13 @@ public class GameRules {
         public void setFromArgument(com.mojang.brigadier.context.CommandContext p0, java.lang.String p1) {
         }
 
-        public void setValue(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule p0, java.lang.Object p1) {
+        public void setValue(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.BooleanRule p0, murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer p1) {
         }
 
-        public void setValue(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Rule p0, java.lang.Object p1) {
+        public void setValue(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Rule p0, murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer p1) {
         }
 
-        public void set(boolean p0, java.lang.Object p1) {
+        public void set(boolean p0, murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer p1) {
         }
 
         public void set(com.mojang.brigadier.context.CommandContext p0, java.lang.String p1) {
@@ -234,13 +234,13 @@ public class GameRules {
     }
 
     public static class IntRule extends murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Rule {
-        public murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type type;
+        public murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type<java.lang.Object> type;
         public int value;
 
         public IntRule(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type p0, int p1) {
         }
 
-        public void changed(java.lang.Object p0) {
+        public void changed(murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer p0) {
         }
 
         public murat.simv2.simulation.mirror.net.minecraft.world.GameRules.IntRule copy() {
@@ -251,7 +251,7 @@ public class GameRules {
             return null;
         }
 
-        public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type create(int p0, int p1, int p2, java.lang.Object p3, java.util.function.BiConsumer p4) {
+        public static murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type create(int p0, int p1, int p2, murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet p3, java.util.function.BiConsumer p4) {
             return null;
         }
 
@@ -285,16 +285,16 @@ public class GameRules {
         public void setFromArgument(com.mojang.brigadier.context.CommandContext p0, java.lang.String p1) {
         }
 
-        public void setValue(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.IntRule p0, java.lang.Object p1) {
+        public void setValue(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.IntRule p0, murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer p1) {
         }
 
-        public void setValue(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Rule p0, java.lang.Object p1) {
+        public void setValue(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Rule p0, murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer p1) {
         }
 
         public void set(com.mojang.brigadier.context.CommandContext p0, java.lang.String p1) {
         }
 
-        public void set(int p0, java.lang.Object p1) {
+        public void set(int p0, murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer p1) {
         }
 
         public java.lang.String toString() {
@@ -310,7 +310,7 @@ public class GameRules {
 
     }
 
-    public static class Key<T> {
+    public static class Key<T> extends java.lang.Object {
         public murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Category category;
         public java.lang.String name;
 
@@ -346,13 +346,13 @@ public class GameRules {
 
     }
 
-    public static class Rule<T> {
-        public murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type type;
+    public static class Rule<T> extends java.lang.Object {
+        public murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type<java.lang.Object> type;
 
         public Rule(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type p0) {
         }
 
-        public void changed(java.lang.Object p0) {
+        public void changed(murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer p0) {
         }
 
         public murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Rule copy() {
@@ -377,7 +377,7 @@ public class GameRules {
         public void setFromArgument(com.mojang.brigadier.context.CommandContext p0, java.lang.String p1) {
         }
 
-        public void setValue(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Rule p0, java.lang.Object p1) {
+        public void setValue(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Rule p0, murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer p1) {
         }
 
         public void set(com.mojang.brigadier.context.CommandContext p0, java.lang.String p1) {
@@ -392,15 +392,15 @@ public class GameRules {
 
     }
 
-    public static class Type<T> {
-        public java.util.function.Supplier argumentType;
-        public java.util.function.BiConsumer changeCallback;
-        public java.lang.Object requiredFeatures;
-        public murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Acceptor ruleAcceptor;
-        public java.lang.Class ruleClass;
-        public java.util.function.Function ruleFactory;
+    public static class Type<T> extends java.lang.Object {
+        public java.util.function.Supplier<com.mojang.brigadier.arguments.ArgumentType<?>> argumentType;
+        public java.util.function.BiConsumer<murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer, java.lang.Object> changeCallback;
+        public murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet requiredFeatures;
+        public murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Acceptor<java.lang.Object> ruleAcceptor;
+        public java.lang.Class<java.lang.Object> ruleClass;
+        public java.util.function.Function<murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Type<java.lang.Object>, java.lang.Object> ruleFactory;
 
-        public Type(java.util.function.Supplier p0, java.util.function.Function p1, java.util.function.BiConsumer p2, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Acceptor p3, java.lang.Class p4, java.lang.Object p5) {
+        public Type(java.util.function.Supplier p0, java.util.function.Function p1, java.util.function.BiConsumer p2, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Acceptor p3, java.lang.Class p4, murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet p5) {
         }
 
         public void accept(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Visitor p0, murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key p1) {
@@ -414,7 +414,7 @@ public class GameRules {
             return null;
         }
 
-        public java.lang.Object getRequiredFeatures() {
+        public murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet getRequiredFeatures() {
             return null;
         }
 

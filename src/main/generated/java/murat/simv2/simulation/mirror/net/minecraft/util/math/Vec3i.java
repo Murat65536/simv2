@@ -1,11 +1,11 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.math;
 
 // Generated mirror stub for simulation closure.
-public class Vec3i {
+public class Vec3i extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.Codec CODEC;
-    public static java.lang.Object PACKET_CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3i> CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<io.netty.buffer.ByteBuf, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3i> PACKET_CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3i ZERO;
     public int x;
     public int y;
@@ -74,7 +74,7 @@ public class Vec3i {
         return 0.0D;
     }
 
-    public double getSquaredDistance(java.lang.Object p0) {
+    public double getSquaredDistance(murat.simv2.simulation.mirror.net.minecraft.util.math.Position p0) {
         return 0.0D;
     }
 
@@ -98,7 +98,7 @@ public class Vec3i {
         return 0;
     }
 
-    public boolean isWithinDistance(java.lang.Object p0, double p1) {
+    public boolean isWithinDistance(murat.simv2.simulation.mirror.net.minecraft.util.math.Position p0, double p1) {
         return false;
     }
 

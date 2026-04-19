@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.function;
 
 // Generated mirror stub for simulation closure.
-public class ValueLists {
+public class ValueLists extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public ValueLists() {

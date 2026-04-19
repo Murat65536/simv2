@@ -40,7 +40,7 @@ public interface Random {
 
     public long nextLong();
 
-    public java.lang.Object nextSplitter();
+    public murat.simv2.simulation.mirror.net.minecraft.util.math.random.RandomSplitter nextSplitter();
 
     public double nextTriangular(double p0, double p1);
 

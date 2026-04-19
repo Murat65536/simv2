@@ -1,13 +1,13 @@
 package murat.simv2.simulation.mirror.net.minecraft.server.world;
 
 // Generated mirror stub for simulation closure.
-public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.world.World {
+public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.world.World implements murat.simv2.simulation.mirror.net.minecraft.world.EntityLookupView, murat.simv2.simulation.mirror.net.minecraft.world.StructureWorldAccess {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static java.lang.Object CLEAR_THUNDER_WEATHER_DURATION_PROVIDER;
-    public static java.lang.Object CLEAR_WEATHER_DURATION_PROVIDER;
-    public static com.mojang.serialization.Codec CODEC;
-    public static murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey END;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.math.intprovider.IntProvider CLEAR_THUNDER_WEATHER_DURATION_PROVIDER;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.math.intprovider.IntProvider CLEAR_WEATHER_DURATION_PROVIDER;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey<murat.simv2.simulation.mirror.net.minecraft.world.World>> CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey<murat.simv2.simulation.mirror.net.minecraft.world.World> END;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos END_SPAWN_POS;
     public static int HORIZONTAL_LIMIT;
     public static org.slf4j.Logger LOGGER;
@@ -15,25 +15,25 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
     public static int MAX_UPDATE_DEPTH;
     public static int MAX_Y;
     public static int MIN_Y;
-    public static murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey NETHER;
-    public static murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey OVERWORLD;
-    public static java.lang.Object RAIN_WEATHER_DURATION_PROVIDER;
+    public static murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey<murat.simv2.simulation.mirror.net.minecraft.world.World> NETHER;
+    public static murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey<murat.simv2.simulation.mirror.net.minecraft.world.World> OVERWORLD;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.math.intprovider.IntProvider RAIN_WEATHER_DURATION_PROVIDER;
     public static int SERVER_IDLE_COOLDOWN;
-    public static java.lang.Object THUNDER_WEATHER_DURATION_PROVIDER;
-    public java.util.List blockEntityTickers;
-    public java.util.List blockEventQueue;
-    public java.lang.Object blockTickScheduler;
-    public java.lang.Object chunkManager;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.math.intprovider.IntProvider THUNDER_WEATHER_DURATION_PROVIDER;
+    public java.util.List<murat.simv2.simulation.mirror.net.minecraft.world.chunk.BlockEntityTickInvoker> blockEntityTickers;
+    public java.util.List<murat.simv2.simulation.mirror.net.minecraft.server.world.BlockEvent> blockEventQueue;
+    public murat.simv2.simulation.mirror.net.minecraft.world.tick.WorldTickScheduler<murat.simv2.simulation.mirror.net.minecraft.block.Block> blockTickScheduler;
+    public murat.simv2.simulation.mirror.net.minecraft.server.world.ServerChunkManager chunkManager;
     public boolean duringListenerUpdate;
-    public java.lang.Object enderDragonFight;
-    public it.unimi.dsi.fastutil.ints.Int2ObjectMap enderDragonParts;
-    public java.lang.Object entityList;
-    public java.lang.Object entityManager;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.boss.dragon.EnderDragonFight enderDragonFight;
+    public it.unimi.dsi.fastutil.ints.Int2ObjectMap<murat.simv2.simulation.mirror.net.minecraft.entity.boss.dragon.EnderDragonPart> enderDragonParts;
+    public murat.simv2.simulation.mirror.net.minecraft.world.EntityList entityList;
+    public murat.simv2.simulation.mirror.net.minecraft.server.world.ServerEntityManager<murat.simv2.simulation.mirror.net.minecraft.entity.Entity> entityManager;
     public static int field_30967;
     public static int field_30968;
     public static int field_30969;
-    public java.lang.Object fluidTickScheduler;
-    public java.lang.Object gameEventDispatchManager;
+    public murat.simv2.simulation.mirror.net.minecraft.world.tick.WorldTickScheduler<murat.simv2.simulation.mirror.net.minecraft.fluid.Fluid> fluidTickScheduler;
+    public murat.simv2.simulation.mirror.net.minecraft.world.event.listener.GameEventDispatchManager gameEventDispatchManager;
     public int idleTimeout;
     public boolean inBlockTick;
     public boolean isClient;
@@ -41,38 +41,38 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
     public float lastThunderGradient;
     public int lcgBlockSeed;
     public int lcgBlockSeedIncrement;
-    public java.util.Set loadedMobs;
-    public java.lang.Object neighborUpdater;
-    public java.lang.Object pathNodeTypeCache;
-    public java.util.List players;
-    public java.lang.Object portalForcer;
-    public java.lang.Object properties;
-    public java.lang.Object raidManager;
+    public java.util.Set<murat.simv2.simulation.mirror.net.minecraft.entity.mob.MobEntity> loadedMobs;
+    public murat.simv2.simulation.mirror.net.minecraft.world.block.NeighborUpdater neighborUpdater;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.pathing.PathNodeTypeCache pathNodeTypeCache;
+    public java.util.List<murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity> players;
+    public murat.simv2.simulation.mirror.net.minecraft.world.dimension.PortalForcer portalForcer;
+    public murat.simv2.simulation.mirror.net.minecraft.world.MutableWorldProperties properties;
+    public murat.simv2.simulation.mirror.net.minecraft.village.raid.RaidManager raidManager;
     public float rainGradient;
     public murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random random;
-    public java.lang.Object randomSequences;
+    public murat.simv2.simulation.mirror.net.minecraft.util.math.random.RandomSequencesState randomSequences;
     public boolean savingDisabled;
-    public java.lang.Object server;
+    public murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer server;
     public boolean shouldTickTime;
-    public java.lang.Object sleepManager;
+    public murat.simv2.simulation.mirror.net.minecraft.server.world.SleepManager sleepManager;
     public int spawnChunkRadius;
-    public java.util.List spawners;
-    public java.lang.Object structureAccessor;
-    public java.lang.Object structureLocator;
-    public it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet syncedBlockEventQueue;
+    public java.util.List<java.lang.Object> spawners;
+    public murat.simv2.simulation.mirror.net.minecraft.world.gen.StructureAccessor structureAccessor;
+    public murat.simv2.simulation.mirror.net.minecraft.world.StructureLocator structureLocator;
+    public it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet<murat.simv2.simulation.mirror.net.minecraft.server.world.BlockEvent> syncedBlockEventQueue;
     public float thunderGradient;
-    public java.lang.Object worldProperties;
+    public murat.simv2.simulation.mirror.net.minecraft.world.level.ServerWorldProperties worldProperties;
 
-    public ServerWorld(java.lang.Object p0, java.util.concurrent.Executor p1, java.lang.Object p2, java.lang.Object p3, murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p4, java.lang.Object p5, java.lang.Object p6, boolean p7, long p8, java.util.List p9, boolean p10, java.lang.Object p11) {
+    public ServerWorld(murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer p0, java.util.concurrent.Executor p1, murat.simv2.simulation.mirror.net.minecraft.world.level.storage.LevelStorage.Session p2, murat.simv2.simulation.mirror.net.minecraft.world.level.ServerWorldProperties p3, murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p4, murat.simv2.simulation.mirror.net.minecraft.world.dimension.DimensionOptions p5, murat.simv2.simulation.mirror.net.minecraft.server.WorldGenerationProgressListener p6, boolean p7, long p8, java.util.List p9, boolean p10, murat.simv2.simulation.mirror.net.minecraft.util.math.random.RandomSequencesState p11) {
     }
 
     public void addBlockBreakParticles(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1) {
     }
 
-    public void addBlockEntityTicker(java.lang.Object p0) {
+    public void addBlockEntityTicker(murat.simv2.simulation.mirror.net.minecraft.world.chunk.BlockEntityTickInvoker p0) {
     }
 
-    public void addBlockEntity(java.lang.Object p0) {
+    public void addBlockEntity(murat.simv2.simulation.mirror.net.minecraft.block.entity.BlockEntity p0) {
     }
 
     public murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashReportSection addDetailsToCrashReport(murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashReport p0) {
@@ -89,16 +89,16 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
     public void addFireworkParticle(double p0, double p1, double p2, double p3, double p4, double p5, java.util.List p6) {
     }
 
-    public void addImportantParticleClient(java.lang.Object p0, boolean p1, double p2, double p3, double p4, double p5, double p6, double p7) {
+    public void addImportantParticleClient(murat.simv2.simulation.mirror.net.minecraft.particle.ParticleEffect p0, boolean p1, double p2, double p3, double p4, double p5, double p6, double p7) {
     }
 
-    public void addImportantParticleClient(java.lang.Object p0, double p1, double p2, double p3, double p4, double p5, double p6) {
+    public void addImportantParticleClient(murat.simv2.simulation.mirror.net.minecraft.particle.ParticleEffect p0, double p1, double p2, double p3, double p4, double p5, double p6) {
     }
 
-    public void addParticleClient(java.lang.Object p0, boolean p1, boolean p2, double p3, double p4, double p5, double p6, double p7, double p8) {
+    public void addParticleClient(murat.simv2.simulation.mirror.net.minecraft.particle.ParticleEffect p0, boolean p1, boolean p2, double p3, double p4, double p5, double p6, double p7, double p8) {
     }
 
-    public void addParticleClient(java.lang.Object p0, double p1, double p2, double p3, double p4, double p5, double p6) {
+    public void addParticleClient(murat.simv2.simulation.mirror.net.minecraft.particle.ParticleEffect p0, double p1, double p2, double p3, double p4, double p5, double p6) {
     }
 
     public void addPlayer(murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity p0) {
@@ -123,7 +123,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return false;
     }
 
-    public void cacheStructures(java.lang.Object p0) {
+    public void cacheStructures(murat.simv2.simulation.mirror.net.minecraft.world.chunk.Chunk p0) {
     }
 
     public void calculateAmbientDarkness() {
@@ -145,7 +145,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return false;
     }
 
-    public void clearUpdatesInArea(java.lang.Object p0) {
+    public void clearUpdatesInArea(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockBox p0) {
     }
 
     public void close() {
@@ -154,16 +154,16 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
     public static void collectCollisionsBetween(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p2, murat.simv2.simulation.mirror.net.minecraft.world.BlockView.CollisionVisitor p3) {
     }
 
-    public void collectEntitiesByType(java.lang.Object p0, java.util.function.Predicate p1, java.util.List p2) {
+    public void collectEntitiesByType(murat.simv2.simulation.mirror.net.minecraft.util.TypeFilter p0, java.util.function.Predicate p1, java.util.List p2) {
     }
 
-    public void collectEntitiesByType(java.lang.Object p0, java.util.function.Predicate p1, java.util.List p2, int p3) {
+    public void collectEntitiesByType(murat.simv2.simulation.mirror.net.minecraft.util.TypeFilter p0, java.util.function.Predicate p1, java.util.List p2, int p3) {
     }
 
-    public void collectEntitiesByType(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p1, java.util.function.Predicate p2, java.util.List p3) {
+    public void collectEntitiesByType(murat.simv2.simulation.mirror.net.minecraft.util.TypeFilter p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p1, java.util.function.Predicate p2, java.util.List p3) {
     }
 
-    public void collectEntitiesByType(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p1, java.util.function.Predicate p2, java.util.List p3, int p4) {
+    public void collectEntitiesByType(murat.simv2.simulation.mirror.net.minecraft.util.TypeFilter p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p1, java.util.function.Predicate p2, java.util.List p3, int p4) {
     }
 
     public boolean containsFluid(murat.simv2.simulation.mirror.net.minecraft.util.math.Box p0) {
@@ -174,7 +174,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return 0;
     }
 
-    public java.lang.Object createCommandRegistryWrapper(murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.registry.RegistryWrapper createCommandRegistryWrapper(murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p0) {
         return null;
     }
 
@@ -184,28 +184,28 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
     public void createExplosion(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, double p1, double p2, double p3, float p4, murat.simv2.simulation.mirror.net.minecraft.world.World.ExplosionSourceType p5) {
     }
 
-    public void createExplosion(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p1, java.lang.Object p2, double p3, double p4, double p5, float p6, boolean p7, murat.simv2.simulation.mirror.net.minecraft.world.World.ExplosionSourceType p8) {
+    public void createExplosion(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p1, murat.simv2.simulation.mirror.net.minecraft.world.explosion.ExplosionBehavior p2, double p3, double p4, double p5, float p6, boolean p7, murat.simv2.simulation.mirror.net.minecraft.world.World.ExplosionSourceType p8) {
     }
 
-    public void createExplosion(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p1, java.lang.Object p2, double p3, double p4, double p5, float p6, boolean p7, murat.simv2.simulation.mirror.net.minecraft.world.World.ExplosionSourceType p8, java.lang.Object p9, java.lang.Object p10, murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p11) {
+    public void createExplosion(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p1, murat.simv2.simulation.mirror.net.minecraft.world.explosion.ExplosionBehavior p2, double p3, double p4, double p5, float p6, boolean p7, murat.simv2.simulation.mirror.net.minecraft.world.World.ExplosionSourceType p8, murat.simv2.simulation.mirror.net.minecraft.particle.ParticleEffect p9, murat.simv2.simulation.mirror.net.minecraft.particle.ParticleEffect p10, murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p11) {
     }
 
-    public void createExplosion(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p1, java.lang.Object p2, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p3, float p4, boolean p5, murat.simv2.simulation.mirror.net.minecraft.world.World.ExplosionSourceType p6) {
+    public void createExplosion(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSource p1, murat.simv2.simulation.mirror.net.minecraft.world.explosion.ExplosionBehavior p2, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p3, float p4, boolean p5, murat.simv2.simulation.mirror.net.minecraft.world.World.ExplosionSourceType p6) {
     }
 
-    public java.lang.Object createOrderedTick(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, java.lang.Object p1, int p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.world.tick.OrderedTick createOrderedTick(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, java.lang.Object p1, int p2) {
         return null;
     }
 
-    public java.lang.Object createOrderedTick(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, java.lang.Object p1, int p2, java.lang.Object p3) {
+    public murat.simv2.simulation.mirror.net.minecraft.world.tick.OrderedTick createOrderedTick(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, java.lang.Object p1, int p2, murat.simv2.simulation.mirror.net.minecraft.world.tick.TickPriority p3) {
         return null;
     }
 
-    public static java.lang.Object create(int p0, int p1) {
+    public static murat.simv2.simulation.mirror.net.minecraft.world.HeightLimitView create(int p0, int p1) {
         return null;
     }
 
-    public void disableTickSchedulers(java.lang.Object p0) {
+    public void disableTickSchedulers(murat.simv2.simulation.mirror.net.minecraft.world.chunk.WorldChunk p0) {
     }
 
     public void disconnect() {
@@ -263,7 +263,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return 0;
     }
 
-    public java.lang.Object getBiomeAccess() {
+    public murat.simv2.simulation.mirror.net.minecraft.world.biome.source.BiomeAccess getBiomeAccess() {
         return null;
     }
 
@@ -283,11 +283,11 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return 0;
     }
 
-    public java.lang.Object getBlockEntity(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.block.entity.BlockEntity getBlockEntity(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
         return null;
     }
 
-    public java.util.Optional getBlockEntity(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, java.lang.Object p1) {
+    public java.util.Optional getBlockEntity(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.entity.BlockEntityType p1) {
         return null;
     }
 
@@ -299,7 +299,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public java.lang.Object getBlockTickScheduler() {
+    public murat.simv2.simulation.mirror.net.minecraft.world.tick.QueryableTickScheduler getBlockTickScheduler() {
         return null;
     }
 
@@ -311,7 +311,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return 0;
     }
 
-    public java.lang.Object getBrewingRecipeRegistry() {
+    public murat.simv2.simulation.mirror.net.minecraft.recipe.BrewingRecipeRegistry getBrewingRecipeRegistry() {
         return null;
     }
 
@@ -327,31 +327,31 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public java.lang.Object getChunkManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.server.world.ServerChunkManager getChunkManager() {
         return null;
     }
 
-    public java.lang.Object getChunk(int p0, int p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.world.chunk.Chunk getChunk(int p0, int p1) {
         return null;
     }
 
-    public java.lang.Object getChunk(int p0, int p1, java.lang.Object p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.world.chunk.Chunk getChunk(int p0, int p1, murat.simv2.simulation.mirror.net.minecraft.world.chunk.ChunkStatus p2) {
         return null;
     }
 
-    public java.lang.Object getChunk(int p0, int p1, java.lang.Object p2, boolean p3) {
+    public murat.simv2.simulation.mirror.net.minecraft.world.chunk.Chunk getChunk(int p0, int p1, murat.simv2.simulation.mirror.net.minecraft.world.chunk.ChunkStatus p2, boolean p3) {
         return null;
     }
 
-    public java.lang.Object getChunk(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.world.chunk.Chunk getChunk(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity getClosestEntity(java.lang.Class p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p2, double p3, double p4, double p5, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p6) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity getClosestEntity(java.lang.Class p0, murat.simv2.simulation.mirror.net.minecraft.entity.ai.TargetPredicate p1, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p2, double p3, double p4, double p5, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p6) {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity getClosestEntity(java.util.List p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p2, double p3, double p4, double p5) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity getClosestEntity(java.util.List p0, murat.simv2.simulation.mirror.net.minecraft.entity.ai.TargetPredicate p1, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p2, double p3, double p4, double p5) {
         return null;
     }
 
@@ -363,19 +363,19 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity getClosestPlayer(java.lang.Object p0, double p1, double p2, double p3) {
-        return null;
-    }
-
-    public murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity getClosestPlayer(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1) {
-        return null;
-    }
-
-    public murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity getClosestPlayer(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1, double p2, double p3, double p4) {
-        return null;
-    }
-
     public murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity getClosestPlayer(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, double p1) {
+        return null;
+    }
+
+    public murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity getClosestPlayer(murat.simv2.simulation.mirror.net.minecraft.entity.ai.TargetPredicate p0, double p1, double p2, double p3) {
+        return null;
+    }
+
+    public murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity getClosestPlayer(murat.simv2.simulation.mirror.net.minecraft.entity.ai.TargetPredicate p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1) {
+        return null;
+    }
+
+    public murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity getClosestPlayer(murat.simv2.simulation.mirror.net.minecraft.entity.ai.TargetPredicate p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1, double p2, double p3, double p4) {
         return null;
     }
 
@@ -387,7 +387,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public int getColor(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, java.lang.Object p1) {
+    public int getColor(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.world.biome.ColorResolver p1) {
         return 0;
     }
 
@@ -395,7 +395,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public java.lang.Object getDamageSources() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSources getDamageSources() {
         return null;
     }
 
@@ -403,7 +403,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public java.lang.Object getDestructionType(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.world.explosion.Explosion.DestructionType getDestructionType(murat.simv2.simulation.mirror.net.minecraft.world.GameRules.Key p0) {
         return null;
     }
 
@@ -415,7 +415,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public java.lang.Object getDimension() {
+    public murat.simv2.simulation.mirror.net.minecraft.world.dimension.DimensionType getDimension() {
         return null;
     }
 
@@ -435,11 +435,11 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return 0;
     }
 
-    public java.lang.Object getEnabledFeatures() {
+    public murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet getEnabledFeatures() {
         return null;
     }
 
-    public java.lang.Object getEnderDragonFight() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.boss.dragon.EnderDragonFight getEnderDragonFight() {
         return null;
     }
 
@@ -451,11 +451,11 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public java.util.List getEntitiesByType(java.lang.Object p0, java.util.function.Predicate p1) {
+    public java.util.List getEntitiesByType(murat.simv2.simulation.mirror.net.minecraft.util.TypeFilter p0, java.util.function.Predicate p1) {
         return null;
     }
 
-    public java.util.List getEntitiesByType(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p1, java.util.function.Predicate p2) {
+    public java.util.List getEntitiesByType(murat.simv2.simulation.mirror.net.minecraft.util.TypeFilter p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p1, java.util.function.Predicate p2) {
         return null;
     }
 
@@ -467,7 +467,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public java.lang.Object getEntityLookup() {
+    public murat.simv2.simulation.mirror.net.minecraft.world.entity.EntityLookup getEntityLookup() {
         return null;
     }
 
@@ -483,7 +483,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public java.lang.Object getFluidTickScheduler() {
+    public murat.simv2.simulation.mirror.net.minecraft.world.tick.QueryableTickScheduler getFluidTickScheduler() {
         return null;
     }
 
@@ -491,7 +491,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public java.lang.Object getFuelRegistry() {
+    public murat.simv2.simulation.mirror.net.minecraft.item.FuelRegistry getFuelRegistry() {
         return null;
     }
 
@@ -507,12 +507,8 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return 0;
     }
 
-    public java.lang.Object getLevelProperties() {
+    public murat.simv2.simulation.mirror.net.minecraft.world.WorldProperties getLevelProperties() {
         return null;
-    }
-
-    public int getLightLevel(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
-        return 0;
     }
 
     public int getLightLevel(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
@@ -523,7 +519,11 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return 0;
     }
 
-    public java.lang.Object getLightingProvider() {
+    public int getLightLevel(murat.simv2.simulation.mirror.net.minecraft.world.LightType p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
+        return 0;
+    }
+
+    public murat.simv2.simulation.mirror.net.minecraft.world.chunk.light.LightingProvider getLightingProvider() {
         return null;
     }
 
@@ -535,7 +535,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public java.lang.Object getLocalDifficulty(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.world.LocalDifficulty getLocalDifficulty(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
         return null;
     }
 
@@ -551,7 +551,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return 0L;
     }
 
-    public java.lang.Object getMapState(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.item.map.MapState getMapState(murat.simv2.simulation.mirror.net.minecraft.component.type.MapIdComponent p0) {
         return null;
     }
 
@@ -583,11 +583,11 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public java.lang.Object getPathNodeTypeCache() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.pathing.PathNodeTypeCache getPathNodeTypeCache() {
         return null;
     }
 
-    public java.lang.Object getPersistentStateManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.world.PersistentStateManager getPersistentStateManager() {
         return null;
     }
 
@@ -603,10 +603,6 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public java.util.List getPlayers(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p2) {
-        return null;
-    }
-
     public java.util.List getPlayers(java.util.function.Predicate p0) {
         return null;
     }
@@ -615,19 +611,23 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public java.lang.Object getPointOfInterestStorage() {
+    public java.util.List getPlayers(murat.simv2.simulation.mirror.net.minecraft.entity.ai.TargetPredicate p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p2) {
         return null;
     }
 
-    public java.lang.Object getPortalForcer() {
+    public murat.simv2.simulation.mirror.net.minecraft.world.poi.PointOfInterestStorage getPointOfInterestStorage() {
         return null;
     }
 
-    public java.lang.Object getRaidAt(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.world.dimension.PortalForcer getPortalForcer() {
         return null;
     }
 
-    public java.lang.Object getRaidManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.village.raid.Raid getRaidAt(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
+        return null;
+    }
+
+    public murat.simv2.simulation.mirror.net.minecraft.village.raid.RaidManager getRaidManager() {
         return null;
     }
 
@@ -643,7 +643,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public java.lang.Object getRandomSequences() {
+    public murat.simv2.simulation.mirror.net.minecraft.util.math.random.RandomSequencesState getRandomSequences() {
         return null;
     }
 
@@ -659,7 +659,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return 0;
     }
 
-    public java.lang.Object getRecipeManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.recipe.RecipeManager getRecipeManager() {
         return null;
     }
 
@@ -667,11 +667,11 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public java.lang.Object getRegistryManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.registry.DynamicRegistryManager getRegistryManager() {
         return null;
     }
 
-    public java.lang.Object getScoreboard() {
+    public murat.simv2.simulation.mirror.net.minecraft.scoreboard.Scoreboard getScoreboard() {
         return null;
     }
 
@@ -687,7 +687,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return 0L;
     }
 
-    public java.lang.Object getServer() {
+    public murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer getServer() {
         return null;
     }
 
@@ -719,15 +719,15 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return 0;
     }
 
-    public java.lang.Object getStructureAccessor() {
+    public murat.simv2.simulation.mirror.net.minecraft.world.gen.StructureAccessor getStructureAccessor() {
         return null;
     }
 
-    public java.lang.Object getStructureTemplateManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.structure.StructureTemplateManager getStructureTemplateManager() {
         return null;
     }
 
-    public java.util.List getTargets(java.lang.Class p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p2, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p3) {
+    public java.util.List getTargets(java.lang.Class p0, murat.simv2.simulation.mirror.net.minecraft.entity.ai.TargetPredicate p1, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p2, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p3) {
         return null;
     }
 
@@ -735,7 +735,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return 0.0F;
     }
 
-    public java.lang.Object getTickManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.world.tick.TickManager getTickManager() {
         return null;
     }
 
@@ -755,7 +755,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos getTopPosition(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos getTopPosition(murat.simv2.simulation.mirror.net.minecraft.world.Heightmap.Type p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
         return null;
     }
 
@@ -767,11 +767,11 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return 0;
     }
 
-    public int getTopY(java.lang.Object p0, int p1, int p2) {
+    public int getTopY(murat.simv2.simulation.mirror.net.minecraft.world.Heightmap.Type p0, int p1, int p2) {
         return 0;
     }
 
-    public int getTopY(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
+    public int getTopY(murat.simv2.simulation.mirror.net.minecraft.world.Heightmap.Type p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
         return 0;
     }
 
@@ -779,11 +779,11 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return null;
     }
 
-    public java.lang.Object getWorldChunk(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.world.chunk.WorldChunk getWorldChunk(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
         return null;
     }
 
-    public void handleInteraction(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p1, java.lang.Object p2) {
+    public void handleInteraction(murat.simv2.simulation.mirror.net.minecraft.entity.EntityInteraction p0, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p1, murat.simv2.simulation.mirror.net.minecraft.entity.InteractionObserver p2) {
     }
 
     public boolean hasRaidAt(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0) {
@@ -794,7 +794,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return false;
     }
 
-    public java.lang.Object increaseAndGetMapId() {
+    public murat.simv2.simulation.mirror.net.minecraft.component.type.MapIdComponent increaseAndGetMapId() {
         return null;
     }
 
@@ -1042,25 +1042,25 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
     public void playSound(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent p2, murat.simv2.simulation.mirror.net.minecraft.sound.SoundCategory p3, float p4, float p5) {
     }
 
-    public boolean processBlockEvent(java.lang.Object p0) {
+    public boolean processBlockEvent(murat.simv2.simulation.mirror.net.minecraft.server.world.BlockEvent p0) {
         return false;
     }
 
     public void processSyncedBlockEvents() {
     }
 
-    public void putMapState(java.lang.Object p0, java.lang.Object p1) {
+    public void putMapState(murat.simv2.simulation.mirror.net.minecraft.component.type.MapIdComponent p0, murat.simv2.simulation.mirror.net.minecraft.item.map.MapState p1) {
     }
 
     public murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult raycastBlock(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape p3, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p4) {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult raycast(java.lang.Object p0) {
+    public static java.lang.Object raycast(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1, java.lang.Object p2, java.util.function.BiFunction p3, java.util.function.Function p4) {
         return null;
     }
 
-    public static java.lang.Object raycast(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1, java.lang.Object p2, java.util.function.BiFunction p3, java.util.function.Function p4) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult raycast(murat.simv2.simulation.mirror.net.minecraft.world.BlockStateRaycastContext p0) {
         return null;
     }
 
@@ -1090,7 +1090,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
     public void savePersistentState(boolean p0) {
     }
 
-    public void save(java.lang.Object p0, boolean p1, boolean p2) {
+    public void save(murat.simv2.simulation.mirror.net.minecraft.util.ProgressListener p0, boolean p1, boolean p2) {
     }
 
     public void scheduleBlockRerenderIfNeeded(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2) {
@@ -1099,13 +1099,13 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
     public void scheduleBlockTick(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.Block p1, int p2) {
     }
 
-    public void scheduleBlockTick(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.Block p1, int p2, java.lang.Object p3) {
+    public void scheduleBlockTick(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.Block p1, int p2, murat.simv2.simulation.mirror.net.minecraft.world.tick.TickPriority p3) {
     }
 
     public void scheduleFluidTick(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.fluid.Fluid p1, int p2) {
     }
 
-    public void scheduleFluidTick(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.fluid.Fluid p1, int p2, java.lang.Object p3) {
+    public void scheduleFluidTick(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.fluid.Fluid p1, int p2, murat.simv2.simulation.mirror.net.minecraft.world.tick.TickPriority p3) {
     }
 
     public int sectionCoordToIndex(int p0) {
@@ -1122,13 +1122,13 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
     public void sendEntityStatus(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, byte p1) {
     }
 
-    public void sendPacket(java.lang.Object p0) {
+    public void sendPacket(murat.simv2.simulation.mirror.net.minecraft.network.packet.Packet p0) {
     }
 
     public void sendSleepingStatus() {
     }
 
-    public boolean sendToPlayerIfNearby(murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity p0, boolean p1, double p2, double p3, double p4, java.lang.Object p5) {
+    public boolean sendToPlayerIfNearby(murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity p0, boolean p1, double p2, double p3, double p4, murat.simv2.simulation.mirror.net.minecraft.network.packet.Packet p5) {
         return false;
     }
 
@@ -1154,7 +1154,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
     public void setCurrentlyGeneratingStructureName(java.util.function.Supplier p0) {
     }
 
-    public void setEnderDragonFight(java.lang.Object p0) {
+    public void setEnderDragonFight(murat.simv2.simulation.mirror.net.minecraft.entity.boss.dragon.EnderDragonFight p0) {
     }
 
     public void setLightningTicksLeft(int p0) {
@@ -1217,15 +1217,15 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return false;
     }
 
-    public int spawnParticles(java.lang.Object p0, boolean p1, boolean p2, double p3, double p4, double p5, int p6, double p7, double p8, double p9, double p10) {
+    public int spawnParticles(murat.simv2.simulation.mirror.net.minecraft.particle.ParticleEffect p0, boolean p1, boolean p2, double p3, double p4, double p5, int p6, double p7, double p8, double p9, double p10) {
         return 0;
     }
 
-    public int spawnParticles(java.lang.Object p0, double p1, double p2, double p3, int p4, double p5, double p6, double p7, double p8) {
+    public int spawnParticles(murat.simv2.simulation.mirror.net.minecraft.particle.ParticleEffect p0, double p1, double p2, double p3, int p4, double p5, double p6, double p7, double p8) {
         return 0;
     }
 
-    public boolean spawnParticles(murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity p0, java.lang.Object p1, boolean p2, boolean p3, double p4, double p5, double p6, int p7, double p8, double p9, double p10, double p11) {
+    public boolean spawnParticles(murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.particle.ParticleEffect p1, boolean p2, boolean p3, double p4, double p5, double p6, int p7, double p8, double p9, double p10, double p11) {
         return false;
     }
 
@@ -1252,7 +1252,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
     public void tickBlock(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.Block p1) {
     }
 
-    public void tickChunk(java.lang.Object p0, int p1) {
+    public void tickChunk(murat.simv2.simulation.mirror.net.minecraft.world.chunk.WorldChunk p0, int p1) {
     }
 
     public void tickEntity(java.util.function.Consumer p0, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p1) {
@@ -1273,7 +1273,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
     public void tickSpawners(boolean p0, boolean p1) {
     }
 
-    public void tickThunder(java.lang.Object p0) {
+    public void tickThunder(murat.simv2.simulation.mirror.net.minecraft.world.chunk.WorldChunk p0) {
     }
 
     public void tickTime() {
@@ -1297,7 +1297,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
         return false;
     }
 
-    public void unloadEntities(java.lang.Object p0) {
+    public void unloadEntities(murat.simv2.simulation.mirror.net.minecraft.world.chunk.WorldChunk p0) {
     }
 
     public void updateComparators(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.Block p1) {
@@ -1306,19 +1306,19 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
     public void updateListeners(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2, int p3) {
     }
 
-    public void updateNeighborsAlways(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.Block p1, java.lang.Object p2) {
+    public void updateNeighborsAlways(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.Block p1, murat.simv2.simulation.mirror.net.minecraft.world.block.WireOrientation p2) {
     }
 
-    public void updateNeighborsExcept(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.Block p1, murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p2, java.lang.Object p3) {
+    public void updateNeighborsExcept(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.Block p1, murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p2, murat.simv2.simulation.mirror.net.minecraft.world.block.WireOrientation p3) {
     }
 
     public void updateNeighbors(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.Block p1) {
     }
 
-    public void updateNeighbor(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.Block p2, java.lang.Object p3, boolean p4) {
+    public void updateNeighbor(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.Block p2, murat.simv2.simulation.mirror.net.minecraft.world.block.WireOrientation p3, boolean p4) {
     }
 
-    public void updateNeighbor(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.Block p1, java.lang.Object p2) {
+    public void updateNeighbor(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.Block p1, murat.simv2.simulation.mirror.net.minecraft.world.block.WireOrientation p2) {
     }
 
     public void updateSleepingPlayers() {
@@ -1330,7 +1330,7 @@ public class ServerWorld extends murat.simv2.simulation.mirror.net.minecraft.wor
     public ServerWorld() {
     }
 
-    public static class ServerEntityHandler {
+    public static class ServerEntityHandler extends java.lang.Object {
         public murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld field_26936;
 
         public ServerEntityHandler(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0) {

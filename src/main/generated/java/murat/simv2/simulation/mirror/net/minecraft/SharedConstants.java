@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft;
 
 // Generated mirror stub for simulation closure.
-public class SharedConstants {
+public class SharedConstants extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static int CHUNK_WIDTH;
@@ -119,7 +119,7 @@ public class SharedConstants {
     public static boolean field_52311;
     public static boolean field_52319;
     public static boolean field_58199;
-    public static java.lang.Object gameVersion;
+    public static murat.simv2.simulation.mirror.net.minecraft.GameVersion gameVersion;
     public static boolean isDevelopment;
     public static boolean useChoiceTypeRegistrations;
 
@@ -129,7 +129,7 @@ public class SharedConstants {
     public static void createGameVersion() {
     }
 
-    public static java.lang.Object getGameVersion() {
+    public static murat.simv2.simulation.mirror.net.minecraft.GameVersion getGameVersion() {
         return null;
     }
 
@@ -141,7 +141,7 @@ public class SharedConstants {
         return false;
     }
 
-    public static void setGameVersion(java.lang.Object p0) {
+    public static void setGameVersion(murat.simv2.simulation.mirror.net.minecraft.GameVersion p0) {
     }
 
     // END GENERATED MIRROR NESTED STUBS

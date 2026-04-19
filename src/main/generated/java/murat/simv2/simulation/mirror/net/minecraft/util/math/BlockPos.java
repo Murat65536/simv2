@@ -9,11 +9,11 @@ public class BlockPos extends murat.simv2.simulation.mirror.net.minecraft.util.m
     public static long BITS_Z;
     public static int BIT_SHIFT_X;
     public static int BIT_SHIFT_Z;
-    public static com.mojang.serialization.Codec CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos> CODEC;
     public static org.slf4j.Logger LOGGER;
     public static int MAX_XZ;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos ORIGIN;
-    public static java.lang.Object PACKET_CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<io.netty.buffer.ByteBuf, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos> PACKET_CODEC;
     public static int SIZE_BITS_XZ;
     public static int SIZE_BITS_Y;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3i ZERO;
@@ -109,7 +109,7 @@ public class BlockPos extends murat.simv2.simulation.mirror.net.minecraft.util.m
         return 0.0D;
     }
 
-    public double getSquaredDistance(java.lang.Object p0) {
+    public double getSquaredDistance(murat.simv2.simulation.mirror.net.minecraft.util.math.Position p0) {
         return 0.0D;
     }
 
@@ -133,7 +133,7 @@ public class BlockPos extends murat.simv2.simulation.mirror.net.minecraft.util.m
         return 0;
     }
 
-    public boolean isWithinDistance(java.lang.Object p0, double p1) {
+    public boolean isWithinDistance(murat.simv2.simulation.mirror.net.minecraft.util.math.Position p0, double p1) {
         return false;
     }
 
@@ -201,7 +201,7 @@ public class BlockPos extends murat.simv2.simulation.mirror.net.minecraft.util.m
         return null;
     }
 
-    public static murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos ofFloored(java.lang.Object p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos ofFloored(murat.simv2.simulation.mirror.net.minecraft.util.math.Position p0) {
         return null;
     }
 
@@ -225,7 +225,7 @@ public class BlockPos extends murat.simv2.simulation.mirror.net.minecraft.util.m
         return 0L;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos rotate(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos rotate(murat.simv2.simulation.mirror.net.minecraft.util.BlockRotation p0) {
         return null;
     }
 
@@ -261,7 +261,7 @@ public class BlockPos extends murat.simv2.simulation.mirror.net.minecraft.util.m
         return null;
     }
 
-    public static java.util.stream.Stream stream(java.lang.Object p0) {
+    public static java.util.stream.Stream stream(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockBox p0) {
         return null;
     }
 
@@ -359,10 +359,10 @@ public class BlockPos extends murat.simv2.simulation.mirror.net.minecraft.util.m
     }
 
     public static class Mutable extends murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos {
-        public static com.mojang.serialization.Codec CODEC;
+        public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos> CODEC;
         public static int MAX_XZ;
         public static murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos ORIGIN;
-        public static java.lang.Object PACKET_CODEC;
+        public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<io.netty.buffer.ByteBuf, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos> PACKET_CODEC;
         public static int SIZE_BITS_XZ;
         public static int SIZE_BITS_Y;
         public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3i ZERO;
@@ -464,7 +464,7 @@ public class BlockPos extends murat.simv2.simulation.mirror.net.minecraft.util.m
             return 0.0D;
         }
 
-        public double getSquaredDistance(java.lang.Object p0) {
+        public double getSquaredDistance(murat.simv2.simulation.mirror.net.minecraft.util.math.Position p0) {
             return 0.0D;
         }
 
@@ -488,7 +488,7 @@ public class BlockPos extends murat.simv2.simulation.mirror.net.minecraft.util.m
             return 0;
         }
 
-        public boolean isWithinDistance(java.lang.Object p0, double p1) {
+        public boolean isWithinDistance(murat.simv2.simulation.mirror.net.minecraft.util.math.Position p0, double p1) {
             return false;
         }
 
@@ -572,7 +572,7 @@ public class BlockPos extends murat.simv2.simulation.mirror.net.minecraft.util.m
             return null;
         }
 
-        public static murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos ofFloored(java.lang.Object p0) {
+        public static murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos ofFloored(murat.simv2.simulation.mirror.net.minecraft.util.math.Position p0) {
             return null;
         }
 
@@ -596,7 +596,7 @@ public class BlockPos extends murat.simv2.simulation.mirror.net.minecraft.util.m
             return 0L;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos rotate(java.lang.Object p0) {
+        public murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos rotate(murat.simv2.simulation.mirror.net.minecraft.util.BlockRotation p0) {
             return null;
         }
 
@@ -620,11 +620,11 @@ public class BlockPos extends murat.simv2.simulation.mirror.net.minecraft.util.m
             return null;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos.Mutable set(java.lang.Object p0, int p1, int p2, int p3) {
+        public murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos.Mutable set(long p0) {
             return null;
         }
 
-        public murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos.Mutable set(long p0) {
+        public murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos.Mutable set(murat.simv2.simulation.mirror.net.minecraft.util.math.AxisCycleDirection p0, int p1, int p2, int p3) {
             return null;
         }
 
@@ -664,7 +664,7 @@ public class BlockPos extends murat.simv2.simulation.mirror.net.minecraft.util.m
             return null;
         }
 
-        public static java.util.stream.Stream stream(java.lang.Object p0) {
+        public static java.util.stream.Stream stream(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockBox p0) {
             return null;
         }
 

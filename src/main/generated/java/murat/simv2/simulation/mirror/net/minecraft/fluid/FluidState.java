@@ -1,13 +1,13 @@
 package murat.simv2.simulation.mirror.net.minecraft.fluid;
 
 // Generated mirror stub for simulation closure.
-public class FluidState {
+public class FluidState extends murat.simv2.simulation.mirror.net.minecraft.state.State {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.Codec CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState> CODEC;
     public static java.lang.String NAME;
     public static java.lang.String PROPERTIES;
-    public com.mojang.serialization.MapCodec codec;
+    public com.mojang.serialization.MapCodec<java.lang.Object> codec;
     public static int field_31727;
     public static int field_31728;
     public java.lang.Object owner;
@@ -23,7 +23,7 @@ public class FluidState {
         return false;
     }
 
-    public boolean contains(java.lang.Object p0) {
+    public boolean contains(murat.simv2.simulation.mirror.net.minecraft.state.property.Property p0) {
         return false;
     }
 
@@ -34,7 +34,7 @@ public class FluidState {
     public void createWithMap(java.util.Map p0) {
     }
 
-    public java.lang.Object cycle(java.lang.Object p0) {
+    public java.lang.Object cycle(murat.simv2.simulation.mirror.net.minecraft.state.property.Property p0) {
         return null;
     }
 
@@ -78,11 +78,11 @@ public class FluidState {
         return null;
     }
 
-    public java.util.Optional getOrEmpty(java.lang.Object p0) {
+    public java.util.Optional getOrEmpty(murat.simv2.simulation.mirror.net.minecraft.state.property.Property p0) {
         return null;
     }
 
-    public java.lang.Object getParticle() {
+    public murat.simv2.simulation.mirror.net.minecraft.particle.ParticleEffect getParticle() {
         return null;
     }
 
@@ -102,11 +102,11 @@ public class FluidState {
         return null;
     }
 
-    public java.lang.Comparable get(java.lang.Object p0) {
+    public java.lang.Comparable get(murat.simv2.simulation.mirror.net.minecraft.state.property.Property p0) {
         return null;
     }
 
-    public java.lang.Comparable get(java.lang.Object p0, java.lang.Comparable p1) {
+    public java.lang.Comparable get(murat.simv2.simulation.mirror.net.minecraft.state.property.Property p0, java.lang.Comparable p1) {
         return null;
     }
 
@@ -126,7 +126,7 @@ public class FluidState {
         return false;
     }
 
-    public boolean isIn(java.lang.Object p0) {
+    public boolean isIn(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntryList p0) {
         return false;
     }
 
@@ -162,11 +162,11 @@ public class FluidState {
         return null;
     }
 
-    public java.lang.Object withIfExists(java.lang.Object p0, java.lang.Comparable p1) {
+    public java.lang.Object withIfExists(murat.simv2.simulation.mirror.net.minecraft.state.property.Property p0, java.lang.Comparable p1) {
         return null;
     }
 
-    public java.lang.Object with(java.lang.Object p0, java.lang.Comparable p1) {
+    public java.lang.Object with(murat.simv2.simulation.mirror.net.minecraft.state.property.Property p0, java.lang.Comparable p1) {
         return null;
     }
 

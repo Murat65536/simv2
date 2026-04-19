@@ -13,8 +13,8 @@ public class ToolMaterial {
     public float attackDamageBonus;
     public int durability;
     public int enchantmentValue;
-    public murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey incorrectBlocksForDrops;
-    public murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey repairItems;
+    public murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey<murat.simv2.simulation.mirror.net.minecraft.block.Block> incorrectBlocksForDrops;
+    public murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey<murat.simv2.simulation.mirror.net.minecraft.item.Item> repairItems;
     public float speed;
 
     public ToolMaterial(murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey p0, int p1, float p2, float p3, int p4, murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey p5) {
@@ -36,11 +36,11 @@ public class ToolMaterial {
         return 0.0F;
     }
 
-    public java.lang.Object createSwordAttributeModifiers(float p0, float p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.component.type.AttributeModifiersComponent createSwordAttributeModifiers(float p0, float p1) {
         return null;
     }
 
-    public java.lang.Object createToolAttributeModifiers(float p0, float p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.component.type.AttributeModifiersComponent createToolAttributeModifiers(float p0, float p1) {
         return null;
     }
 

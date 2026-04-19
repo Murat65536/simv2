@@ -1,18 +1,18 @@
 package murat.simv2.simulation.mirror.net.minecraft.fluid;
 
 // Generated mirror stub for simulation closure.
-public class Fluid {
+public class Fluid extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static java.lang.Object STATE_IDS;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.collection.IdList<murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState> STATE_IDS;
     public murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState defaultState;
-    public murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry.Reference registryEntry;
-    public java.lang.Object stateManager;
+    public murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry.Reference<murat.simv2.simulation.mirror.net.minecraft.fluid.Fluid> registryEntry;
+    public murat.simv2.simulation.mirror.net.minecraft.state.StateManager<murat.simv2.simulation.mirror.net.minecraft.fluid.Fluid, murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState> stateManager;
 
     public Fluid() {
     }
 
-    public void appendProperties(java.lang.Object p0) {
+    public void appendProperties(murat.simv2.simulation.mirror.net.minecraft.state.StateManager.Builder p0) {
     }
 
     public boolean canBeReplacedWith(murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.fluid.Fluid p3, murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p4) {
@@ -51,7 +51,7 @@ public class Fluid {
         return 0;
     }
 
-    public java.lang.Object getParticle() {
+    public murat.simv2.simulation.mirror.net.minecraft.particle.ParticleEffect getParticle() {
         return null;
     }
 
@@ -63,11 +63,11 @@ public class Fluid {
         return null;
     }
 
-    public java.lang.Object getStateManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.state.StateManager getStateManager() {
         return null;
     }
 
-    public int getTickRate(java.lang.Object p0) {
+    public int getTickRate(murat.simv2.simulation.mirror.net.minecraft.world.WorldView p0) {
         return 0;
     }
 

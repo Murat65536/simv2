@@ -1,11 +1,11 @@
 package murat.simv2.simulation.mirror.net.minecraft.world;
 
 // Generated mirror stub for simulation closure.
-public class Difficulty {
+public class Difficulty implements murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static java.util.function.IntFunction BY_ID;
-    public static java.lang.Object CODEC;
+    public static java.util.function.IntFunction<murat.simv2.simulation.mirror.net.minecraft.world.Difficulty> BY_ID;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec<murat.simv2.simulation.mirror.net.minecraft.world.Difficulty> CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.world.Difficulty EASY;
     public static murat.simv2.simulation.mirror.net.minecraft.world.Difficulty HARD;
     public static murat.simv2.simulation.mirror.net.minecraft.world.Difficulty NORMAL;
@@ -33,15 +33,15 @@ public class Difficulty {
         return null;
     }
 
-    public static java.lang.Object createCodec(java.util.function.Supplier p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0) {
         return null;
     }
 
-    public static java.lang.Object createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
         return null;
     }
 
-    public static java.util.function.Function createMapper(java.lang.Object[] p0, java.util.function.Function p1) {
+    public static java.util.function.Function createMapper(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0, java.util.function.Function p1) {
         return null;
     }
 
@@ -65,7 +65,7 @@ public class Difficulty {
         return 0;
     }
 
-    public static com.mojang.serialization.Keyable toKeyable(java.lang.Object[] p0) {
+    public static com.mojang.serialization.Keyable toKeyable(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0) {
         return null;
     }
 

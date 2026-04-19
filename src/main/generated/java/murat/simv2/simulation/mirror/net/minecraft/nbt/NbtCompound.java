@@ -1,14 +1,14 @@
 package murat.simv2.simulation.mirror.net.minecraft.nbt;
 
 // Generated mirror stub for simulation closure.
-public class NbtCompound {
+public class NbtCompound extends java.lang.Object implements murat.simv2.simulation.mirror.net.minecraft.nbt.NbtElement {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.Codec CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound> CODEC;
     public static org.slf4j.Logger LOGGER;
     public static int SIZE;
-    public static java.lang.Object TYPE;
-    public java.util.Map entries;
+    public static murat.simv2.simulation.mirror.net.minecraft.nbt.NbtType<murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound> TYPE;
+    public java.util.Map<java.lang.String, murat.simv2.simulation.mirror.net.minecraft.nbt.NbtElement> entries;
     public static int field_41719;
 
     public NbtCompound() {
@@ -17,7 +17,10 @@ public class NbtCompound {
     public NbtCompound(java.util.Map p0) {
     }
 
-    public void accept(java.lang.Object p0) {
+    public void accept(murat.simv2.simulation.mirror.net.minecraft.nbt.scanner.NbtScanner p0) {
+    }
+
+    public void accept(murat.simv2.simulation.mirror.net.minecraft.nbt.visitor.NbtElementVisitor p0) {
     }
 
     public java.util.Optional asBoolean() {
@@ -102,7 +105,7 @@ public class NbtCompound {
         return null;
     }
 
-    public java.lang.Object doAccept(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.nbt.scanner.NbtScanner.Result doAccept(murat.simv2.simulation.mirror.net.minecraft.nbt.scanner.NbtScanner p0) {
         return null;
     }
 
@@ -177,7 +180,7 @@ public class NbtCompound {
         return null;
     }
 
-    public java.lang.Object getListOrEmpty(java.lang.String p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.nbt.NbtList getListOrEmpty(java.lang.String p0) {
         return null;
     }
 
@@ -197,7 +200,7 @@ public class NbtCompound {
         return 0L;
     }
 
-    public java.lang.Object getNbtType() {
+    public murat.simv2.simulation.mirror.net.minecraft.nbt.NbtType getNbtType() {
         return null;
     }
 
@@ -233,7 +236,7 @@ public class NbtCompound {
         return (byte) 0;
     }
 
-    public java.lang.Object get(java.lang.String p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.nbt.NbtElement get(java.lang.String p0) {
         return null;
     }
 
@@ -298,11 +301,11 @@ public class NbtCompound {
     public void put(java.lang.String p0, com.mojang.serialization.Codec p1, java.lang.Object p2) {
     }
 
-    public java.lang.Object put(java.lang.String p0, java.lang.Object p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.nbt.NbtElement put(java.lang.String p0, murat.simv2.simulation.mirror.net.minecraft.nbt.NbtElement p1) {
         return null;
     }
 
-    public static java.lang.Object read(java.lang.Object p0, java.lang.String p1, java.io.DataInput p2, java.lang.Object p3) {
+    public static murat.simv2.simulation.mirror.net.minecraft.nbt.NbtElement read(murat.simv2.simulation.mirror.net.minecraft.nbt.NbtType p0, java.lang.String p1, java.io.DataInput p2, murat.simv2.simulation.mirror.net.minecraft.nbt.NbtSizeTracker p3) {
         return null;
     }
 
@@ -324,7 +327,7 @@ public class NbtCompound {
     public void write(java.io.DataOutput p0) {
     }
 
-    public static void write(java.lang.String p0, java.lang.Object p1, java.io.DataOutput p2) {
+    public static void write(java.lang.String p0, murat.simv2.simulation.mirror.net.minecraft.nbt.NbtElement p1, java.io.DataOutput p2) {
     }
 
     // END GENERATED MIRROR NESTED STUBS

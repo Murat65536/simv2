@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.collection;
 
 // Generated mirror stub for simulation closure.
-public class Int2ObjectBiMap<K> {
+public class Int2ObjectBiMap<K> extends java.lang.Object implements murat.simv2.simulation.mirror.net.minecraft.util.collection.IndexedIterable {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static int ABSENT;

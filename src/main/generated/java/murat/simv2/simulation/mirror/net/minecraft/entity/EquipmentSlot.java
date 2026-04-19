@@ -1,22 +1,22 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity;
 
 // Generated mirror stub for simulation closure.
-public class EquipmentSlot {
+public class EquipmentSlot implements murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot BODY;
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot CHEST;
-    public static java.lang.Object CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec<murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot> CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot FEET;
-    public static java.util.function.IntFunction FROM_INDEX;
+    public static java.util.function.IntFunction<murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot> FROM_INDEX;
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot HEAD;
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot LEGS;
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot MAINHAND;
     public static int NO_MAX_COUNT;
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot OFFHAND;
-    public static java.lang.Object PACKET_CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<io.netty.buffer.ByteBuf, murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot> PACKET_CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot SADDLE;
-    public static java.util.List VALUES;
+    public static java.util.List<murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot> VALUES;
     public int entityId;
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot[] field_6176;
     public int index;
@@ -42,15 +42,15 @@ public class EquipmentSlot {
         return null;
     }
 
-    public static java.lang.Object createCodec(java.util.function.Supplier p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0) {
         return null;
     }
 
-    public static java.lang.Object createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
         return null;
     }
 
-    public static java.util.function.Function createMapper(java.lang.Object[] p0, java.util.function.Function p1) {
+    public static java.util.function.Function createMapper(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0, java.util.function.Function p1) {
         return null;
     }
 
@@ -94,7 +94,7 @@ public class EquipmentSlot {
         return null;
     }
 
-    public static com.mojang.serialization.Keyable toKeyable(java.lang.Object[] p0) {
+    public static com.mojang.serialization.Keyable toKeyable(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0) {
         return null;
     }
 

@@ -1,18 +1,18 @@
 package murat.simv2.simulation.mirror.net.minecraft.client.network;
 
 // Generated mirror stub for simulation closure.
-public class PlayerListEntry {
+public class PlayerListEntry extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public murat.simv2.simulation.mirror.net.minecraft.text.Text displayName;
     public murat.simv2.simulation.mirror.net.minecraft.world.GameMode gameMode;
     public int latency;
     public int listOrder;
-    public java.lang.Object messageVerifier;
+    public murat.simv2.simulation.mirror.net.minecraft.network.message.MessageVerifier messageVerifier;
     public com.mojang.authlib.GameProfile profile;
-    public java.lang.Object session;
+    public murat.simv2.simulation.mirror.net.minecraft.network.encryption.PublicPlayerSession session;
     public boolean showHat;
-    public java.util.function.Supplier texturesSupplier;
+    public java.util.function.Supplier<murat.simv2.simulation.mirror.net.minecraft.client.util.SkinTextures> texturesSupplier;
 
     public PlayerListEntry(com.mojang.authlib.GameProfile p0, boolean p1) {
     }
@@ -25,7 +25,7 @@ public class PlayerListEntry {
         return null;
     }
 
-    public static java.lang.Object getInitialVerifier(boolean p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.network.message.MessageVerifier getInitialVerifier(boolean p0) {
         return null;
     }
 
@@ -37,7 +37,7 @@ public class PlayerListEntry {
         return 0;
     }
 
-    public java.lang.Object getMessageVerifier() {
+    public murat.simv2.simulation.mirror.net.minecraft.network.message.MessageVerifier getMessageVerifier() {
         return null;
     }
 
@@ -49,11 +49,11 @@ public class PlayerListEntry {
         return null;
     }
 
-    public java.lang.Object getSession() {
+    public murat.simv2.simulation.mirror.net.minecraft.network.encryption.PublicPlayerSession getSession() {
         return null;
     }
 
-    public java.lang.Object getSkinTextures() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.util.SkinTextures getSkinTextures() {
         return null;
     }
 
@@ -76,7 +76,7 @@ public class PlayerListEntry {
     public void setListOrder(int p0) {
     }
 
-    public void setSession(java.lang.Object p0) {
+    public void setSession(murat.simv2.simulation.mirror.net.minecraft.network.encryption.PublicPlayerSession p0) {
     }
 
     public void setShowHat(boolean p0) {

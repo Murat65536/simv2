@@ -12,7 +12,7 @@ public interface Profiler {
 
     public void endTick();
 
-    public void markSampleType(java.lang.Object p0);
+    public void markSampleType(murat.simv2.simulation.mirror.net.minecraft.util.profiler.SampleType p0);
 
     public void pop();
 
@@ -20,9 +20,9 @@ public interface Profiler {
 
     public void push(java.util.function.Supplier p0);
 
-    public java.lang.Object scoped(java.lang.String p0);
+    public murat.simv2.simulation.mirror.net.minecraft.util.profiler.ScopedProfiler scoped(java.lang.String p0);
 
-    public java.lang.Object scoped(java.util.function.Supplier p0);
+    public murat.simv2.simulation.mirror.net.minecraft.util.profiler.ScopedProfiler scoped(java.util.function.Supplier p0);
 
     public void setZoneColor(int p0);
 
@@ -44,7 +44,7 @@ public interface Profiler {
 
     public void visit(java.util.function.Supplier p0, int p1);
 
-    public static class UnionProfiler implements murat.simv2.simulation.mirror.net.minecraft.util.profiler.Profiler {
+    public static class UnionProfiler extends java.lang.Object implements murat.simv2.simulation.mirror.net.minecraft.util.profiler.Profiler {
         public murat.simv2.simulation.mirror.net.minecraft.util.profiler.Profiler first;
         public murat.simv2.simulation.mirror.net.minecraft.util.profiler.Profiler second;
 
@@ -60,7 +60,7 @@ public interface Profiler {
         public void endTick() {
         }
 
-        public void markSampleType(java.lang.Object p0) {
+        public void markSampleType(murat.simv2.simulation.mirror.net.minecraft.util.profiler.SampleType p0) {
         }
 
         public void pop() {
@@ -72,11 +72,11 @@ public interface Profiler {
         public void push(java.util.function.Supplier p0) {
         }
 
-        public java.lang.Object scoped(java.lang.String p0) {
+        public murat.simv2.simulation.mirror.net.minecraft.util.profiler.ScopedProfiler scoped(java.lang.String p0) {
             return null;
         }
 
-        public java.lang.Object scoped(java.util.function.Supplier p0) {
+        public murat.simv2.simulation.mirror.net.minecraft.util.profiler.ScopedProfiler scoped(java.util.function.Supplier p0) {
             return null;
         }
 

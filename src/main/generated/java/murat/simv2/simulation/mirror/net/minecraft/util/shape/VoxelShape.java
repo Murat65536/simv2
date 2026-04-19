@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.shape;
 
 // Generated mirror stub for simulation closure.
-public class VoxelShape {
+public class VoxelShape extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape[] shapeCache;
@@ -14,7 +14,7 @@ public class VoxelShape {
         return null;
     }
 
-    public double calculateMaxDistance(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p1, double p2) {
+    public double calculateMaxDistance(murat.simv2.simulation.mirror.net.minecraft.util.math.AxisCycleDirection p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p1, double p2) {
         return 0.0D;
     }
 

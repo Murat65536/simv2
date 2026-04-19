@@ -4,7 +4,7 @@ package murat.simv2.simulation.mirror.net.minecraft.block;
 public interface CaveVines {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static final java.lang.Object BERRIES = null;
+    public static final murat.simv2.simulation.mirror.net.minecraft.state.property.BooleanProperty BERRIES = null;
     public static final murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape SHAPE = null;
 
     public static java.util.function.ToIntFunction getLuminanceSupplier(int p0) {
@@ -15,7 +15,7 @@ public interface CaveVines {
         return false;
     }
 
-    public static java.lang.Object pickBerries(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, murat.simv2.simulation.mirror.net.minecraft.world.World p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.ActionResult pickBerries(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, murat.simv2.simulation.mirror.net.minecraft.world.World p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3) {
         return null;
     }
 

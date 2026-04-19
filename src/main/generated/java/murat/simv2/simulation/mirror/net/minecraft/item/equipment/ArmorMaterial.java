@@ -4,13 +4,13 @@ package murat.simv2.simulation.mirror.net.minecraft.item.equipment;
 public class ArmorMaterial {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey assetId;
-    public java.util.Map defense;
+    public murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey<java.lang.Object> assetId;
+    public java.util.Map<murat.simv2.simulation.mirror.net.minecraft.item.equipment.EquipmentType, java.lang.Integer> defense;
     public int durability;
     public int enchantmentValue;
-    public murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry equipSound;
+    public murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.sound.SoundEvent> equipSound;
     public float knockbackResistance;
-    public murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey repairIngredient;
+    public murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey<murat.simv2.simulation.mirror.net.minecraft.item.Item> repairIngredient;
     public float toughness;
 
     public ArmorMaterial(int p0, java.util.Map p1, int p2, murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p3, float p4, float p5, murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey p6, murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p7) {
@@ -20,7 +20,7 @@ public class ArmorMaterial {
         return null;
     }
 
-    public java.lang.Object createAttributeModifiers(murat.simv2.simulation.mirror.net.minecraft.item.equipment.EquipmentType p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.component.type.AttributeModifiersComponent createAttributeModifiers(murat.simv2.simulation.mirror.net.minecraft.item.equipment.EquipmentType p0) {
         return null;
     }
 

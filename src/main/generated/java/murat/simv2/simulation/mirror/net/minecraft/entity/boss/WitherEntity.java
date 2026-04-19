@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity.boss;
 
 // Generated mirror stub for simulation closure.
-public class WitherEntity {
+public class WitherEntity extends murat.simv2.simulation.mirror.net.minecraft.entity.mob.HostileEntity implements murat.simv2.simulation.mirror.net.minecraft.entity.ai.RangedAttackMob {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static java.lang.String ATTRIBUTES_NBT_KEY;
@@ -9,7 +9,7 @@ public class WitherEntity {
     public static float BASE_ENCHANTED_ARMOR_CHANCE;
     public static float BASE_ENCHANTED_MAIN_HAND_EQUIPMENT_CHANCE;
     public static float BASE_SPAWN_EQUIPMENT_CHANCE;
-    public static java.lang.Object CAN_ATTACK_PREDICATE;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.ai.TargetPredicate.EntityPredicate CAN_ATTACK_PREDICATE;
     public static int DEATH_TICKS;
     public static float DEFAULT_CAN_PICKUP_LOOT_CHANCE;
     public static float DEFAULT_FRICTION;
@@ -18,47 +18,47 @@ public class WitherEntity {
     public static float DEFAULT_PATHFINDING_FAVOR;
     public static int DEFAULT_PORTAL_COOLDOWN;
     public static int EQUIPMENT_SLOT_ID;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData FLAGS;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Byte> FLAGS;
     public static int FREEZING_DAMAGE_INTERVAL;
     public static int GLIDING_FLAG_INDEX;
     public static int GLOWING_FLAG;
     public static int GLOWING_FLAG_INDEX;
     public static double GRAVITY;
-    public static java.lang.Object HEAD_TARGET_PREDICATE;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.ai.TargetPredicate HEAD_TARGET_PREDICATE;
     public static java.lang.String ID_KEY;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData INVUL_TIMER;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData LIVING_FLAGS;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Integer> INVUL_TIMER;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Byte> LIVING_FLAGS;
     public static int MAX_COMMAND_TAGS;
     public static int MAX_RIDING_COOLDOWN;
     public static int MINIMUM_DROPPED_EXPERIENCE_PER_EQUIPMENT;
     public static float MIN_RISING_BUBBLE_COLUMN_SPEED;
-    public static java.util.function.Predicate NOT_WEARING_GAZE_DISGUISE_PREDICATE;
+    public static java.util.function.Predicate<murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity> NOT_WEARING_GAZE_DISGUISE_PREDICATE;
     public static int OFF_HAND_ACTIVE_FLAG;
     public static int ON_FIRE_FLAG_INDEX;
     public static int ON_SUMMONED_INVUL_TIMER;
     public static java.lang.String PASSENGERS_KEY;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData POSE;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose> POSE;
     public static murat.simv2.simulation.mirror.net.minecraft.util.Identifier RANDOM_SPAWN_BONUS_MODIFIER_ID;
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EntityDimensions SLEEPING_DIMENSIONS;
-    public static java.util.List TRACKED_ENTITY_IDS;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData TRACKED_ENTITY_ID_1;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData TRACKED_ENTITY_ID_2;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData TRACKED_ENTITY_ID_3;
+    public static java.util.List<murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Integer>> TRACKED_ENTITY_IDS;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Integer> TRACKED_ENTITY_ID_1;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Integer> TRACKED_ENTITY_ID_2;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Integer> TRACKED_ENTITY_ID_3;
     public static int USING_ITEM_FLAG;
     public static int USING_RIPTIDE_FLAG;
     public static java.lang.String UUID_KEY;
     public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack activeItemStack;
     public int age;
     public int ambientSoundChance;
-    public murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference attackingPlayer;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference<murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity> attackingPlayer;
     public int blockBreakingCooldown;
     public murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos blockPos;
     public float bodyYaw;
-    public java.lang.Object bossBar;
-    public java.lang.Object brain;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.boss.ServerBossBar bossBar;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.brain.Brain<?> brain;
     public int[] chargedSkullCooldowns;
     public murat.simv2.simulation.mirror.net.minecraft.util.math.ChunkPos chunkPos;
-    public java.util.Optional climbingPos;
+    public java.util.Optional<murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos> climbingPos;
     public boolean collidedSoftly;
     public murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker dataTracker;
     public boolean dead;
@@ -67,7 +67,7 @@ public class WitherEntity {
     public int despawnCounter;
     public murat.simv2.simulation.mirror.net.minecraft.entity.EntityDimensions dimensions;
     public float distanceTraveled;
-    public java.lang.Object elytraFlightController;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.mob.ElytraFlightController elytraFlightController;
     public murat.simv2.simulation.mirror.net.minecraft.entity.EntityEquipment equipment;
     public int experiencePoints;
     public double fallDistance;
@@ -86,11 +86,11 @@ public class WitherEntity {
     public static int field_55952;
     public static float field_56256;
     public boolean firstUpdate;
-    public it.unimi.dsi.fastutil.objects.Object2DoubleMap fluidHeight;
+    public it.unimi.dsi.fastutil.objects.Object2DoubleMap<murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey<murat.simv2.simulation.mirror.net.minecraft.fluid.Fluid>> fluidHeight;
     public boolean forceUpdateSupportingBlockPos;
     public float forwardSpeed;
     public int glidingTicks;
-    public java.lang.Object goalSelector;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.goal.GoalSelector goalSelector;
     public boolean groundCollision;
     public float handSwingProgress;
     public int handSwingTicks;
@@ -103,7 +103,7 @@ public class WitherEntity {
     public murat.simv2.simulation.mirror.net.minecraft.entity.PositionInterpolator interpolator;
     public boolean intersectionChecked;
     public int itemUseTimeLeft;
-    public java.lang.Object jumpControl;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.control.JumpControl jumpControl;
     public boolean jumping;
     public int jumpingCooldown;
     public int lastAttackedTicks;
@@ -121,16 +121,16 @@ public class WitherEntity {
     public double lastY;
     public float lastYaw;
     public double lastZ;
-    public java.lang.Object limbAnimator;
-    public java.lang.Object lookControl;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.LimbAnimator limbAnimator;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.control.LookControl lookControl;
     public int maxHurtTime;
-    public java.lang.Object moveControl;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.control.MoveControl moveControl;
     public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d movementMultiplier;
-    public java.lang.Object navigation;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.pathing.EntityNavigation navigation;
     public boolean noClip;
     public long pistonMovementTick;
     public int playerHitTimer;
-    public java.lang.Object portalManager;
+    public murat.simv2.simulation.mirror.net.minecraft.world.dimension.PortalManager portalManager;
     public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d pos;
     public murat.simv2.simulation.mirror.net.minecraft.util.Hand preferredHand;
     public murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random random;
@@ -149,8 +149,8 @@ public class WitherEntity {
     public int stuckArrowTimer;
     public int stuckStingerTimer;
     public boolean submergedInWater;
-    public java.util.Optional supportingBlockPos;
-    public java.lang.Object targetSelector;
+    public java.util.Optional<murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos> supportingBlockPos;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.goal.GoalSelector targetSelector;
     public int timeUntilRegen;
     public boolean touchingWater;
     public float upwardSpeed;
@@ -242,14 +242,14 @@ public class WitherEntity {
     public void applyLeashElasticity(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, float p1) {
     }
 
-    public float applyMirror(java.lang.Object p0) {
+    public float applyMirror(murat.simv2.simulation.mirror.net.minecraft.util.BlockMirror p0) {
         return 0.0F;
     }
 
     public void applyMovementEffects(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
     }
 
-    public float applyRotation(java.lang.Object p0) {
+    public float applyRotation(murat.simv2.simulation.mirror.net.minecraft.util.BlockRotation p0) {
         return 0.0F;
     }
 
@@ -346,7 +346,7 @@ public class WitherEntity {
         return false;
     }
 
-    public boolean canExplosionDestroyBlock(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, float p4) {
+    public boolean canExplosionDestroyBlock(murat.simv2.simulation.mirror.net.minecraft.world.explosion.Explosion p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, float p4) {
         return false;
     }
 
@@ -382,7 +382,7 @@ public class WitherEntity {
         return false;
     }
 
-    public static boolean canMobSpawn(murat.simv2.simulation.mirror.net.minecraft.entity.EntityType p0, java.lang.Object p1, java.lang.Object p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p4) {
+    public static boolean canMobSpawn(murat.simv2.simulation.mirror.net.minecraft.entity.EntityType p0, murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p1, murat.simv2.simulation.mirror.net.minecraft.entity.SpawnReason p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p4) {
         return false;
     }
 
@@ -410,19 +410,19 @@ public class WitherEntity {
         return false;
     }
 
-    public static boolean canSpawnIgnoreLightLevel(murat.simv2.simulation.mirror.net.minecraft.entity.EntityType p0, java.lang.Object p1, java.lang.Object p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p4) {
+    public static boolean canSpawnIgnoreLightLevel(murat.simv2.simulation.mirror.net.minecraft.entity.EntityType p0, murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p1, murat.simv2.simulation.mirror.net.minecraft.entity.SpawnReason p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p4) {
         return false;
     }
 
-    public static boolean canSpawnInDark(murat.simv2.simulation.mirror.net.minecraft.entity.EntityType p0, java.lang.Object p1, java.lang.Object p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p4) {
+    public static boolean canSpawnInDark(murat.simv2.simulation.mirror.net.minecraft.entity.EntityType p0, murat.simv2.simulation.mirror.net.minecraft.world.ServerWorldAccess p1, murat.simv2.simulation.mirror.net.minecraft.entity.SpawnReason p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p4) {
         return false;
     }
 
-    public boolean canSpawn(java.lang.Object p0) {
+    public boolean canSpawn(murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p0, murat.simv2.simulation.mirror.net.minecraft.entity.SpawnReason p1) {
         return false;
     }
 
-    public boolean canSpawn(java.lang.Object p0, java.lang.Object p1) {
+    public boolean canSpawn(murat.simv2.simulation.mirror.net.minecraft.world.WorldView p0) {
         return false;
     }
 
@@ -454,7 +454,7 @@ public class WitherEntity {
         return false;
     }
 
-    public boolean canUseRangedWeapon(java.lang.Object p0) {
+    public boolean canUseRangedWeapon(murat.simv2.simulation.mirror.net.minecraft.item.RangedWeaponItem p0) {
         return false;
     }
 
@@ -470,7 +470,7 @@ public class WitherEntity {
         return false;
     }
 
-    public static java.lang.Object castComponentValue(java.lang.Object p0, java.lang.Object p1) {
+    public static java.lang.Object castComponentValue(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1) {
         return null;
     }
 
@@ -535,19 +535,19 @@ public class WitherEntity {
         return false;
     }
 
-    public java.lang.Object convertTo(murat.simv2.simulation.mirror.net.minecraft.entity.EntityType p0, java.lang.Object p1, java.lang.Object p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.mob.MobEntity convertTo(murat.simv2.simulation.mirror.net.minecraft.entity.EntityType p0, murat.simv2.simulation.mirror.net.minecraft.entity.conversion.EntityConversionContext p1, murat.simv2.simulation.mirror.net.minecraft.entity.SpawnReason p2, murat.simv2.simulation.mirror.net.minecraft.entity.conversion.EntityConversionContext.Finalizer p3) {
         return null;
     }
 
-    public java.lang.Object convertTo(murat.simv2.simulation.mirror.net.minecraft.entity.EntityType p0, java.lang.Object p1, java.lang.Object p2, java.lang.Object p3) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.mob.MobEntity convertTo(murat.simv2.simulation.mirror.net.minecraft.entity.EntityType p0, murat.simv2.simulation.mirror.net.minecraft.entity.conversion.EntityConversionContext p1, murat.simv2.simulation.mirror.net.minecraft.entity.conversion.EntityConversionContext.Finalizer p2) {
         return null;
     }
 
-    public boolean copyComponentFrom(java.lang.Object p0, java.lang.Object p1) {
+    public boolean copyComponentFrom(murat.simv2.simulation.mirror.net.minecraft.component.ComponentsAccess p0, murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p1) {
         return false;
     }
 
-    public void copyComponentsFrom(java.lang.Object p0) {
+    public void copyComponentsFrom(murat.simv2.simulation.mirror.net.minecraft.component.ComponentsAccess p0) {
     }
 
     public void copyComponentsFrom(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0) {
@@ -563,15 +563,15 @@ public class WitherEntity {
         return false;
     }
 
-    public java.lang.Object createBodyControl() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.control.BodyControl createBodyControl() {
         return null;
     }
 
-    public java.lang.Object createBrainProfile() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.brain.Brain.Profile createBrainProfile() {
         return null;
     }
 
-    public java.lang.Object createEquipmentInventory(murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.inventory.Inventory createEquipmentInventory(murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot p0) {
         return null;
     }
 
@@ -579,27 +579,27 @@ public class WitherEntity {
         return null;
     }
 
-    public static java.lang.Object createHostileAttributes() {
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.attribute.DefaultAttributeContainer.Builder createHostileAttributes() {
         return null;
     }
 
-    public static java.lang.Object createLivingAttributes() {
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.attribute.DefaultAttributeContainer.Builder createLivingAttributes() {
         return null;
     }
 
-    public static java.lang.Object createMobAttributes() {
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.attribute.DefaultAttributeContainer.Builder createMobAttributes() {
         return null;
     }
 
-    public java.lang.Object createNavigation(murat.simv2.simulation.mirror.net.minecraft.world.World p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.pathing.EntityNavigation createNavigation(murat.simv2.simulation.mirror.net.minecraft.world.World p0) {
         return null;
     }
 
-    public java.lang.Object createSpawnPacket(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.network.packet.Packet createSpawnPacket(murat.simv2.simulation.mirror.net.minecraft.server.network.EntityTrackerEntry p0) {
         return null;
     }
 
-    public static java.lang.Object createWitherAttributes() {
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.attribute.DefaultAttributeContainer.Builder createWitherAttributes() {
         return null;
     }
 
@@ -619,7 +619,7 @@ public class WitherEntity {
     public void defrost() {
     }
 
-    public java.lang.Object deserializeBrain(com.mojang.serialization.Dynamic p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.brain.Brain deserializeBrain(com.mojang.serialization.Dynamic p0) {
         return null;
     }
 
@@ -673,11 +673,11 @@ public class WitherEntity {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity dropItem(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, java.lang.Object p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity dropItem(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemConvertible p1) {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity dropItem(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, java.lang.Object p1, int p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity dropItem(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemConvertible p1, int p2) {
         return null;
     }
 
@@ -701,10 +701,10 @@ public class WitherEntity {
     public void emitGameEvent(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p1) {
     }
 
-    public void enchantEquipment(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p1, murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot p2, java.lang.Object p3) {
+    public void enchantEquipment(murat.simv2.simulation.mirror.net.minecraft.world.ServerWorldAccess p0, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p1, murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot p2, murat.simv2.simulation.mirror.net.minecraft.world.LocalDifficulty p3) {
     }
 
-    public void enchantMainHandItem(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p1, java.lang.Object p2) {
+    public void enchantMainHandItem(murat.simv2.simulation.mirror.net.minecraft.world.ServerWorldAccess p0, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p1, murat.simv2.simulation.mirror.net.minecraft.world.LocalDifficulty p2) {
     }
 
     public void endCombat() {
@@ -746,11 +746,11 @@ public class WitherEntity {
     public void forEachShearedItem(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p1, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p2, java.util.function.BiConsumer p3) {
     }
 
-    public static java.lang.Object fromName(java.lang.String p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.scoreboard.ScoreHolder fromName(java.lang.String p0) {
         return null;
     }
 
-    public static java.lang.Object fromProfile(com.mojang.authlib.GameProfile p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.scoreboard.ScoreHolder fromProfile(com.mojang.authlib.GameProfile p0) {
         return null;
     }
 
@@ -818,7 +818,7 @@ public class WitherEntity {
         return 0.0D;
     }
 
-    public java.lang.Object getAttributeInstance(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributeInstance getAttributeInstance(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0) {
         return null;
     }
 
@@ -826,7 +826,7 @@ public class WitherEntity {
         return 0.0D;
     }
 
-    public java.lang.Object getAttributes() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.attribute.AttributeContainer getAttributes() {
         return null;
     }
 
@@ -890,7 +890,7 @@ public class WitherEntity {
         return null;
     }
 
-    public java.lang.Object getBrain() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.brain.Brain getBrain() {
         return null;
     }
 
@@ -918,7 +918,7 @@ public class WitherEntity {
         return null;
     }
 
-    public java.lang.Object getCommandSource(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.server.command.ServerCommandSource getCommandSource(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0) {
         return null;
     }
 
@@ -946,7 +946,7 @@ public class WitherEntity {
         return 0.0F;
     }
 
-    public java.lang.Object getDamageSources() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSources getDamageSources() {
         return null;
     }
 
@@ -954,7 +954,7 @@ public class WitherEntity {
         return 0.0F;
     }
 
-    public java.lang.Object getDamageTracker() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageTracker getDamageTracker() {
         return null;
     }
 
@@ -990,7 +990,7 @@ public class WitherEntity {
         return 0.0F;
     }
 
-    public float getEffectiveExplosionResistance(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState p4, float p5) {
+    public float getEffectiveExplosionResistance(murat.simv2.simulation.mirror.net.minecraft.world.explosion.Explosion p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState p4, float p5) {
         return 0.0F;
     }
 
@@ -1006,7 +1006,7 @@ public class WitherEntity {
         return null;
     }
 
-    public java.lang.Object getEquipmentDropChances() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentDropChances getEquipmentDropChances() {
         return null;
     }
 
@@ -1130,7 +1130,7 @@ public class WitherEntity {
         return null;
     }
 
-    public java.lang.Object getHoverEvent() {
+    public murat.simv2.simulation.mirror.net.minecraft.text.HoverEvent getHoverEvent() {
         return null;
     }
 
@@ -1166,7 +1166,7 @@ public class WitherEntity {
         return 0.0F;
     }
 
-    public java.lang.Object getJumpControl() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.control.JumpControl getJumpControl() {
         return null;
     }
 
@@ -1210,7 +1210,7 @@ public class WitherEntity {
         return 0.0F;
     }
 
-    public java.lang.Object getLeashData() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.Leashable.LeashData getLeashData() {
         return null;
     }
 
@@ -1250,7 +1250,7 @@ public class WitherEntity {
         return null;
     }
 
-    public java.lang.Object getLookControl() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.control.LookControl getLookControl() {
         return null;
     }
 
@@ -1266,7 +1266,7 @@ public class WitherEntity {
         return 0.0F;
     }
 
-    public java.lang.Object getMainArm() {
+    public murat.simv2.simulation.mirror.net.minecraft.util.Arm getMainArm() {
         return null;
     }
 
@@ -1310,7 +1310,7 @@ public class WitherEntity {
         return 0;
     }
 
-    public java.lang.Object getMoveControl() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.control.MoveControl getMoveControl() {
         return null;
     }
 
@@ -1338,7 +1338,7 @@ public class WitherEntity {
         return null;
     }
 
-    public java.lang.Object getNavigation() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ai.pathing.EntityNavigation getNavigation() {
         return null;
     }
 
@@ -1370,7 +1370,7 @@ public class WitherEntity {
         return null;
     }
 
-    public java.lang.Object getOrDefault(java.lang.Object p0, java.lang.Object p1) {
+    public java.lang.Object getOrDefault(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1) {
         return null;
     }
 
@@ -1410,11 +1410,11 @@ public class WitherEntity {
         return 0.0F;
     }
 
-    public float getPathfindingFavor(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, java.lang.Object p1) {
+    public float getPathfindingFavor(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.world.WorldView p1) {
         return 0.0F;
     }
 
-    public float getPathfindingPenalty(java.lang.Object p0) {
+    public float getPathfindingPenalty(murat.simv2.simulation.mirror.net.minecraft.entity.ai.pathing.PathNodeType p0) {
         return 0.0F;
     }
 
@@ -1422,7 +1422,7 @@ public class WitherEntity {
         return null;
     }
 
-    public java.lang.Object getPistonBehavior() {
+    public murat.simv2.simulation.mirror.net.minecraft.block.piston.PistonBehavior getPistonBehavior() {
         return null;
     }
 
@@ -1502,7 +1502,7 @@ public class WitherEntity {
         return null;
     }
 
-    public java.lang.Object getRegistryManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.registry.DynamicRegistryManager getRegistryManager() {
         return null;
     }
 
@@ -1566,7 +1566,7 @@ public class WitherEntity {
         return null;
     }
 
-    public java.lang.Object getServer() {
+    public murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer getServer() {
         return null;
     }
 
@@ -1610,7 +1610,7 @@ public class WitherEntity {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getStackInArm(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getStackInArm(murat.simv2.simulation.mirror.net.minecraft.util.Arm p0) {
         return null;
     }
 
@@ -1618,7 +1618,7 @@ public class WitherEntity {
         return null;
     }
 
-    public java.lang.Object getStackReference(int p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.inventory.StackReference getStackReference(int p0) {
         return null;
     }
 
@@ -1694,11 +1694,11 @@ public class WitherEntity {
         return 0;
     }
 
-    public java.lang.Object getTrackedPosition() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.TrackedPosition getTrackedPosition() {
         return null;
     }
 
-    public java.lang.Object getTyped(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.component.Component getTyped(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0) {
         return null;
     }
 
@@ -1734,7 +1734,7 @@ public class WitherEntity {
         return null;
     }
 
-    public java.lang.Object getVisibilityCache() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.mob.MobVisibilityCache getVisibilityCache() {
         return null;
     }
 
@@ -1778,7 +1778,7 @@ public class WitherEntity {
         return 0.0D;
     }
 
-    public java.lang.Object get(java.lang.Object p0) {
+    public java.lang.Object get(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0) {
         return null;
     }
 
@@ -1891,25 +1891,25 @@ public class WitherEntity {
     public void initDataTracker(murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker.Builder p0) {
     }
 
-    public void initEquipment(murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p0, java.lang.Object p1) {
+    public void initEquipment(murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p0, murat.simv2.simulation.mirror.net.minecraft.world.LocalDifficulty p1) {
     }
 
     public void initGoals() {
     }
 
-    public java.lang.Object initialize(java.lang.Object p0, java.lang.Object p1, java.lang.Object p2, java.lang.Object p3) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.EntityData initialize(murat.simv2.simulation.mirror.net.minecraft.world.ServerWorldAccess p0, murat.simv2.simulation.mirror.net.minecraft.world.LocalDifficulty p1, murat.simv2.simulation.mirror.net.minecraft.entity.SpawnReason p2, murat.simv2.simulation.mirror.net.minecraft.entity.EntityData p3) {
         return null;
     }
 
-    public java.lang.Object interactAt(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1, murat.simv2.simulation.mirror.net.minecraft.util.Hand p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult interactAt(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1, murat.simv2.simulation.mirror.net.minecraft.util.Hand p2) {
         return null;
     }
 
-    public java.lang.Object interactMob(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.util.Hand p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult interactMob(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.util.Hand p1) {
         return null;
     }
 
-    public java.lang.Object interact(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.util.Hand p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult interact(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.util.Hand p1) {
         return null;
     }
 
@@ -2049,7 +2049,7 @@ public class WitherEntity {
         return false;
     }
 
-    public boolean isImmuneToExplosion(java.lang.Object p0) {
+    public boolean isImmuneToExplosion(murat.simv2.simulation.mirror.net.minecraft.world.explosion.Explosion p0) {
         return false;
     }
 
@@ -2213,7 +2213,7 @@ public class WitherEntity {
         return false;
     }
 
-    public static boolean isSpawnDark(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p2) {
+    public static boolean isSpawnDark(murat.simv2.simulation.mirror.net.minecraft.world.ServerWorldAccess p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p2) {
         return false;
     }
 
@@ -2297,7 +2297,7 @@ public class WitherEntity {
     public void lookAtEntity(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, float p1, float p2) {
     }
 
-    public void lookAt(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
+    public void lookAt(murat.simv2.simulation.mirror.net.minecraft.command.argument.EntityAnchorArgumentType.EntityAnchor p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
     }
 
     public void loot(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity p1) {
@@ -2384,7 +2384,7 @@ public class WitherEntity {
     public void onPlayerCollision(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0) {
     }
 
-    public void onPlayerSpawnedChild(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, java.lang.Object p1) {
+    public void onPlayerSpawnedChild(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.entity.mob.MobEntity p1) {
     }
 
     public void onRemoval(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.entity.Entity.RemovalReason p1) {
@@ -2399,7 +2399,7 @@ public class WitherEntity {
     public void onShortLeashTick(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
     }
 
-    public void onSpawnPacket(java.lang.Object p0) {
+    public void onSpawnPacket(murat.simv2.simulation.mirror.net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket p0) {
     }
 
     public void onStartPathfinding() {
@@ -2420,7 +2420,7 @@ public class WitherEntity {
     public void onStoppedTrackingBy(murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity p0) {
     }
 
-    public void onStruckByLightning(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, java.lang.Object p1) {
+    public void onStruckByLightning(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.entity.LightningEntity p1) {
     }
 
     public void onSummoned() {
@@ -2480,7 +2480,7 @@ public class WitherEntity {
     public void populateCrashReport(murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashReportSection p0) {
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d positionInPortal(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis p0, java.lang.Object p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d positionInPortal(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockLocating.Rectangle p1) {
         return null;
     }
 
@@ -2629,7 +2629,7 @@ public class WitherEntity {
     public void setAngles(float p0, float p1) {
     }
 
-    public boolean setApplicableComponent(java.lang.Object p0, java.lang.Object p1) {
+    public boolean setApplicableComponent(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1) {
         return false;
     }
 
@@ -2661,10 +2661,10 @@ public class WitherEntity {
     public void setCanPickUpLoot(boolean p0) {
     }
 
-    public void setChangeListener(java.lang.Object p0) {
+    public void setChangeListener(murat.simv2.simulation.mirror.net.minecraft.world.entity.EntityChangeListener p0) {
     }
 
-    public void setComponent(java.lang.Object p0, java.lang.Object p1) {
+    public void setComponent(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1) {
     }
 
     public void setCurrentHand(murat.simv2.simulation.mirror.net.minecraft.util.Hand p0) {
@@ -2685,10 +2685,10 @@ public class WitherEntity {
     public void setEquipmentDropChance(murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot p0, float p1) {
     }
 
-    public void setEquipmentFromTable(java.lang.Object p0) {
+    public void setEquipmentFromTable(murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentTable p0) {
     }
 
-    public void setEquipmentFromTable(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.loot.context.LootWorldContext p1) {
+    public void setEquipmentFromTable(murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentTable p0, murat.simv2.simulation.mirror.net.minecraft.loot.context.LootWorldContext p1) {
     }
 
     public void setEquipmentFromTable(murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p0, java.util.Map p1) {
@@ -2742,7 +2742,7 @@ public class WitherEntity {
     public void setLastPositionAndAngles(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, float p1, float p2) {
     }
 
-    public void setLeashData(java.lang.Object p0) {
+    public void setLeashData(murat.simv2.simulation.mirror.net.minecraft.entity.Leashable.LeashData p0) {
     }
 
     public void setLeftHanded(boolean p0) {
@@ -2784,7 +2784,7 @@ public class WitherEntity {
     public void setOnGround(boolean p0) {
     }
 
-    public void setPathfindingPenalty(java.lang.Object p0, float p1) {
+    public void setPathfindingPenalty(murat.simv2.simulation.mirror.net.minecraft.entity.ai.pathing.PathNodeType p0, float p1) {
     }
 
     public void setPersistent() {
@@ -2805,7 +2805,7 @@ public class WitherEntity {
     public void setPosition(double p0, double p1, double p2) {
     }
 
-    public void setPosition(java.lang.Object p0, java.util.Set p1) {
+    public void setPosition(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerPosition p0, java.util.Set p1) {
     }
 
     public void setPosition(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
@@ -3038,7 +3038,7 @@ public class WitherEntity {
     public void takeShieldHit(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1) {
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.entity.Entity teleportTo(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.Entity teleportTo(murat.simv2.simulation.mirror.net.minecraft.world.TeleportTarget p0) {
         return null;
     }
 
@@ -3125,7 +3125,7 @@ public class WitherEntity {
         return null;
     }
 
-    public void tryUsePortal(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
+    public void tryUsePortal(murat.simv2.simulation.mirror.net.minecraft.block.Portal p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
     }
 
     public void turnHead(float p0) {
@@ -3140,7 +3140,7 @@ public class WitherEntity {
     public void updateDespawnCounter() {
     }
 
-    public void updateEnchantments(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p1, java.lang.Object p2) {
+    public void updateEnchantments(murat.simv2.simulation.mirror.net.minecraft.world.ServerWorldAccess p0, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p1, murat.simv2.simulation.mirror.net.minecraft.world.LocalDifficulty p2) {
     }
 
     public void updateEventHandler(java.util.function.BiConsumer p0) {
@@ -3222,7 +3222,7 @@ public class WitherEntity {
     public void writeCustomDataToNbt(murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound p0) {
     }
 
-    public void writeLeashDataToNbt(murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound p0, java.lang.Object p1) {
+    public void writeLeashDataToNbt(murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound p0, murat.simv2.simulation.mirror.net.minecraft.entity.Leashable.LeashData p1) {
     }
 
     public murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound writeNbt(murat.simv2.simulation.mirror.net.minecraft.nbt.NbtCompound p0) {
@@ -3232,7 +3232,7 @@ public class WitherEntity {
     public WitherEntity() {
     }
 
-    public static class DescendAtHalfHealthGoal {
+    public static class DescendAtHalfHealthGoal extends murat.simv2.simulation.mirror.net.minecraft.entity.ai.goal.Goal {
         public murat.simv2.simulation.mirror.net.minecraft.entity.boss.WitherEntity field_7096;
 
         public DescendAtHalfHealthGoal(murat.simv2.simulation.mirror.net.minecraft.entity.boss.WitherEntity p0) {

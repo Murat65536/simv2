@@ -1,11 +1,11 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.collection;
 
 // Generated mirror stub for simulation closure.
-public class Class2IntMap {
+public class Class2IntMap extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static int MISSING;
-    public it.unimi.dsi.fastutil.objects.Object2IntMap backingMap;
+    public it.unimi.dsi.fastutil.objects.Object2IntMap<java.lang.Class<?>> backingMap;
 
     public Class2IntMap() {
     }

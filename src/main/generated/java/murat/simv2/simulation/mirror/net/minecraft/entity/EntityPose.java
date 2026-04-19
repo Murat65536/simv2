@@ -10,10 +10,10 @@ public class EntityPose {
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose DYING;
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose EMERGING;
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose GLIDING;
-    public static java.util.function.IntFunction INDEX_TO_VALUE;
+    public static java.util.function.IntFunction<murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose> INDEX_TO_VALUE;
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose INHALING;
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose LONG_JUMPING;
-    public static java.lang.Object PACKET_CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<io.netty.buffer.ByteBuf, murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose> PACKET_CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose ROARING;
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose SHOOTING;
     public static murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose SITTING;

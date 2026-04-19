@@ -1,11 +1,11 @@
 package murat.simv2.simulation.mirror.net.minecraft.client;
 
 // Generated mirror stub for simulation closure.
-public class MinecraftClient {
+public class MinecraftClient extends murat.simv2.simulation.mirror.net.minecraft.util.thread.ReentrantThreadExecutor implements murat.simv2.simulation.mirror.net.minecraft.client.WindowEventHandler {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.util.Identifier ALT_TEXT_RENDERER_ID;
-    public static java.util.concurrent.CompletableFuture COMPLETED_UNIT_FUTURE;
+    public static java.util.concurrent.CompletableFuture<murat.simv2.simulation.mirror.net.minecraft.util.Unit> COMPLETED_UNIT_FUTURE;
     public static murat.simv2.simulation.mirror.net.minecraft.util.Identifier DEFAULT_FONT_ID;
     public static java.lang.String GL_ERROR_DIALOGUE;
     public static boolean IS_SYSTEM_MAC;
@@ -14,140 +14,140 @@ public class MinecraftClient {
     public static murat.simv2.simulation.mirror.net.minecraft.text.Text SOCIAL_INTERACTIONS_NOT_AVAILABLE;
     public static murat.simv2.simulation.mirror.net.minecraft.util.Identifier UNICODE_FONT_ID;
     public long UNIVERSE;
-    public java.lang.Object abuseReportContext;
-    public java.lang.Object advanceValidatingTextRenderer;
+    public murat.simv2.simulation.mirror.net.minecraft.client.session.report.AbuseReportContext abuseReportContext;
+    public murat.simv2.simulation.mirror.net.minecraft.client.font.TextRenderer advanceValidatingTextRenderer;
     public int attackCooldown;
     public com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService authenticationService;
-    public java.lang.Object bakedModelManager;
-    public java.lang.Object blockColors;
-    public java.lang.Object blockEntityRenderDispatcher;
-    public java.lang.Object blockRenderManager;
-    public java.lang.Object bufferBuilders;
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.model.BakedModelManager bakedModelManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.color.block.BlockColors blockColors;
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher blockEntityRenderDispatcher;
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.block.BlockRenderManager blockRenderManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.BufferBuilderStorage bufferBuilders;
     public murat.simv2.simulation.mirror.net.minecraft.entity.Entity cameraEntity;
     public boolean chunkCullingEnabled;
-    public java.lang.Object commandHistoryManager;
-    public java.util.function.Supplier crashReportSupplier;
-    public java.lang.Object creativeHotbarStorage;
+    public murat.simv2.simulation.mirror.net.minecraft.client.util.CommandHistoryManager commandHistoryManager;
+    public java.util.function.Supplier<murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashReport> crashReportSupplier;
+    public murat.simv2.simulation.mirror.net.minecraft.client.option.HotbarStorage creativeHotbarStorage;
     public murat.simv2.simulation.mirror.net.minecraft.util.hit.HitResult crosshairTarget;
     public static int currentFps;
-    public java.lang.Object currentGlTimerQuery;
-    public java.lang.Object currentScreen;
+    public murat.simv2.simulation.mirror.net.minecraft.client.gl.GlTimer.Query currentGlTimerQuery;
+    public murat.simv2.simulation.mirror.net.minecraft.client.gui.screen.Screen currentScreen;
     public com.mojang.datafixers.DataFixer dataFixer;
     public boolean debugChunkInfo;
     public boolean debugChunkOcclusion;
-    public java.lang.Object debugRenderer;
-    public java.lang.Object defaultResourcePack;
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.debug.DebugRenderer debugRenderer;
+    public murat.simv2.simulation.mirror.net.minecraft.resource.DefaultResourcePack defaultResourcePack;
     public boolean disconnecting;
-    public java.lang.Object entityRenderDispatcher;
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.entity.EntityRenderDispatcher entityRenderDispatcher;
     public static int field_32145;
     public static long field_52421;
     public boolean finishedLoading;
-    public java.lang.Object fontManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.font.FontManager fontManager;
     public int fpsCounter;
     public java.lang.String fpsDebugString;
-    public java.lang.Object framebuffer;
-    public java.util.concurrent.CompletableFuture gameProfileFuture;
-    public java.lang.Object gameRenderer;
+    public murat.simv2.simulation.mirror.net.minecraft.client.gl.Framebuffer framebuffer;
+    public java.util.concurrent.CompletableFuture<com.mojang.authlib.yggdrasil.ProfileResult> gameProfileFuture;
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.GameRenderer gameRenderer;
     public java.lang.String gameVersion;
     public double gpuUtilizationPercentage;
-    public java.lang.Object guiAtlasManager;
-    public java.lang.Object inGameHud;
-    public java.lang.Object inactivityFpsLimiter;
+    public murat.simv2.simulation.mirror.net.minecraft.client.texture.GuiAtlasManager guiAtlasManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.gui.hud.InGameHud inGameHud;
+    public murat.simv2.simulation.mirror.net.minecraft.client.option.InactivityFpsLimiter inactivityFpsLimiter;
     public static murat.simv2.simulation.mirror.net.minecraft.client.MinecraftClient instance;
-    public java.lang.Object integratedServerConnection;
+    public murat.simv2.simulation.mirror.net.minecraft.network.ClientConnection integratedServerConnection;
     public boolean integratedServerRunning;
-    public java.lang.Object interactionManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.network.ClientPlayerInteractionManager interactionManager;
     public boolean isDemo;
-    public java.lang.Object itemModelManager;
-    public java.lang.Object itemRenderer;
+    public murat.simv2.simulation.mirror.net.minecraft.client.item.ItemModelManager itemModelManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.item.ItemRenderer itemRenderer;
     public int itemUseCooldown;
-    public java.lang.Object keyboard;
-    public java.lang.Object languageManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.Keyboard keyboard;
+    public murat.simv2.simulation.mirror.net.minecraft.client.resource.language.LanguageManager languageManager;
     public long lastMetricsSampleTime;
-    public java.lang.Object levelStorage;
-    public java.lang.Object mapDecorationsAtlasManager;
-    public java.lang.Object mapRenderer;
-    public java.lang.Object mapTextureManager;
-    public java.lang.Object messageHandler;
+    public murat.simv2.simulation.mirror.net.minecraft.world.level.storage.LevelStorage levelStorage;
+    public murat.simv2.simulation.mirror.net.minecraft.client.texture.MapDecorationsAtlasManager mapDecorationsAtlasManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.MapRenderer mapRenderer;
+    public murat.simv2.simulation.mirror.net.minecraft.client.texture.MapTextureManager mapTextureManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.network.message.MessageHandler messageHandler;
     public long metricsSampleDuration;
-    public java.lang.Object mouse;
+    public murat.simv2.simulation.mirror.net.minecraft.client.Mouse mouse;
     public boolean multiplayerEnabled;
-    public java.lang.Object musicTracker;
-    public java.lang.Object narratorManager;
-    public java.lang.Object navigationType;
+    public murat.simv2.simulation.mirror.net.minecraft.client.sound.MusicTracker musicTracker;
+    public murat.simv2.simulation.mirror.net.minecraft.client.util.NarratorManager narratorManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.gui.navigation.GuiNavigationType navigationType;
     public java.net.Proxy networkProxy;
     public long nextDebugInfoUpdateTime;
     public boolean onlineChatEnabled;
-    public java.lang.Object options;
-    public java.lang.Object overlay;
-    public java.lang.Object paintingManager;
-    public java.lang.Object particleManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.option.GameOptions options;
+    public murat.simv2.simulation.mirror.net.minecraft.client.gui.screen.Overlay overlay;
+    public murat.simv2.simulation.mirror.net.minecraft.client.texture.PaintingManager paintingManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.particle.ParticleManager particleManager;
     public boolean paused;
     public murat.simv2.simulation.mirror.net.minecraft.client.network.ClientPlayerEntity player;
-    public java.lang.Object profileKeys;
-    public java.lang.Object quickPlayLogger;
-    public java.lang.Object realmsPeriodicCheckers;
-    public java.lang.Object recorder;
-    public java.lang.Object regionalComplianciesManager;
-    public java.util.Queue renderTaskQueue;
-    public java.lang.Object renderTickCounter;
+    public murat.simv2.simulation.mirror.net.minecraft.client.session.ProfileKeys profileKeys;
+    public murat.simv2.simulation.mirror.net.minecraft.client.QuickPlayLogger quickPlayLogger;
+    public murat.simv2.simulation.mirror.net.minecraft.client.realms.RealmsPeriodicCheckers realmsPeriodicCheckers;
+    public murat.simv2.simulation.mirror.net.minecraft.util.profiler.Recorder recorder;
+    public murat.simv2.simulation.mirror.net.minecraft.client.resource.PeriodicNotificationManager regionalComplianciesManager;
+    public java.util.Queue<java.lang.Runnable> renderTaskQueue;
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.RenderTickCounter.Dynamic renderTickCounter;
     public long renderTime;
-    public java.lang.Object resourceManager;
+    public murat.simv2.simulation.mirror.net.minecraft.resource.ReloadableResourceManagerImpl resourceManager;
     public java.nio.file.Path resourcePackDir;
-    public java.lang.Object resourcePackManager;
-    public java.util.concurrent.CompletableFuture resourceReloadFuture;
-    public java.lang.Object resourceReloadLogger;
+    public murat.simv2.simulation.mirror.net.minecraft.resource.ResourcePackManager resourcePackManager;
+    public java.util.concurrent.CompletableFuture<java.lang.Void> resourceReloadFuture;
+    public murat.simv2.simulation.mirror.net.minecraft.client.resource.ResourceReloadLogger resourceReloadLogger;
     public java.io.File runDirectory;
     public boolean running;
-    public java.lang.Object server;
-    public java.lang.Object serverResourcePackLoader;
-    public java.lang.Object session;
+    public murat.simv2.simulation.mirror.net.minecraft.server.integrated.IntegratedServer server;
+    public murat.simv2.simulation.mirror.net.minecraft.client.resource.server.ServerResourcePackLoader serverResourcePackLoader;
+    public murat.simv2.simulation.mirror.net.minecraft.client.session.Session session;
     public com.mojang.authlib.minecraft.MinecraftSessionService sessionService;
-    public java.lang.Object shaderLoader;
-    public java.lang.Object skinProvider;
+    public murat.simv2.simulation.mirror.net.minecraft.client.gl.ShaderLoader shaderLoader;
+    public murat.simv2.simulation.mirror.net.minecraft.client.texture.PlayerSkinProvider skinProvider;
     public boolean skipGameRender;
-    public java.lang.Object socialInteractionsManager;
-    public java.lang.Object socialInteractionsToast;
-    public java.lang.Object soundManager;
-    public java.lang.Object splashTextLoader;
+    public murat.simv2.simulation.mirror.net.minecraft.client.network.SocialInteractionsManager socialInteractionsManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.toast.TutorialToast socialInteractionsToast;
+    public murat.simv2.simulation.mirror.net.minecraft.client.sound.SoundManager soundManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.resource.SplashTextResourceSupplier splashTextLoader;
     public long startTime;
-    public java.lang.Object statusEffectSpriteManager;
-    public java.lang.Object symlinkFinder;
+    public murat.simv2.simulation.mirror.net.minecraft.client.texture.StatusEffectSpriteManager statusEffectSpriteManager;
+    public murat.simv2.simulation.mirror.net.minecraft.util.path.SymlinkFinder symlinkFinder;
     public murat.simv2.simulation.mirror.net.minecraft.entity.Entity targetedEntity;
-    public java.lang.Object telemetryManager;
-    public java.lang.Object textRenderer;
-    public java.lang.Object textureManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.session.telemetry.TelemetryManager telemetryManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.font.TextRenderer textRenderer;
+    public murat.simv2.simulation.mirror.net.minecraft.client.texture.TextureManager textureManager;
     public java.lang.Thread thread;
-    public java.lang.Object tickTimeTracker;
-    public java.lang.Object toastManager;
+    public murat.simv2.simulation.mirror.net.minecraft.util.profiler.TickTimeTracker tickTimeTracker;
+    public murat.simv2.simulation.mirror.net.minecraft.client.toast.ToastManager toastManager;
     public int trackingTick;
-    public java.lang.Object tracyFrameCapturer;
-    public java.lang.Object tutorialManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.util.tracy.TracyFrameCapturer tracyFrameCapturer;
+    public murat.simv2.simulation.mirror.net.minecraft.client.tutorial.TutorialManager tutorialManager;
     public long uptimeInTicks;
     public com.mojang.authlib.minecraft.UserApiService userApiService;
-    public java.util.concurrent.CompletableFuture userPropertiesFuture;
+    public java.util.concurrent.CompletableFuture<com.mojang.authlib.minecraft.UserApiService.UserProperties> userPropertiesFuture;
     public java.lang.String versionType;
-    public java.lang.Object videoWarningManager;
-    public java.lang.Object window;
+    public murat.simv2.simulation.mirror.net.minecraft.client.resource.VideoWarningManager videoWarningManager;
+    public murat.simv2.simulation.mirror.net.minecraft.client.util.Window window;
     public boolean windowFocused;
-    public java.lang.Object windowProvider;
+    public murat.simv2.simulation.mirror.net.minecraft.client.util.WindowProvider windowProvider;
     public boolean wireFrame;
-    public java.lang.Object world;
-    public java.util.concurrent.atomic.AtomicReference worldGenProgressTracker;
-    public java.lang.Object worldRenderer;
+    public murat.simv2.simulation.mirror.net.minecraft.client.world.ClientWorld world;
+    public java.util.concurrent.atomic.AtomicReference<murat.simv2.simulation.mirror.net.minecraft.server.WorldGenerationProgressTracker> worldGenProgressTracker;
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.WorldRenderer worldRenderer;
 
-    public MinecraftClient(java.lang.Object p0) {
+    public MinecraftClient(murat.simv2.simulation.mirror.net.minecraft.client.RunArgs p0) {
     }
 
     public murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashReport addDetailsToCrashReport(murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashReport p0) {
         return null;
     }
 
-    public static java.lang.Object addSystemDetailsToCrashReport(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.client.MinecraftClient p1, java.lang.Object p2, java.lang.String p3, java.lang.Object p4) {
-        return null;
+    public static void addSystemDetailsToCrashReport(murat.simv2.simulation.mirror.net.minecraft.client.MinecraftClient p0, murat.simv2.simulation.mirror.net.minecraft.client.resource.language.LanguageManager p1, java.lang.String p2, murat.simv2.simulation.mirror.net.minecraft.client.option.GameOptions p3, murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashReport p4) {
     }
 
-    public static void addSystemDetailsToCrashReport(murat.simv2.simulation.mirror.net.minecraft.client.MinecraftClient p0, java.lang.Object p1, java.lang.String p2, java.lang.Object p3, murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashReport p4) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.SystemDetails addSystemDetailsToCrashReport(murat.simv2.simulation.mirror.net.minecraft.util.SystemDetails p0, murat.simv2.simulation.mirror.net.minecraft.client.MinecraftClient p1, murat.simv2.simulation.mirror.net.minecraft.client.resource.language.LanguageManager p2, java.lang.String p3, murat.simv2.simulation.mirror.net.minecraft.client.option.GameOptions p4) {
+        return null;
     }
 
     public void addUptimesToCrashReport(murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashReportSection p0) {
@@ -175,7 +175,7 @@ public class MinecraftClient {
     public void createInitScreens(java.util.List p0) {
     }
 
-    public java.lang.Object createIntegratedServerLoader() {
+    public murat.simv2.simulation.mirror.net.minecraft.server.integrated.IntegratedServerLoader createIntegratedServerLoader() {
         return null;
     }
 
@@ -187,17 +187,17 @@ public class MinecraftClient {
         return null;
     }
 
-    public com.mojang.authlib.minecraft.UserApiService createUserApiService(com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService p0, java.lang.Object p1) {
+    public com.mojang.authlib.minecraft.UserApiService createUserApiService(com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService p0, murat.simv2.simulation.mirror.net.minecraft.client.RunArgs p1) {
         return null;
     }
 
     public void disconnect() {
     }
 
-    public void disconnect(java.lang.Object p0) {
+    public void disconnect(murat.simv2.simulation.mirror.net.minecraft.client.gui.screen.Screen p0) {
     }
 
-    public void disconnect(java.lang.Object p0, boolean p1) {
+    public void disconnect(murat.simv2.simulation.mirror.net.minecraft.client.gui.screen.Screen p0, boolean p1) {
     }
 
     public boolean doAttack() {
@@ -210,13 +210,13 @@ public class MinecraftClient {
     public void doItemUse() {
     }
 
-    public void endMonitor(boolean p0, java.lang.Object p1) {
+    public void endMonitor(boolean p0, murat.simv2.simulation.mirror.net.minecraft.util.TickDurationMonitor p1) {
     }
 
-    public void ensureAbuseReportContext(java.lang.Object p0) {
+    public void ensureAbuseReportContext(murat.simv2.simulation.mirror.net.minecraft.client.session.report.ReporterEnvironment p0) {
     }
 
-    public void enterReconfiguration(java.lang.Object p0) {
+    public void enterReconfiguration(murat.simv2.simulation.mirror.net.minecraft.client.gui.screen.Screen p0) {
     }
 
     public java.util.concurrent.CompletableFuture executeAsync(java.util.function.Consumer p0) {
@@ -243,27 +243,27 @@ public class MinecraftClient {
         return null;
     }
 
-    public java.lang.Object getAbuseReportContext() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.session.report.AbuseReportContext getAbuseReportContext() {
         return null;
     }
 
-    public java.lang.Object getBakedModelManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.model.BakedModelManager getBakedModelManager() {
         return null;
     }
 
-    public java.lang.Object getBlockColors() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.color.block.BlockColors getBlockColors() {
         return null;
     }
 
-    public java.lang.Object getBlockEntityRenderDispatcher() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher getBlockEntityRenderDispatcher() {
         return null;
     }
 
-    public java.lang.Object getBlockRenderManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.block.BlockRenderManager getBlockRenderManager() {
         return null;
     }
 
-    public java.lang.Object getBufferBuilders() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.BufferBuilderStorage getBufferBuilders() {
         return null;
     }
 
@@ -275,11 +275,11 @@ public class MinecraftClient {
         return null;
     }
 
-    public java.lang.Object getCommandHistoryManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.util.CommandHistoryManager getCommandHistoryManager() {
         return null;
     }
 
-    public java.lang.Object getCreativeHotbarStorage() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.option.HotbarStorage getCreativeHotbarStorage() {
         return null;
     }
 
@@ -287,7 +287,7 @@ public class MinecraftClient {
         return 0;
     }
 
-    public java.lang.Object getCurrentServerEntry() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.network.ServerInfo getCurrentServerEntry() {
         return null;
     }
 
@@ -295,19 +295,19 @@ public class MinecraftClient {
         return null;
     }
 
-    public java.lang.Object getDebugHud() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.gui.hud.DebugHud getDebugHud() {
         return null;
     }
 
-    public java.lang.Object getDefaultResourcePack() {
+    public murat.simv2.simulation.mirror.net.minecraft.resource.DefaultResourcePack getDefaultResourcePack() {
         return null;
     }
 
-    public java.lang.Object getEntityRenderDispatcher() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.entity.EntityRenderDispatcher getEntityRenderDispatcher() {
         return null;
     }
 
-    public java.lang.Object getFramebuffer() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.gl.Framebuffer getFramebuffer() {
         return null;
     }
 
@@ -323,11 +323,11 @@ public class MinecraftClient {
         return 0.0D;
     }
 
-    public java.lang.Object getGuiAtlasManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.texture.GuiAtlasManager getGuiAtlasManager() {
         return null;
     }
 
-    public java.lang.Object getInactivityFpsLimiter() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.option.InactivityFpsLimiter getInactivityFpsLimiter() {
         return null;
     }
 
@@ -335,15 +335,15 @@ public class MinecraftClient {
         return null;
     }
 
-    public java.lang.Object getItemModelManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.item.ItemModelManager getItemModelManager() {
         return null;
     }
 
-    public java.lang.Object getItemRenderer() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.item.ItemRenderer getItemRenderer() {
         return null;
     }
 
-    public java.lang.Object getLanguageManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.resource.language.LanguageManager getLanguageManager() {
         return null;
     }
 
@@ -351,31 +351,31 @@ public class MinecraftClient {
         return null;
     }
 
-    public java.lang.Object getLevelStorage() {
+    public murat.simv2.simulation.mirror.net.minecraft.world.level.storage.LevelStorage getLevelStorage() {
         return null;
     }
 
-    public java.lang.Object getLoadedEntityModels() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.entity.model.LoadedEntityModels getLoadedEntityModels() {
         return null;
     }
 
-    public java.lang.Object getMapDecorationsAtlasManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.texture.MapDecorationsAtlasManager getMapDecorationsAtlasManager() {
         return null;
     }
 
-    public java.lang.Object getMapRenderer() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.MapRenderer getMapRenderer() {
         return null;
     }
 
-    public java.lang.Object getMapTextureManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.texture.MapTextureManager getMapTextureManager() {
         return null;
     }
 
-    public java.lang.Object getMessageHandler() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.network.message.MessageHandler getMessageHandler() {
         return null;
     }
 
-    public static java.lang.Object getModStatus() {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.ModStatus getModStatus() {
         return null;
     }
 
@@ -383,11 +383,11 @@ public class MinecraftClient {
         return null;
     }
 
-    public java.lang.Object getMusicInstance() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.sound.MusicInstance getMusicInstance() {
         return null;
     }
 
-    public java.lang.Object getMusicTracker() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.sound.MusicTracker getMusicTracker() {
         return null;
     }
 
@@ -395,15 +395,15 @@ public class MinecraftClient {
         return null;
     }
 
-    public java.lang.Object getNarratorManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.util.NarratorManager getNarratorManager() {
         return null;
     }
 
-    public java.lang.Object getNavigationType() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.gui.navigation.GuiNavigationType getNavigationType() {
         return null;
     }
 
-    public java.lang.Object getNetworkHandler() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.network.ClientPlayNetworkHandler getNetworkHandler() {
         return null;
     }
 
@@ -411,27 +411,27 @@ public class MinecraftClient {
         return null;
     }
 
-    public java.lang.Object getOverlay() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.gui.screen.Overlay getOverlay() {
         return null;
     }
 
-    public java.lang.Object getPaintingManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.texture.PaintingManager getPaintingManager() {
         return null;
     }
 
-    public java.lang.Object getProfileKeys() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.session.ProfileKeys getProfileKeys() {
         return null;
     }
 
-    public java.lang.Object getQuickPlayLogger() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.QuickPlayLogger getQuickPlayLogger() {
         return null;
     }
 
-    public java.lang.Object getRealmsPeriodicCheckers() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.realms.RealmsPeriodicCheckers getRealmsPeriodicCheckers() {
         return null;
     }
 
-    public java.lang.Object getRenderTickCounter() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.render.RenderTickCounter getRenderTickCounter() {
         return null;
     }
 
@@ -439,7 +439,7 @@ public class MinecraftClient {
         return 0L;
     }
 
-    public java.lang.Object getResourceManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.resource.ResourceManager getResourceManager() {
         return null;
     }
 
@@ -447,19 +447,19 @@ public class MinecraftClient {
         return null;
     }
 
-    public java.lang.Object getResourcePackManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.resource.ResourcePackManager getResourcePackManager() {
         return null;
     }
 
-    public java.lang.Object getServerResourcePackProvider() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.resource.server.ServerResourcePackLoader getServerResourcePackProvider() {
         return null;
     }
 
-    public java.lang.Object getServer() {
+    public murat.simv2.simulation.mirror.net.minecraft.server.integrated.IntegratedServer getServer() {
         return null;
     }
 
-    public java.lang.Object getServicesSignatureVerifier() {
+    public murat.simv2.simulation.mirror.net.minecraft.network.encryption.SignatureVerifier getServicesSignatureVerifier() {
         return null;
     }
 
@@ -467,27 +467,27 @@ public class MinecraftClient {
         return null;
     }
 
-    public java.lang.Object getSession() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.session.Session getSession() {
         return null;
     }
 
-    public java.lang.Object getShaderLoader() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.gl.ShaderLoader getShaderLoader() {
         return null;
     }
 
-    public java.lang.Object getSkinProvider() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.texture.PlayerSkinProvider getSkinProvider() {
         return null;
     }
 
-    public java.lang.Object getSocialInteractionsManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.network.SocialInteractionsManager getSocialInteractionsManager() {
         return null;
     }
 
-    public java.lang.Object getSoundManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.sound.SoundManager getSoundManager() {
         return null;
     }
 
-    public java.lang.Object getSplashTextLoader() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.resource.SplashTextResourceSupplier getSplashTextLoader() {
         return null;
     }
 
@@ -495,11 +495,11 @@ public class MinecraftClient {
         return null;
     }
 
-    public java.lang.Object getStatusEffectSpriteManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.texture.StatusEffectSpriteManager getStatusEffectSpriteManager() {
         return null;
     }
 
-    public java.lang.Object getSymlinkFinder() {
+    public murat.simv2.simulation.mirror.net.minecraft.util.path.SymlinkFinder getSymlinkFinder() {
         return null;
     }
 
@@ -511,11 +511,11 @@ public class MinecraftClient {
         return 0;
     }
 
-    public java.lang.Object getTelemetryManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.session.telemetry.TelemetryManager getTelemetryManager() {
         return null;
     }
 
-    public java.lang.Object getTextureManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.texture.TextureManager getTextureManager() {
         return null;
     }
 
@@ -523,11 +523,11 @@ public class MinecraftClient {
         return null;
     }
 
-    public java.lang.Object getToastManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.toast.ToastManager getToastManager() {
         return null;
     }
 
-    public java.lang.Object getTutorialManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.tutorial.TutorialManager getTutorialManager() {
         return null;
     }
 
@@ -539,7 +539,7 @@ public class MinecraftClient {
         return null;
     }
 
-    public java.lang.Object getVideoWarningManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.resource.VideoWarningManager getVideoWarningManager() {
         return null;
     }
 
@@ -547,11 +547,11 @@ public class MinecraftClient {
         return null;
     }
 
-    public java.lang.Object getWindow() {
+    public murat.simv2.simulation.mirror.net.minecraft.client.util.Window getWindow() {
         return null;
     }
 
-    public java.lang.Object getWorldGenerationProgressTracker() {
+    public murat.simv2.simulation.mirror.net.minecraft.server.WorldGenerationProgressTracker getWorldGenerationProgressTracker() {
         return null;
     }
 
@@ -667,13 +667,13 @@ public class MinecraftClient {
         return false;
     }
 
-    public void joinWorld(java.lang.Object p0, java.lang.Object p1) {
+    public void joinWorld(murat.simv2.simulation.mirror.net.minecraft.client.world.ClientWorld p0, murat.simv2.simulation.mirror.net.minecraft.client.gui.screen.DownloadingTerrainScreen.WorldEntryReason p1) {
     }
 
     public void loadBlockList() {
     }
 
-    public static java.lang.Object of(java.lang.String p0, java.util.concurrent.Executor p1) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.thread.TaskExecutor of(java.lang.String p0, java.util.concurrent.Executor p1) {
         return null;
     }
 
@@ -742,7 +742,7 @@ public class MinecraftClient {
     public void render(boolean p0) {
     }
 
-    public void reset(java.lang.Object p0) {
+    public void reset(murat.simv2.simulation.mirror.net.minecraft.client.gui.screen.Screen p0) {
     }
 
     public void runTasks() {
@@ -762,7 +762,7 @@ public class MinecraftClient {
         return 0;
     }
 
-    public java.nio.file.Path saveProfilingResult(java.lang.Object p0, java.util.List p1) {
+    public java.nio.file.Path saveProfilingResult(murat.simv2.simulation.mirror.net.minecraft.util.SystemDetails p0, java.util.List p1) {
         return null;
     }
 
@@ -784,19 +784,19 @@ public class MinecraftClient {
     public void setMipmapLevels(int p0) {
     }
 
-    public void setNavigationType(java.lang.Object p0) {
+    public void setNavigationType(murat.simv2.simulation.mirror.net.minecraft.client.gui.navigation.GuiNavigationType p0) {
     }
 
-    public void setOverlay(java.lang.Object p0) {
+    public void setOverlay(murat.simv2.simulation.mirror.net.minecraft.client.gui.screen.Overlay p0) {
     }
 
-    public void setScreenAndRender(java.lang.Object p0) {
+    public void setScreenAndRender(murat.simv2.simulation.mirror.net.minecraft.client.gui.screen.Screen p0) {
     }
 
-    public void setScreen(java.lang.Object p0) {
+    public void setScreen(murat.simv2.simulation.mirror.net.minecraft.client.gui.screen.Screen p0) {
     }
 
-    public void setWorld(java.lang.Object p0) {
+    public void setWorld(murat.simv2.simulation.mirror.net.minecraft.client.world.ClientWorld p0) {
     }
 
     public boolean shouldBlockMessages(java.util.UUID p0) {
@@ -818,10 +818,10 @@ public class MinecraftClient {
     public void showResourceReloadFailureToast(murat.simv2.simulation.mirror.net.minecraft.text.Text p0) {
     }
 
-    public void startIntegratedServer(java.lang.Object p0, java.lang.Object p1, java.lang.Object p2, boolean p3) {
+    public void startIntegratedServer(murat.simv2.simulation.mirror.net.minecraft.world.level.storage.LevelStorage.Session p0, murat.simv2.simulation.mirror.net.minecraft.resource.ResourcePackManager p1, murat.simv2.simulation.mirror.net.minecraft.server.SaveLoader p2, boolean p3) {
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.util.profiler.Profiler startMonitor(boolean p0, java.lang.Object p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.profiler.Profiler startMonitor(boolean p0, murat.simv2.simulation.mirror.net.minecraft.util.TickDurationMonitor p1) {
         return null;
     }
 
@@ -904,10 +904,10 @@ public class MinecraftClient {
     }
 
     public static class LoadingContext {
-        public java.lang.Object quickPlayData;
+        public murat.simv2.simulation.mirror.net.minecraft.client.RunArgs.QuickPlay quickPlayData;
         public java.lang.Object realmsClient;
 
-        public LoadingContext(java.lang.Object p0, java.lang.Object p1) {
+        public LoadingContext(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.client.RunArgs.QuickPlay p1) {
         }
 
         public boolean equals(java.lang.Object p0) {
@@ -918,7 +918,7 @@ public class MinecraftClient {
             return 0;
         }
 
-        public java.lang.Object quickPlayData() {
+        public murat.simv2.simulation.mirror.net.minecraft.client.RunArgs.QuickPlay quickPlayData() {
             return null;
         }
 

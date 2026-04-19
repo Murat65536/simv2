@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.shape;
 
 // Generated mirror stub for simulation closure.
-public class VoxelShapes {
+public class VoxelShapes extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d BLOCK_CENTER;
@@ -22,11 +22,11 @@ public class VoxelShapes {
         return 0.0D;
     }
 
-    public static murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape combineAndSimplify(murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape p0, murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape p1, java.lang.Object p2) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape combineAndSimplify(murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape p0, murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape p1, murat.simv2.simulation.mirror.net.minecraft.util.function.BooleanBiFunction p2) {
         return null;
     }
 
-    public static murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape combine(murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape p0, murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape p1, java.lang.Object p2) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape combine(murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape p0, murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape p1, murat.simv2.simulation.mirror.net.minecraft.util.function.BooleanBiFunction p2) {
         return null;
     }
 
@@ -66,7 +66,7 @@ public class VoxelShapes {
         return null;
     }
 
-    public static java.lang.Object createListPair(int p0, it.unimi.dsi.fastutil.doubles.DoubleList p1, it.unimi.dsi.fastutil.doubles.DoubleList p2, boolean p3, boolean p4) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.shape.PairList createListPair(int p0, it.unimi.dsi.fastutil.doubles.DoubleList p1, it.unimi.dsi.fastutil.doubles.DoubleList p2, boolean p3, boolean p4) {
         return null;
     }
 
@@ -106,11 +106,11 @@ public class VoxelShapes {
         return 0L;
     }
 
-    public static boolean matchesAnywhere(java.lang.Object p0, java.lang.Object p1, java.lang.Object p2, murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelSet p3, murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelSet p4, java.lang.Object p5) {
+    public static boolean matchesAnywhere(murat.simv2.simulation.mirror.net.minecraft.util.shape.PairList p0, murat.simv2.simulation.mirror.net.minecraft.util.shape.PairList p1, murat.simv2.simulation.mirror.net.minecraft.util.shape.PairList p2, murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelSet p3, murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelSet p4, murat.simv2.simulation.mirror.net.minecraft.util.function.BooleanBiFunction p5) {
         return false;
     }
 
-    public static boolean matchesAnywhere(murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape p0, murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape p1, java.lang.Object p2) {
+    public static boolean matchesAnywhere(murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape p0, murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape p1, murat.simv2.simulation.mirror.net.minecraft.util.function.BooleanBiFunction p2) {
         return false;
     }
 

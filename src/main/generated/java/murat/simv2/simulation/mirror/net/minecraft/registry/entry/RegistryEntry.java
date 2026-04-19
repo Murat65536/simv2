@@ -28,7 +28,7 @@ public interface RegistryEntry<T> {
         return null;
     }
 
-    public boolean ownerEquals(java.lang.Object p0);
+    public boolean ownerEquals(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntryOwner p0);
 
     public java.util.stream.Stream streamTags();
 
@@ -92,7 +92,7 @@ public interface RegistryEntry<T> {
             return null;
         }
 
-        public boolean ownerEquals(java.lang.Object p0) {
+        public boolean ownerEquals(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntryOwner p0) {
             return false;
         }
 
@@ -113,14 +113,14 @@ public interface RegistryEntry<T> {
 
     }
 
-    public static class Reference<T> implements murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry {
-        public java.lang.Object owner;
+    public static class Reference<T> extends java.lang.Object implements murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry {
+        public murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntryOwner<java.lang.Object> owner;
         public murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry.Reference.Type referenceType;
-        public murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey registryKey;
-        public java.util.Set tags;
+        public murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey<java.lang.Object> registryKey;
+        public java.util.Set<murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey<java.lang.Object>> tags;
         public java.lang.Object value;
 
-        public Reference(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry.Reference.Type p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p2, java.lang.Object p3) {
+        public Reference(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry.Reference.Type p0, murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntryOwner p1, murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p2, java.lang.Object p3) {
         }
 
         public java.lang.String getIdAsString() {
@@ -147,7 +147,7 @@ public interface RegistryEntry<T> {
             return false;
         }
 
-        public static murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry.Reference intrusive(java.lang.Object p0, java.lang.Object p1) {
+        public static murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry.Reference intrusive(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntryOwner p0, java.lang.Object p1) {
             return null;
         }
 
@@ -175,7 +175,7 @@ public interface RegistryEntry<T> {
             return null;
         }
 
-        public boolean ownerEquals(java.lang.Object p0) {
+        public boolean ownerEquals(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntryOwner p0) {
             return false;
         }
 
@@ -192,7 +192,7 @@ public interface RegistryEntry<T> {
         public void setValue(java.lang.Object p0) {
         }
 
-        public static murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry.Reference standAlone(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p1) {
+        public static murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry.Reference standAlone(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntryOwner p0, murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p1) {
             return null;
         }
 

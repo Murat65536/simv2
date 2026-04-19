@@ -1,14 +1,14 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.math;
 
 // Generated mirror stub for simulation closure.
-public class ChunkPos {
+public class ChunkPos extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.Codec CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.util.math.ChunkPos> CODEC;
     public static long MARKER;
     public static int MAX_COORDINATE;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.ChunkPos ORIGIN;
-    public static java.lang.Object PACKET_CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<io.netty.buffer.ByteBuf, murat.simv2.simulation.mirror.net.minecraft.util.math.ChunkPos> PACKET_CODEC;
     public static long field_30953;
     public static long field_30954;
     public static int field_30955;

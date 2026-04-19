@@ -1,25 +1,25 @@
 package murat.simv2.simulation.mirror.net.minecraft.util;
 
 // Generated mirror stub for simulation closure.
-public class Util {
+public class Util extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static int BACKUP_ATTEMPTS;
     public static java.time.format.DateTimeFormatter DATE_TIME_FORMATTER;
-    public static java.lang.Object DOWNLOAD_WORKER_EXECUTOR;
-    public static java.lang.Object IO_WORKER_EXECUTOR;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.thread.NameableExecutor DOWNLOAD_WORKER_EXECUTOR;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.thread.NameableExecutor IO_WORKER_EXECUTOR;
     public static java.nio.file.spi.FileSystemProvider JAR_FILE_SYSTEM_PROVIDER;
     public static org.slf4j.Logger LOGGER;
-    public static java.lang.Object MAIN_WORKER_EXECUTOR;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.thread.NameableExecutor MAIN_WORKER_EXECUTOR;
     public static java.lang.String MAX_BG_THREADS_PROPERTY;
     public static int MAX_PARALLELISM;
     public static java.util.UUID NIL_UUID;
-    public static java.util.Set SUPPORTED_URI_PROTOCOLS;
+    public static java.util.Set<java.lang.String> SUPPORTED_URI_PROTOCOLS;
     public static com.google.common.base.Ticker TICKER;
     public static long field_45714;
     public static int field_46220;
-    public static java.util.function.Consumer missingBreakpointHandler;
-    public static java.lang.Object nanoTimeSupplier;
+    public static java.util.function.Consumer<java.lang.String> missingBreakpointHandler;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.TimeSupplier.Nanoseconds nanoTimeSupplier;
 
     public Util() {
     }
@@ -83,7 +83,7 @@ public class Util {
         return false;
     }
 
-    public static java.lang.Object cachedMapper(java.util.function.Function p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.CachedMapper cachedMapper(java.util.function.Function p0) {
         return null;
     }
 
@@ -115,7 +115,7 @@ public class Util {
         return null;
     }
 
-    public static java.lang.Object createIoWorker(java.lang.String p0, boolean p1) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.thread.NameableExecutor createIoWorker(java.lang.String p0, boolean p1) {
         return null;
     }
 
@@ -123,7 +123,7 @@ public class Util {
         return null;
     }
 
-    public static java.lang.Object createWorker(java.lang.String p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.thread.NameableExecutor createWorker(java.lang.String p0) {
         return null;
     }
 
@@ -171,7 +171,7 @@ public class Util {
         return null;
     }
 
-    public static java.lang.Object getDownloadWorkerExecutor() {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.thread.NameableExecutor getDownloadWorkerExecutor() {
         return null;
     }
 
@@ -191,7 +191,7 @@ public class Util {
         return null;
     }
 
-    public static java.lang.Object getIoWorkerExecutor() {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.thread.NameableExecutor getIoWorkerExecutor() {
         return null;
     }
 
@@ -203,7 +203,7 @@ public class Util {
         return null;
     }
 
-    public static java.lang.Object getMainWorkerExecutor() {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.thread.NameableExecutor getMainWorkerExecutor() {
         return null;
     }
 
@@ -239,7 +239,7 @@ public class Util {
         return null;
     }
 
-    public static java.lang.String getValueAsString(java.lang.Object p0, java.lang.Object p1) {
+    public static java.lang.String getValueAsString(murat.simv2.simulation.mirror.net.minecraft.state.property.Property p0, java.lang.Object p1) {
         return null;
     }
 
@@ -344,7 +344,7 @@ public class Util {
         return null;
     }
 
-    public static java.lang.String registryValueToString(java.lang.Object p0, java.lang.Object p1) {
+    public static java.lang.String registryValueToString(murat.simv2.simulation.mirror.net.minecraft.registry.Registry p0, java.lang.Object p1) {
         return null;
     }
 
@@ -355,7 +355,7 @@ public class Util {
         return null;
     }
 
-    public static java.lang.String replaceInvalidChars(java.lang.String p0, java.lang.Object p1) {
+    public static java.lang.String replaceInvalidChars(java.lang.String p0, murat.simv2.simulation.mirror.net.minecraft.util.function.CharPredicate p1) {
         return null;
     }
 

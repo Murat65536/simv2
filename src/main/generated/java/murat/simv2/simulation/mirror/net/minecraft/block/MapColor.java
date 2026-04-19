@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.block;
 
 // Generated mirror stub for simulation closure.
-public class MapColor {
+public class MapColor extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.block.MapColor BLACK;

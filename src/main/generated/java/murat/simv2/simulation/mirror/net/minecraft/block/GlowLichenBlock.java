@@ -1,10 +1,10 @@
 package murat.simv2.simulation.mirror.net.minecraft.block;
 
 // Generated mirror stub for simulation closure.
-public class GlowLichenBlock {
+public class GlowLichenBlock extends murat.simv2.simulation.mirror.net.minecraft.block.MultifaceGrowthBlock implements murat.simv2.simulation.mirror.net.minecraft.block.Fertilizable {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.MapCodec CODEC;
+    public static com.mojang.serialization.MapCodec<murat.simv2.simulation.mirror.net.minecraft.block.GlowLichenBlock> CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction[] DIRECTIONS;
     public static int FORCE_STATE;
     public static int FORCE_STATE_AND_SKIP_CALLBACKS_AND_DROPS;
@@ -20,33 +20,33 @@ public class GlowLichenBlock {
     public static int SKIP_DROPS;
     public static int SKIP_REDRAW_AND_BLOCK_ENTITY_REPLACED_CALLBACK;
     public static int SKIP_REDSTONE_WIRE_STATE_REPLACEMENT;
-    public static java.lang.Object STATE_IDS;
-    public static java.lang.Object WATERLOGGED;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.collection.IdList<murat.simv2.simulation.mirror.net.minecraft.block.BlockState> STATE_IDS;
+    public static murat.simv2.simulation.mirror.net.minecraft.state.property.BooleanProperty WATERLOGGED;
     public boolean collidable;
     public boolean dynamicBounds;
     public static float field_31023;
     public static float field_31024;
     public static int field_31025;
-    public java.lang.Object grower;
+    public murat.simv2.simulation.mirror.net.minecraft.block.MultifaceGrower grower;
     public float jumpVelocityMultiplier;
-    public java.util.Optional lootTableKey;
+    public java.util.Optional<murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey<murat.simv2.simulation.mirror.net.minecraft.loot.LootTable>> lootTableKey;
     public boolean randomTicks;
-    public java.lang.Object requiredFeatures;
+    public murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet requiredFeatures;
     public float resistance;
     public murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.Settings settings;
     public float slipperiness;
     public murat.simv2.simulation.mirror.net.minecraft.sound.BlockSoundGroup soundGroup;
-    public java.lang.Object stateManager;
+    public murat.simv2.simulation.mirror.net.minecraft.state.StateManager<murat.simv2.simulation.mirror.net.minecraft.block.Block, murat.simv2.simulation.mirror.net.minecraft.block.BlockState> stateManager;
     public java.lang.String translationKey;
     public float velocityMultiplier;
 
     public GlowLichenBlock(murat.simv2.simulation.mirror.net.minecraft.block.AbstractBlock.Settings p0) {
     }
 
-    public void afterBreak(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, java.lang.Object p4, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p5) {
+    public void afterBreak(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, murat.simv2.simulation.mirror.net.minecraft.block.entity.BlockEntity p4, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p5) {
     }
 
-    public void appendProperties(java.lang.Object p0) {
+    public void appendProperties(murat.simv2.simulation.mirror.net.minecraft.state.StateManager.Builder p0) {
     }
 
     public murat.simv2.simulation.mirror.net.minecraft.block.Block asBlock() {
@@ -93,19 +93,19 @@ public class GlowLichenBlock {
         return false;
     }
 
-    public boolean canPathfindThrough(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1) {
+    public boolean canPathfindThrough(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.entity.ai.pathing.NavigationType p1) {
         return false;
     }
 
-    public boolean canPlaceAt(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
+    public boolean canPlaceAt(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.WorldView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
         return false;
     }
 
-    public boolean canReplace(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1) {
+    public boolean canReplace(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemPlacementContext p1) {
         return false;
     }
 
-    public static boolean canSpread(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2) {
+    public static boolean canSpread(murat.simv2.simulation.mirror.net.minecraft.world.WorldView p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2) {
         return false;
     }
 
@@ -153,7 +153,7 @@ public class GlowLichenBlock {
         return null;
     }
 
-    public java.lang.Object createScreenHandlerFactory(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.screen.NamedScreenHandlerFactory createScreenHandlerFactory(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
         return null;
     }
 
@@ -169,7 +169,7 @@ public class GlowLichenBlock {
         return null;
     }
 
-    public java.util.function.Function createShapeFunction(java.util.function.Function p0, java.lang.Object[] p1) {
+    public java.util.function.Function createShapeFunction(java.util.function.Function p0, murat.simv2.simulation.mirror.net.minecraft.state.property.Property[] p1) {
         return null;
     }
 
@@ -177,19 +177,19 @@ public class GlowLichenBlock {
         return (byte) 0;
     }
 
-    public void dropExperienceWhenMined(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p2, java.lang.Object p3) {
+    public void dropExperienceWhenMined(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p2, murat.simv2.simulation.mirror.net.minecraft.util.math.intprovider.IntProvider p3) {
     }
 
     public void dropExperience(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, int p2) {
     }
 
-    public static void dropStacks(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, java.lang.Object p3) {
-    }
-
     public static void dropStacks(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
     }
 
-    public static void dropStacks(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, java.lang.Object p3, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p4, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p5) {
+    public static void dropStacks(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.entity.BlockEntity p3, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p4, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p5) {
+    }
+
+    public static void dropStacks(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.entity.BlockEntity p3) {
     }
 
     public static void dropStack(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p2) {
@@ -258,15 +258,15 @@ public class GlowLichenBlock {
         return null;
     }
 
-    public static java.util.List getDroppedStacks(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, java.lang.Object p3) {
+    public static java.util.List getDroppedStacks(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.entity.BlockEntity p3) {
         return null;
     }
 
-    public static java.util.List getDroppedStacks(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, java.lang.Object p3, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p4, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p5) {
+    public static java.util.List getDroppedStacks(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.entity.BlockEntity p3, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p4, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p5) {
         return null;
     }
 
-    public java.lang.Object getFertilizableType() {
+    public murat.simv2.simulation.mirror.net.minecraft.block.Fertilizable.FertilizableType getFertilizableType() {
         return null;
     }
 
@@ -278,7 +278,7 @@ public class GlowLichenBlock {
         return null;
     }
 
-    public java.lang.Object getGrower() {
+    public murat.simv2.simulation.mirror.net.minecraft.block.MultifaceGrower getGrower() {
         return null;
     }
 
@@ -306,7 +306,7 @@ public class GlowLichenBlock {
         return 0.0F;
     }
 
-    public java.lang.Object getName() {
+    public murat.simv2.simulation.mirror.net.minecraft.text.MutableText getName() {
         return null;
     }
 
@@ -318,15 +318,15 @@ public class GlowLichenBlock {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getPickStack(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2, boolean p3) {
+    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack getPickStack(murat.simv2.simulation.mirror.net.minecraft.world.WorldView p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2, boolean p3) {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.block.BlockState getPlacementState(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.block.BlockState getPlacementState(murat.simv2.simulation.mirror.net.minecraft.item.ItemPlacementContext p0) {
         return null;
     }
 
-    public static java.lang.Object getProperty(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.state.property.BooleanProperty getProperty(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p0) {
         return null;
     }
 
@@ -342,7 +342,7 @@ public class GlowLichenBlock {
         return null;
     }
 
-    public java.lang.Object getRenderType(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.block.BlockRenderType getRenderType(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0) {
         return null;
     }
 
@@ -350,7 +350,7 @@ public class GlowLichenBlock {
         return 0L;
     }
 
-    public java.lang.Object getRequiredFeatures() {
+    public murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet getRequiredFeatures() {
         return null;
     }
 
@@ -370,7 +370,7 @@ public class GlowLichenBlock {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.block.BlockState getStateForNeighborUpdate(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1, java.lang.Object p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p4, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p5, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p6, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p7) {
+    public murat.simv2.simulation.mirror.net.minecraft.block.BlockState getStateForNeighborUpdate(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.WorldView p1, murat.simv2.simulation.mirror.net.minecraft.world.tick.ScheduledTickView p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p4, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p5, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p6, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p7) {
         return null;
     }
 
@@ -378,7 +378,7 @@ public class GlowLichenBlock {
         return null;
     }
 
-    public java.lang.Object getStateManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.state.StateManager getStateManager() {
         return null;
     }
 
@@ -437,7 +437,7 @@ public class GlowLichenBlock {
         return false;
     }
 
-    public boolean isEnabled(java.lang.Object p0) {
+    public boolean isEnabled(murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet p0) {
         return false;
     }
 
@@ -445,7 +445,7 @@ public class GlowLichenBlock {
         return false;
     }
 
-    public boolean isFertilizable(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2) {
+    public boolean isFertilizable(murat.simv2.simulation.mirror.net.minecraft.world.WorldView p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2) {
         return false;
     }
 
@@ -465,11 +465,11 @@ public class GlowLichenBlock {
         return false;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.block.BlockState mirror(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.block.BlockState mirror(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.util.BlockMirror p1) {
         return null;
     }
 
-    public void neighborUpdate(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.Block p3, java.lang.Object p4, boolean p5) {
+    public void neighborUpdate(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.Block p3, murat.simv2.simulation.mirror.net.minecraft.world.block.WireOrientation p4, boolean p5) {
     }
 
     public void onBlockAdded(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, boolean p4) {
@@ -482,10 +482,10 @@ public class GlowLichenBlock {
         return null;
     }
 
-    public void onBroken(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2) {
+    public void onBroken(murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2) {
     }
 
-    public void onDestroyedByExplosion(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, java.lang.Object p2) {
+    public void onDestroyedByExplosion(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.world.explosion.Explosion p2) {
     }
 
     public void onEntityCollision(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p3, murat.simv2.simulation.mirror.net.minecraft.entity.EntityCollisionHandler p4) {
@@ -494,7 +494,7 @@ public class GlowLichenBlock {
     public void onEntityLand(murat.simv2.simulation.mirror.net.minecraft.world.BlockView p0, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p1) {
     }
 
-    public void onExploded(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, java.lang.Object p3, java.util.function.BiConsumer p4) {
+    public void onExploded(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.world.explosion.Explosion p3, java.util.function.BiConsumer p4) {
     }
 
     public void onLandedUpon(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p3, double p4) {
@@ -519,25 +519,25 @@ public class GlowLichenBlock {
         return false;
     }
 
-    public java.lang.Object onUseWithItem(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, murat.simv2.simulation.mirror.net.minecraft.world.World p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p4, murat.simv2.simulation.mirror.net.minecraft.util.Hand p5, murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult p6) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult onUseWithItem(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, murat.simv2.simulation.mirror.net.minecraft.world.World p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p4, murat.simv2.simulation.mirror.net.minecraft.util.Hand p5, murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult p6) {
         return null;
     }
 
-    public java.lang.Object onUse(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p3, murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult p4) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult onUse(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p3, murat.simv2.simulation.mirror.net.minecraft.util.hit.BlockHitResult p4) {
         return null;
     }
 
-    public static murat.simv2.simulation.mirror.net.minecraft.block.BlockState postProcessState(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
+    public static murat.simv2.simulation.mirror.net.minecraft.block.BlockState postProcessState(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
         return null;
     }
 
-    public void precipitationTick(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, java.lang.Object p3) {
+    public void precipitationTick(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.World p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.world.biome.Biome.Precipitation p3) {
     }
 
-    public void prepare(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, int p3, int p4) {
+    public void prepare(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, int p3, int p4) {
     }
 
-    public static murat.simv2.simulation.mirror.net.minecraft.block.BlockState pushEntitiesUpBeforeBlockChange(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, java.lang.Object p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3) {
+    public static murat.simv2.simulation.mirror.net.minecraft.block.BlockState pushEntitiesUpBeforeBlockChange(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3) {
         return null;
     }
 
@@ -547,13 +547,13 @@ public class GlowLichenBlock {
     public void randomTick(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random p3) {
     }
 
-    public static void replace(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, java.lang.Object p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, int p4) {
+    public static void replace(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, int p4) {
     }
 
-    public static void replace(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, java.lang.Object p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, int p4, int p5) {
+    public static void replace(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3, int p4, int p5) {
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.block.BlockState rotate(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.block.BlockState rotate(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.util.BlockRotation p1) {
         return null;
     }
 
@@ -567,11 +567,11 @@ public class GlowLichenBlock {
         return false;
     }
 
-    public boolean shouldDropItemsOnExplosion(java.lang.Object p0) {
+    public boolean shouldDropItemsOnExplosion(murat.simv2.simulation.mirror.net.minecraft.world.explosion.Explosion p0) {
         return false;
     }
 
-    public static boolean sideCoversSmallSquare(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p2) {
+    public static boolean sideCoversSmallSquare(murat.simv2.simulation.mirror.net.minecraft.world.WorldView p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.util.math.Direction p2) {
         return false;
     }
 
@@ -582,11 +582,11 @@ public class GlowLichenBlock {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack tryDrainFluid(murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3) {
+    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack tryDrainFluid(murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p0, murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3) {
         return null;
     }
 
-    public boolean tryFillWithFluid(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2, murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState p3) {
+    public boolean tryFillWithFluid(murat.simv2.simulation.mirror.net.minecraft.world.WorldAccess p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2, murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState p3) {
         return false;
     }
 

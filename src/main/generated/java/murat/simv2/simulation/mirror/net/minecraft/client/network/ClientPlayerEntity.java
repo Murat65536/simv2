@@ -288,7 +288,7 @@ public abstract class ClientPlayerEntity extends AbstractClientPlayerEntity {
         }
     }
 
-    protected void hasCollidedSoftly(Vec3d adjustedMovement) {
+    protected boolean hasCollidedSoftly(Vec3d adjustedMovement) {
         float f = this.getYaw() * ((float) (Math.PI / 180.0));
         double d = MathHelper.sin(f);
         double e = MathHelper.cos(f);
@@ -300,6 +300,7 @@ public abstract class ClientPlayerEntity extends AbstractClientPlayerEntity {
             double k = (g * adjustedMovement.x) + (h * adjustedMovement.z);
             double l = Math.acos(k / Math.sqrt(i * j));
         }
+        return false;
     }
 
     private boolean shouldAutoJump() {

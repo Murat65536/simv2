@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.math;
 
 // Generated mirror stub for simulation closure.
-public class RotationCalculator {
+public class RotationCalculator extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public float degreesPerRotation;

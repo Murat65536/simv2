@@ -1,14 +1,14 @@
 package murat.simv2.simulation.mirror.net.minecraft.util;
 
 // Generated mirror stub for simulation closure.
-public class Identifier {
+public class Identifier extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.Codec CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.util.Identifier> CODEC;
     public static com.mojang.brigadier.exceptions.SimpleCommandExceptionType COMMAND_EXCEPTION;
     public static java.lang.String DEFAULT_NAMESPACE;
     public static char NAMESPACE_SEPARATOR;
-    public static java.lang.Object PACKET_CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<io.netty.buffer.ByteBuf, murat.simv2.simulation.mirror.net.minecraft.util.Identifier> PACKET_CODEC;
     public static java.lang.String REALMS_NAMESPACE;
     public static boolean field_52202;
     public java.lang.String namespace;

@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.math;
 
 // Generated mirror stub for simulation closure.
-public class MathHelper {
+public class MathHelper extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static double ARCSINE_MACLAURIN_3;

@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.block;
 
 // Generated mirror stub for simulation closure.
-public class EntityShapeContext implements murat.simv2.simulation.mirror.net.minecraft.block.ShapeContext {
+public class EntityShapeContext extends java.lang.Object implements murat.simv2.simulation.mirror.net.minecraft.block.ShapeContext {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.block.ShapeContext ABSENT;
@@ -10,7 +10,7 @@ public class EntityShapeContext implements murat.simv2.simulation.mirror.net.min
     public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack heldItem;
     public double minY;
     public boolean placement;
-    public java.util.function.Predicate walkOnFluidPredicate;
+    public java.util.function.Predicate<murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState> walkOnFluidPredicate;
 
     public EntityShapeContext(boolean p0, boolean p1, double p2, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p3, java.util.function.Predicate p4, murat.simv2.simulation.mirror.net.minecraft.entity.Entity p5) {
     }
@@ -26,7 +26,7 @@ public class EntityShapeContext implements murat.simv2.simulation.mirror.net.min
         return false;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape getCollisionShape(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.shape.VoxelShape getCollisionShape(murat.simv2.simulation.mirror.net.minecraft.block.BlockState p0, murat.simv2.simulation.mirror.net.minecraft.world.CollisionView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2) {
         return null;
     }
 

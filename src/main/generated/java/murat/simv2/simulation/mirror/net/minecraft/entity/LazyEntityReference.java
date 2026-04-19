@@ -1,20 +1,20 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity;
 
 // Generated mirror stub for simulation closure.
-public class LazyEntityReference<StoredEntityType> {
+public class LazyEntityReference<StoredEntityType> extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.Codec CODEC;
-    public static java.lang.Object PACKET_CODEC;
-    public com.mojang.datafixers.util.Either value;
-
-    public LazyEntityReference(java.lang.Object p0) {
-    }
+    public static com.mojang.serialization.Codec<? extends murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference<?>> CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<io.netty.buffer.ByteBuf, ? extends murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference<?>> PACKET_CODEC;
+    public com.mojang.datafixers.util.Either<java.util.UUID, java.lang.Object> value;
 
     public LazyEntityReference(java.util.UUID p0) {
     }
 
-    public java.lang.Object cast(java.lang.Object p0, java.lang.Class p1) {
+    public LazyEntityReference(java.lang.Object p0) {
+    }
+
+    public murat.simv2.simulation.mirror.net.minecraft.world.entity.UniquelyIdentifiable cast(murat.simv2.simulation.mirror.net.minecraft.world.entity.UniquelyIdentifiable p0, java.lang.Class p1) {
         return null;
     }
 
@@ -22,7 +22,7 @@ public class LazyEntityReference<StoredEntityType> {
         return null;
     }
 
-    public static java.lang.Object createPacketCodec() {
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec createPacketCodec() {
         return null;
     }
 
@@ -38,15 +38,15 @@ public class LazyEntityReference<StoredEntityType> {
         return null;
     }
 
-    public java.lang.Object resolve(java.lang.Object p0, java.lang.Class p1) {
-        return null;
-    }
-
     public static java.lang.Object resolve(murat.simv2.simulation.mirror.net.minecraft.entity.LazyEntityReference p0, java.lang.Object p1, java.lang.Class p2) {
         return null;
     }
 
-    public boolean uuidEquals(java.lang.Object p0) {
+    public java.lang.Object resolve(java.lang.Object p0, java.lang.Class p1) {
+        return null;
+    }
+
+    public boolean uuidEquals(murat.simv2.simulation.mirror.net.minecraft.world.entity.UniquelyIdentifiable p0) {
         return false;
     }
 

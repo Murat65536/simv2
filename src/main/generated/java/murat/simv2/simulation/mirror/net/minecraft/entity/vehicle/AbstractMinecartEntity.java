@@ -1,21 +1,21 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity.vehicle;
 
 // Generated mirror stub for simulation closure.
-public class AbstractMinecartEntity {
+public class AbstractMinecartEntity extends murat.simv2.simulation.mirror.net.minecraft.entity.vehicle.VehicleEntity {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static java.util.Map ADJACENT_RAIL_POSITIONS_BY_SHAPE;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData BLOCK_OFFSET;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData CUSTOM_BLOCK_STATE;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData DAMAGE_WOBBLE_SIDE;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData DAMAGE_WOBBLE_STRENGTH;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData DAMAGE_WOBBLE_TICKS;
+    public static java.util.Map<murat.simv2.simulation.mirror.net.minecraft.block.enums.RailShape, com.mojang.datafixers.util.Pair<murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3i, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3i>> ADJACENT_RAIL_POSITIONS_BY_SHAPE;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Integer> BLOCK_OFFSET;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.util.Optional<murat.simv2.simulation.mirror.net.minecraft.block.BlockState>> CUSTOM_BLOCK_STATE;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Integer> DAMAGE_WOBBLE_SIDE;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Float> DAMAGE_WOBBLE_STRENGTH;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Integer> DAMAGE_WOBBLE_TICKS;
     public static float DEFAULT_FRICTION;
     public static int DEFAULT_MIN_FREEZE_DAMAGE_TICKS;
     public static int DEFAULT_PORTAL_COOLDOWN;
     public static boolean DEFAULT_YAW_FLIPPED;
-    public static com.google.common.collect.ImmutableMap DISMOUNT_FREE_Y_SPACES_NEEDED;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData FLAGS;
+    public static com.google.common.collect.ImmutableMap<murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose, com.google.common.collect.ImmutableList<java.lang.Integer>> DISMOUNT_FREE_Y_SPACES_NEEDED;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Byte> FLAGS;
     public static int FREEZING_DAMAGE_INTERVAL;
     public static int GLIDING_FLAG_INDEX;
     public static int GLOWING_FLAG_INDEX;
@@ -25,7 +25,7 @@ public class AbstractMinecartEntity {
     public static float MIN_RISING_BUBBLE_COLUMN_SPEED;
     public static int ON_FIRE_FLAG_INDEX;
     public static java.lang.String PASSENGERS_KEY;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData POSE;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose> POSE;
     public static java.lang.String UUID_KEY;
     public static float VELOCITY_SLOWDOWN_MULTIPLIER;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d VILLAGER_PASSENGER_ATTACHMENT_POS;
@@ -33,7 +33,7 @@ public class AbstractMinecartEntity {
     public murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos blockPos;
     public murat.simv2.simulation.mirror.net.minecraft.util.math.ChunkPos chunkPos;
     public boolean collidedSoftly;
-    public java.lang.Object controller;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.vehicle.MinecartController controller;
     public murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker dataTracker;
     public murat.simv2.simulation.mirror.net.minecraft.entity.EntityDimensions dimensions;
     public float distanceTraveled;
@@ -44,7 +44,7 @@ public class AbstractMinecartEntity {
     public static int field_49073;
     public static int field_49791;
     public boolean firstUpdate;
-    public it.unimi.dsi.fastutil.objects.Object2DoubleMap fluidHeight;
+    public it.unimi.dsi.fastutil.objects.Object2DoubleMap<murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey<murat.simv2.simulation.mirror.net.minecraft.fluid.Fluid>> fluidHeight;
     public boolean forceUpdateSupportingBlockPos;
     public boolean groundCollision;
     public boolean horizontalCollision;
@@ -62,7 +62,7 @@ public class AbstractMinecartEntity {
     public boolean noClip;
     public boolean onRail;
     public long pistonMovementTick;
-    public java.lang.Object portalManager;
+    public murat.simv2.simulation.mirror.net.minecraft.world.dimension.PortalManager portalManager;
     public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d pos;
     public murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random random;
     public int ridingCooldown;
@@ -70,7 +70,7 @@ public class AbstractMinecartEntity {
     public float standingEyeHeight;
     public murat.simv2.simulation.mirror.net.minecraft.block.BlockState stateAtPos;
     public boolean submergedInWater;
-    public java.util.Optional supportingBlockPos;
+    public java.util.Optional<murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos> supportingBlockPos;
     public int timeUntilRegen;
     public boolean touchingWater;
     public java.util.UUID uuid;
@@ -137,11 +137,11 @@ public class AbstractMinecartEntity {
     public void applyGravity() {
     }
 
-    public float applyMirror(java.lang.Object p0) {
+    public float applyMirror(murat.simv2.simulation.mirror.net.minecraft.util.BlockMirror p0) {
         return 0.0F;
     }
 
-    public float applyRotation(java.lang.Object p0) {
+    public float applyRotation(murat.simv2.simulation.mirror.net.minecraft.util.BlockRotation p0) {
         return 0.0F;
     }
 
@@ -206,7 +206,7 @@ public class AbstractMinecartEntity {
         return false;
     }
 
-    public boolean canExplosionDestroyBlock(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, float p4) {
+    public boolean canExplosionDestroyBlock(murat.simv2.simulation.mirror.net.minecraft.world.explosion.Explosion p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, float p4) {
         return false;
     }
 
@@ -242,7 +242,7 @@ public class AbstractMinecartEntity {
         return false;
     }
 
-    public static java.lang.Object castComponentValue(java.lang.Object p0, java.lang.Object p1) {
+    public static java.lang.Object castComponentValue(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1) {
         return null;
     }
 
@@ -267,11 +267,11 @@ public class AbstractMinecartEntity {
         return false;
     }
 
-    public boolean copyComponentFrom(java.lang.Object p0, java.lang.Object p1) {
+    public boolean copyComponentFrom(murat.simv2.simulation.mirror.net.minecraft.component.ComponentsAccess p0, murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p1) {
         return false;
     }
 
-    public void copyComponentsFrom(java.lang.Object p0) {
+    public void copyComponentsFrom(murat.simv2.simulation.mirror.net.minecraft.component.ComponentsAccess p0) {
     }
 
     public void copyComponentsFrom(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0) {
@@ -287,11 +287,11 @@ public class AbstractMinecartEntity {
         return false;
     }
 
-    public java.lang.Object createSpawnPacket(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.network.packet.Packet createSpawnPacket(murat.simv2.simulation.mirror.net.minecraft.server.network.EntityTrackerEntry p0) {
         return null;
     }
 
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.vehicle.AbstractMinecartEntity create(murat.simv2.simulation.mirror.net.minecraft.world.World p0, double p1, double p2, double p3, murat.simv2.simulation.mirror.net.minecraft.entity.EntityType p4, java.lang.Object p5, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p6, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p7) {
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.vehicle.AbstractMinecartEntity create(murat.simv2.simulation.mirror.net.minecraft.world.World p0, double p1, double p2, double p3, murat.simv2.simulation.mirror.net.minecraft.entity.EntityType p4, murat.simv2.simulation.mirror.net.minecraft.entity.SpawnReason p5, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p6, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p7) {
         return null;
     }
 
@@ -323,11 +323,11 @@ public class AbstractMinecartEntity {
         return false;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity dropItem(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, java.lang.Object p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity dropItem(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemConvertible p1) {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity dropItem(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, java.lang.Object p1, int p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity dropItem(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemConvertible p1, int p2) {
         return null;
     }
 
@@ -358,15 +358,15 @@ public class AbstractMinecartEntity {
     public void fall(double p0, boolean p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3) {
     }
 
-    public static java.lang.Object fromName(java.lang.String p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.scoreboard.ScoreHolder fromName(java.lang.String p0) {
         return null;
     }
 
-    public static java.lang.Object fromProfile(com.mojang.authlib.GameProfile p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.scoreboard.ScoreHolder fromProfile(com.mojang.authlib.GameProfile p0) {
         return null;
     }
 
-    public static com.mojang.datafixers.util.Pair getAdjacentRailPositionsByShape(java.lang.Object p0) {
+    public static com.mojang.datafixers.util.Pair getAdjacentRailPositionsByShape(murat.simv2.simulation.mirror.net.minecraft.block.enums.RailShape p0) {
         return null;
     }
 
@@ -442,7 +442,7 @@ public class AbstractMinecartEntity {
         return null;
     }
 
-    public java.lang.Object getCommandSource(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.server.command.ServerCommandSource getCommandSource(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0) {
         return null;
     }
 
@@ -454,7 +454,7 @@ public class AbstractMinecartEntity {
         return null;
     }
 
-    public java.lang.Object getController() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.vehicle.MinecartController getController() {
         return null;
     }
 
@@ -474,7 +474,7 @@ public class AbstractMinecartEntity {
         return null;
     }
 
-    public java.lang.Object getDamageSources() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSources getDamageSources() {
         return null;
     }
 
@@ -518,7 +518,7 @@ public class AbstractMinecartEntity {
         return null;
     }
 
-    public float getEffectiveExplosionResistance(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState p4, float p5) {
+    public float getEffectiveExplosionResistance(murat.simv2.simulation.mirror.net.minecraft.world.explosion.Explosion p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState p4, float p5) {
         return 0.0F;
     }
 
@@ -594,7 +594,7 @@ public class AbstractMinecartEntity {
         return null;
     }
 
-    public java.lang.Object getHoverEvent() {
+    public murat.simv2.simulation.mirror.net.minecraft.text.HoverEvent getHoverEvent() {
         return null;
     }
 
@@ -694,7 +694,7 @@ public class AbstractMinecartEntity {
         return null;
     }
 
-    public java.lang.Object getOrDefault(java.lang.Object p0, java.lang.Object p1) {
+    public java.lang.Object getOrDefault(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1) {
         return null;
     }
 
@@ -734,7 +734,7 @@ public class AbstractMinecartEntity {
         return null;
     }
 
-    public java.lang.Object getPistonBehavior() {
+    public murat.simv2.simulation.mirror.net.minecraft.block.piston.PistonBehavior getPistonBehavior() {
         return null;
     }
 
@@ -782,7 +782,7 @@ public class AbstractMinecartEntity {
         return null;
     }
 
-    public java.lang.Object getRegistryManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.registry.DynamicRegistryManager getRegistryManager() {
         return null;
     }
 
@@ -830,7 +830,7 @@ public class AbstractMinecartEntity {
         return null;
     }
 
-    public java.lang.Object getServer() {
+    public murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer getServer() {
         return null;
     }
 
@@ -842,7 +842,7 @@ public class AbstractMinecartEntity {
         return null;
     }
 
-    public java.lang.Object getStackReference(int p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.inventory.StackReference getStackReference(int p0) {
         return null;
     }
 
@@ -890,11 +890,11 @@ public class AbstractMinecartEntity {
         return 0;
     }
 
-    public java.lang.Object getTrackedPosition() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.TrackedPosition getTrackedPosition() {
         return null;
     }
 
-    public java.lang.Object getTyped(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.component.Component getTyped(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0) {
         return null;
     }
 
@@ -966,7 +966,7 @@ public class AbstractMinecartEntity {
         return 0.0D;
     }
 
-    public java.lang.Object get(java.lang.Object p0) {
+    public java.lang.Object get(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0) {
         return null;
     }
 
@@ -1044,11 +1044,11 @@ public class AbstractMinecartEntity {
     public void initPosition(double p0, double p1, double p2) {
     }
 
-    public java.lang.Object interactAt(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1, murat.simv2.simulation.mirror.net.minecraft.util.Hand p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult interactAt(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1, murat.simv2.simulation.mirror.net.minecraft.util.Hand p2) {
         return null;
     }
 
-    public java.lang.Object interact(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.util.Hand p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult interact(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.util.Hand p1) {
         return null;
     }
 
@@ -1120,7 +1120,7 @@ public class AbstractMinecartEntity {
         return false;
     }
 
-    public boolean isImmuneToExplosion(java.lang.Object p0) {
+    public boolean isImmuneToExplosion(murat.simv2.simulation.mirror.net.minecraft.world.explosion.Explosion p0) {
         return false;
     }
 
@@ -1303,10 +1303,10 @@ public class AbstractMinecartEntity {
     public void limitFallDistance() {
     }
 
-    public void lookAt(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
+    public void lookAt(murat.simv2.simulation.mirror.net.minecraft.command.argument.EntityAnchorArgumentType.EntityAnchor p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
     }
 
-    public double moveAlongTrack(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, java.lang.Object p1, double p2) {
+    public double moveAlongTrack(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p0, murat.simv2.simulation.mirror.net.minecraft.block.enums.RailShape p1, double p2) {
         return 0.0D;
     }
 
@@ -1367,7 +1367,7 @@ public class AbstractMinecartEntity {
     public void onRemove(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.RemovalReason p0) {
     }
 
-    public void onSpawnPacket(java.lang.Object p0) {
+    public void onSpawnPacket(murat.simv2.simulation.mirror.net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket p0) {
     }
 
     public void onStartedTrackingBy(murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity p0) {
@@ -1376,7 +1376,7 @@ public class AbstractMinecartEntity {
     public void onStoppedTrackingBy(murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity p0) {
     }
 
-    public void onStruckByLightning(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, java.lang.Object p1) {
+    public void onStruckByLightning(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.entity.LightningEntity p1) {
     }
 
     public void onSwimmingStart() {
@@ -1415,7 +1415,7 @@ public class AbstractMinecartEntity {
     public void populateCrashReport(murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashReportSection p0) {
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d positionInPortal(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis p0, java.lang.Object p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d positionInPortal(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockLocating.Rectangle p1) {
         return null;
     }
 
@@ -1517,7 +1517,7 @@ public class AbstractMinecartEntity {
     public void setAngles(float p0, float p1) {
     }
 
-    public boolean setApplicableComponent(java.lang.Object p0, java.lang.Object p1) {
+    public boolean setApplicableComponent(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1) {
         return false;
     }
 
@@ -1530,10 +1530,10 @@ public class AbstractMinecartEntity {
     public void setBoundingBox(murat.simv2.simulation.mirror.net.minecraft.util.math.Box p0) {
     }
 
-    public void setChangeListener(java.lang.Object p0) {
+    public void setChangeListener(murat.simv2.simulation.mirror.net.minecraft.world.entity.EntityChangeListener p0) {
     }
 
-    public void setComponent(java.lang.Object p0, java.lang.Object p1) {
+    public void setComponent(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1) {
     }
 
     public void setCustomBlockState(java.util.Optional p0) {
@@ -1623,7 +1623,7 @@ public class AbstractMinecartEntity {
     public void setPosition(double p0, double p1, double p2) {
     }
 
-    public void setPosition(java.lang.Object p0, java.util.Set p1) {
+    public void setPosition(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerPosition p0, java.util.Set p1) {
     }
 
     public void setPosition(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
@@ -1766,7 +1766,7 @@ public class AbstractMinecartEntity {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.entity.Entity teleportTo(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.Entity teleportTo(murat.simv2.simulation.mirror.net.minecraft.world.TeleportTarget p0) {
         return null;
     }
 
@@ -1799,7 +1799,7 @@ public class AbstractMinecartEntity {
         return null;
     }
 
-    public void tryUsePortal(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
+    public void tryUsePortal(murat.simv2.simulation.mirror.net.minecraft.block.Portal p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
     }
 
     public void unsetRemoved() {

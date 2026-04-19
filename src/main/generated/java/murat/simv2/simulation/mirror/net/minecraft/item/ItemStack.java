@@ -1,41 +1,41 @@
 package murat.simv2.simulation.mirror.net.minecraft.item;
 
 // Generated mirror stub for simulation closure.
-public class ItemStack {
+public class ItemStack extends java.lang.Object implements murat.simv2.simulation.mirror.net.minecraft.component.ComponentHolder {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.Codec CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.item.ItemStack> CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.text.Text DISABLED_TEXT;
     public static murat.simv2.simulation.mirror.net.minecraft.item.ItemStack EMPTY;
-    public static java.lang.Object LENGTH_PREPENDED_OPTIONAL_PACKET_CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<java.lang.Object, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack> LENGTH_PREPENDED_OPTIONAL_PACKET_CODEC;
     public static org.slf4j.Logger LOGGER;
-    public static com.mojang.serialization.MapCodec MAP_CODEC;
-    public static java.util.List OPERATOR_WARNINGS;
-    public static com.mojang.serialization.Codec OPTIONAL_CODEC;
-    public static java.lang.Object OPTIONAL_LIST_PACKET_CODEC;
-    public static java.lang.Object OPTIONAL_PACKET_CODEC;
-    public static java.lang.Object PACKET_CODEC;
-    public static com.mojang.serialization.Codec REGISTRY_ENTRY_CODEC;
+    public static com.mojang.serialization.MapCodec<murat.simv2.simulation.mirror.net.minecraft.item.ItemStack> MAP_CODEC;
+    public static java.util.List<murat.simv2.simulation.mirror.net.minecraft.text.Text> OPERATOR_WARNINGS;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.item.ItemStack> OPTIONAL_CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<java.lang.Object, java.util.List<murat.simv2.simulation.mirror.net.minecraft.item.ItemStack>> OPTIONAL_LIST_PACKET_CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<java.lang.Object, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack> OPTIONAL_PACKET_CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<java.lang.Object, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack> PACKET_CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.item.ItemStack> REGISTRY_ENTRY_CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.text.Text UNBREAKABLE_TEXT;
-    public static com.mojang.serialization.Codec UNCOUNTED_CODEC;
-    public static com.mojang.serialization.Codec VALIDATED_CODEC;
-    public static com.mojang.serialization.Codec VALIDATED_UNCOUNTED_CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.item.ItemStack> UNCOUNTED_CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.item.ItemStack> VALIDATED_CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.item.ItemStack> VALIDATED_UNCOUNTED_CODEC;
     public int bobbingAnimationTime;
-    public java.lang.Object components;
+    public murat.simv2.simulation.mirror.net.minecraft.component.MergedComponentMap components;
     public int count;
     public murat.simv2.simulation.mirror.net.minecraft.entity.Entity holder;
     public murat.simv2.simulation.mirror.net.minecraft.item.Item item;
 
-    public ItemStack(java.lang.Object p0) {
-    }
-
-    public ItemStack(java.lang.Object p0, int p1) {
-    }
-
-    public ItemStack(java.lang.Object p0, int p1, java.lang.Object p2) {
-    }
-
     public ItemStack(java.lang.Void p0) {
+    }
+
+    public ItemStack(murat.simv2.simulation.mirror.net.minecraft.item.ItemConvertible p0) {
+    }
+
+    public ItemStack(murat.simv2.simulation.mirror.net.minecraft.item.ItemConvertible p0, int p1) {
+    }
+
+    public ItemStack(murat.simv2.simulation.mirror.net.minecraft.item.ItemConvertible p0, int p1, murat.simv2.simulation.mirror.net.minecraft.component.MergedComponentMap p2) {
     }
 
     public ItemStack(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0) {
@@ -44,22 +44,22 @@ public class ItemStack {
     public ItemStack(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0, int p1) {
     }
 
-    public ItemStack(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0, int p1, java.lang.Object p2) {
+    public ItemStack(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0, int p1, murat.simv2.simulation.mirror.net.minecraft.component.ComponentChanges p2) {
     }
 
     public void addEnchantment(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p0, int p1) {
     }
 
-    public void appendAttributeModifierTooltip(java.util.function.Consumer p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p2, java.lang.Object p3) {
+    public void appendAttributeModifierTooltip(java.util.function.Consumer p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry p2, murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttributeModifier p3) {
     }
 
-    public void appendAttributeModifiersTooltip(java.util.function.Consumer p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p2) {
+    public void appendAttributeModifiersTooltip(java.util.function.Consumer p0, murat.simv2.simulation.mirror.net.minecraft.component.type.TooltipDisplayComponent p1, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p2) {
     }
 
-    public void appendComponentTooltip(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.item.Item.TooltipContext p1, java.lang.Object p2, java.util.function.Consumer p3, java.lang.Object p4) {
+    public void appendComponentTooltip(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, murat.simv2.simulation.mirror.net.minecraft.item.Item.TooltipContext p1, murat.simv2.simulation.mirror.net.minecraft.component.type.TooltipDisplayComponent p2, java.util.function.Consumer p3, murat.simv2.simulation.mirror.net.minecraft.item.tooltip.TooltipType p4) {
     }
 
-    public void appendTooltip(murat.simv2.simulation.mirror.net.minecraft.item.Item.TooltipContext p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p2, java.lang.Object p3, java.util.function.Consumer p4) {
+    public void appendTooltip(murat.simv2.simulation.mirror.net.minecraft.item.Item.TooltipContext p0, murat.simv2.simulation.mirror.net.minecraft.component.type.TooltipDisplayComponent p1, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p2, murat.simv2.simulation.mirror.net.minecraft.item.tooltip.TooltipType p3, java.util.function.Consumer p4) {
     }
 
     public void applyAttributeModifiers(murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot p0, java.util.function.BiConsumer p1) {
@@ -68,24 +68,24 @@ public class ItemStack {
     public void applyAttributeModifier(murat.simv2.simulation.mirror.net.minecraft.component.type.AttributeModifierSlot p0, java.util.function.BiConsumer p1) {
     }
 
-    public void applyChanges(java.lang.Object p0) {
+    public void applyChanges(murat.simv2.simulation.mirror.net.minecraft.component.ComponentChanges p0) {
     }
 
-    public void applyComponentsFrom(java.lang.Object p0) {
+    public void applyComponentsFrom(murat.simv2.simulation.mirror.net.minecraft.component.ComponentMap p0) {
     }
 
     public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack applyRemainderAndCooldown(murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p1) {
         return null;
     }
 
-    public void applyUnvalidatedChanges(java.lang.Object p0) {
+    public void applyUnvalidatedChanges(murat.simv2.simulation.mirror.net.minecraft.component.ComponentChanges p0) {
     }
 
-    public java.lang.Object apply(java.lang.Object p0, java.lang.Object p1, java.lang.Object p2, java.util.function.BiFunction p3) {
+    public java.lang.Object apply(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1, java.lang.Object p2, java.util.function.BiFunction p3) {
         return null;
     }
 
-    public java.lang.Object apply(java.lang.Object p0, java.lang.Object p1, java.util.function.UnaryOperator p2) {
+    public java.lang.Object apply(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1, java.util.function.UnaryOperator p2) {
         return null;
     }
 
@@ -105,7 +105,7 @@ public class ItemStack {
         return 0;
     }
 
-    public boolean canBreak(java.lang.Object p0) {
+    public boolean canBreak(murat.simv2.simulation.mirror.net.minecraft.block.pattern.CachedBlockPosition p0) {
         return false;
     }
 
@@ -113,7 +113,7 @@ public class ItemStack {
         return false;
     }
 
-    public boolean canPlaceOn(java.lang.Object p0) {
+    public boolean canPlaceOn(murat.simv2.simulation.mirror.net.minecraft.block.pattern.CachedBlockPosition p0) {
         return false;
     }
 
@@ -124,7 +124,7 @@ public class ItemStack {
     public void capCount(int p0) {
     }
 
-    public boolean contains(java.lang.Object p0) {
+    public boolean contains(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0) {
         return false;
     }
 
@@ -132,11 +132,11 @@ public class ItemStack {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack copyComponentsToNewStackIgnoreEmpty(java.lang.Object p0, int p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack copyComponentsToNewStackIgnoreEmpty(murat.simv2.simulation.mirror.net.minecraft.item.ItemConvertible p0, int p1) {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack copyComponentsToNewStack(java.lang.Object p0, int p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack copyComponentsToNewStack(murat.simv2.simulation.mirror.net.minecraft.item.ItemConvertible p0, int p1) {
         return null;
     }
 
@@ -148,10 +148,10 @@ public class ItemStack {
         return null;
     }
 
-    public void copy(java.lang.Object p0, java.lang.Object p1) {
+    public void copy(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, murat.simv2.simulation.mirror.net.minecraft.component.ComponentsAccess p1) {
     }
 
-    public static java.lang.Object createExtraValidatingPacketCodec(java.lang.Object p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec createExtraValidatingPacketCodec(murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec p0) {
         return null;
     }
 
@@ -159,11 +159,7 @@ public class ItemStack {
         return null;
     }
 
-    public static java.lang.Object createOptionalPacketCodec(java.lang.Object p0) {
-        return null;
-    }
-
-    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack damage(int p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p2, murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot p3) {
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec createOptionalPacketCodec(murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec p0) {
         return null;
     }
 
@@ -171,6 +167,10 @@ public class ItemStack {
     }
 
     public void damage(int p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1) {
+    }
+
+    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack damage(int p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemConvertible p1, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p2, murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot p3) {
+        return null;
     }
 
     public void damage(int p0, murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p1, murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity p2, java.util.function.Consumer p3) {
@@ -186,7 +186,7 @@ public class ItemStack {
         return null;
     }
 
-    public static java.util.Optional fromNbt(java.lang.Object p0, java.lang.Object p1) {
+    public static java.util.Optional fromNbt(murat.simv2.simulation.mirror.net.minecraft.registry.RegistryWrapper.WrapperLookup p0, murat.simv2.simulation.mirror.net.minecraft.nbt.NbtElement p1) {
         return null;
     }
 
@@ -194,11 +194,11 @@ public class ItemStack {
         return 0;
     }
 
-    public java.lang.Object getComponentChanges() {
+    public murat.simv2.simulation.mirror.net.minecraft.component.ComponentChanges getComponentChanges() {
         return null;
     }
 
-    public java.lang.Object getComponents() {
+    public murat.simv2.simulation.mirror.net.minecraft.component.ComponentMap getComponents() {
         return null;
     }
 
@@ -214,11 +214,11 @@ public class ItemStack {
         return 0;
     }
 
-    public java.lang.Object getDefaultComponents() {
+    public murat.simv2.simulation.mirror.net.minecraft.component.ComponentMap getDefaultComponents() {
         return null;
     }
 
-    public java.lang.Object getEnchantments() {
+    public murat.simv2.simulation.mirror.net.minecraft.component.type.ItemEnchantmentsComponent getEnchantments() {
         return null;
     }
 
@@ -226,7 +226,7 @@ public class ItemStack {
         return null;
     }
 
-    public java.lang.Object getFrame() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.decoration.ItemFrameEntity getFrame() {
         return null;
     }
 
@@ -234,7 +234,7 @@ public class ItemStack {
         return null;
     }
 
-    public java.lang.Object getImmutableComponents() {
+    public murat.simv2.simulation.mirror.net.minecraft.component.ComponentMap getImmutableComponents() {
         return null;
     }
 
@@ -274,11 +274,11 @@ public class ItemStack {
         return null;
     }
 
-    public java.lang.Object getOrDefault(java.lang.Object p0, java.lang.Object p1) {
+    public java.lang.Object getOrDefault(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1) {
         return null;
     }
 
-    public java.lang.Object getRarity() {
+    public murat.simv2.simulation.mirror.net.minecraft.util.Rarity getRarity() {
         return null;
     }
 
@@ -290,23 +290,23 @@ public class ItemStack {
         return null;
     }
 
-    public java.util.List getTooltip(murat.simv2.simulation.mirror.net.minecraft.item.Item.TooltipContext p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, java.lang.Object p2) {
+    public java.util.List getTooltip(murat.simv2.simulation.mirror.net.minecraft.item.Item.TooltipContext p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.item.tooltip.TooltipType p2) {
         return null;
     }
 
-    public java.lang.Object getTyped(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.component.Component getTyped(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0) {
         return null;
     }
 
-    public java.lang.Object getUseAction() {
+    public murat.simv2.simulation.mirror.net.minecraft.item.consume.UseAction getUseAction() {
         return null;
     }
 
-    public java.lang.Object get(java.lang.Object p0) {
+    public java.lang.Object get(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0) {
         return null;
     }
 
-    public boolean hasChangedComponent(java.lang.Object p0) {
+    public boolean hasChangedComponent(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0) {
         return false;
     }
 
@@ -348,7 +348,7 @@ public class ItemStack {
         return false;
     }
 
-    public boolean isIn(java.lang.Object p0) {
+    public boolean isIn(murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntryList p0) {
         return false;
     }
 
@@ -360,7 +360,7 @@ public class ItemStack {
         return false;
     }
 
-    public boolean isItemEnabled(java.lang.Object p0) {
+    public boolean isItemEnabled(murat.simv2.simulation.mirror.net.minecraft.resource.featuretoggle.FeatureSet p0) {
         return false;
     }
 
@@ -392,7 +392,7 @@ public class ItemStack {
         return 0;
     }
 
-    public boolean onClicked(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, java.lang.Object p1, java.lang.Object p2, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p3, java.lang.Object p4) {
+    public boolean onClicked(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0, murat.simv2.simulation.mirror.net.minecraft.screen.slot.Slot p1, murat.simv2.simulation.mirror.net.minecraft.util.ClickType p2, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p3, murat.simv2.simulation.mirror.net.minecraft.inventory.StackReference p4) {
         return false;
     }
 
@@ -408,7 +408,7 @@ public class ItemStack {
     public void onItemEntityDestroyed(murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity p0) {
     }
 
-    public boolean onStackClicked(java.lang.Object p0, java.lang.Object p1, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p2) {
+    public boolean onStackClicked(murat.simv2.simulation.mirror.net.minecraft.screen.slot.Slot p0, murat.simv2.simulation.mirror.net.minecraft.util.ClickType p1, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p2) {
         return false;
     }
 
@@ -425,7 +425,7 @@ public class ItemStack {
     public void postMine(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p3) {
     }
 
-    public java.lang.Object remove(java.lang.Object p0) {
+    public java.lang.Object remove(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0) {
         return null;
     }
 
@@ -441,7 +441,7 @@ public class ItemStack {
     public void setHolder(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
     }
 
-    public java.lang.Object set(java.lang.Object p0, java.lang.Object p1) {
+    public java.lang.Object set(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1) {
         return null;
     }
 
@@ -477,11 +477,11 @@ public class ItemStack {
         return null;
     }
 
-    public java.lang.Object toNbt(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.nbt.NbtElement toNbt(murat.simv2.simulation.mirror.net.minecraft.registry.RegistryWrapper.WrapperLookup p0) {
         return null;
     }
 
-    public java.lang.Object toNbt(java.lang.Object p0, java.lang.Object p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.nbt.NbtElement toNbt(murat.simv2.simulation.mirror.net.minecraft.registry.RegistryWrapper.WrapperLookup p0, murat.simv2.simulation.mirror.net.minecraft.nbt.NbtElement p1) {
         return null;
     }
 
@@ -492,19 +492,19 @@ public class ItemStack {
     public void usageTick(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1, int p2) {
     }
 
-    public java.lang.Object useOnBlock(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult useOnBlock(murat.simv2.simulation.mirror.net.minecraft.item.ItemUsageContext p0) {
         return null;
     }
 
-    public java.lang.Object useOnEntity(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1, murat.simv2.simulation.mirror.net.minecraft.util.Hand p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult useOnEntity(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.entity.LivingEntity p1, murat.simv2.simulation.mirror.net.minecraft.util.Hand p2) {
         return null;
     }
 
-    public java.lang.Object use(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.util.Hand p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult use(murat.simv2.simulation.mirror.net.minecraft.world.World p0, murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p1, murat.simv2.simulation.mirror.net.minecraft.util.Hand p2) {
         return null;
     }
 
-    public static com.mojang.serialization.DataResult validateComponents(java.lang.Object p0) {
+    public static com.mojang.serialization.DataResult validateComponents(murat.simv2.simulation.mirror.net.minecraft.component.ComponentMap p0) {
         return null;
     }
 
@@ -516,7 +516,7 @@ public class ItemStack {
         return false;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack withItem(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.item.ItemStack withItem(murat.simv2.simulation.mirror.net.minecraft.item.ItemConvertible p0) {
         return null;
     }
 

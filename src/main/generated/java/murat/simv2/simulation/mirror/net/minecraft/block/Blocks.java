@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.block;
 
 // Generated mirror stub for simulation closure.
-public class Blocks {
+public class Blocks extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.block.Block ACACIA_BUTTON;
@@ -1182,7 +1182,7 @@ public class Blocks {
         return null;
     }
 
-    public static murat.simv2.simulation.mirror.net.minecraft.block.Block registerBedBlock(java.lang.String p0, java.lang.Object p1) {
+    public static murat.simv2.simulation.mirror.net.minecraft.block.Block registerBedBlock(java.lang.String p0, murat.simv2.simulation.mirror.net.minecraft.util.DyeColor p1) {
         return null;
     }
 
@@ -1190,7 +1190,7 @@ public class Blocks {
         return null;
     }
 
-    public static murat.simv2.simulation.mirror.net.minecraft.block.Block registerStainedGlassBlock(java.lang.String p0, java.lang.Object p1) {
+    public static murat.simv2.simulation.mirror.net.minecraft.block.Block registerStainedGlassBlock(java.lang.String p0, murat.simv2.simulation.mirror.net.minecraft.util.DyeColor p1) {
         return null;
     }
 

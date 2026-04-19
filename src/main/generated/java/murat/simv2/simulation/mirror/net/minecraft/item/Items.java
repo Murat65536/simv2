@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.item;
 
 // Generated mirror stub for simulation closure.
-public class Items {
+public class Items extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.item.Item ACACIA_BOAT;

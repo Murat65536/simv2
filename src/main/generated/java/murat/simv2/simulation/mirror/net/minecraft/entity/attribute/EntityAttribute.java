@@ -1,11 +1,11 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity.attribute;
 
 // Generated mirror stub for simulation closure.
-public class EntityAttribute {
+public class EntityAttribute extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.Codec CODEC;
-    public static java.lang.Object PACKET_CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttribute>> CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<java.lang.Object, murat.simv2.simulation.mirror.net.minecraft.registry.entry.RegistryEntry<murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttribute>> PACKET_CODEC;
     public murat.simv2.simulation.mirror.net.minecraft.entity.attribute.EntityAttribute.Category category;
     public double fallback;
     public boolean tracked;

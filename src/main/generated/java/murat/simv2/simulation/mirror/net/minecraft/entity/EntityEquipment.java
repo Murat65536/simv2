@@ -1,11 +1,11 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity;
 
 // Generated mirror stub for simulation closure.
-public class EntityEquipment {
+public class EntityEquipment extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.Codec CODEC;
-    public java.util.EnumMap map;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.entity.EntityEquipment> CODEC;
+    public java.util.EnumMap<murat.simv2.simulation.mirror.net.minecraft.entity.EquipmentSlot, murat.simv2.simulation.mirror.net.minecraft.item.ItemStack> map;
 
     public EntityEquipment() {
     }

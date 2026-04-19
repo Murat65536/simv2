@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity;
 
 // Generated mirror stub for simulation closure.
-public interface JumpingMount {
+public interface JumpingMount extends murat.simv2.simulation.mirror.net.minecraft.entity.Mount {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public boolean canJump();

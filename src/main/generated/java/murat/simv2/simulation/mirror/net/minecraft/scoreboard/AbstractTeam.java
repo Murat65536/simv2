@@ -1,13 +1,13 @@
 package murat.simv2.simulation.mirror.net.minecraft.scoreboard;
 
 // Generated mirror stub for simulation closure.
-public class AbstractTeam {
+public class AbstractTeam extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public AbstractTeam() {
     }
 
-    public java.lang.Object decorateName(murat.simv2.simulation.mirror.net.minecraft.text.Text p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.text.MutableText decorateName(murat.simv2.simulation.mirror.net.minecraft.text.Text p0) {
         return null;
     }
 
@@ -47,12 +47,12 @@ public class AbstractTeam {
         return false;
     }
 
-    public static class CollisionRule {
+    public static class CollisionRule implements murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable {
         public static murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.CollisionRule ALWAYS;
-        public static com.mojang.serialization.Codec CODEC;
-        public static java.util.function.IntFunction INDEX_MAPPER;
+        public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.CollisionRule> CODEC;
+        public static java.util.function.IntFunction<murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.CollisionRule> INDEX_MAPPER;
         public static murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.CollisionRule NEVER;
-        public static java.lang.Object PACKET_CODEC;
+        public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<io.netty.buffer.ByteBuf, murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.CollisionRule> PACKET_CODEC;
         public static murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.CollisionRule PUSH_OTHER_TEAMS;
         public static murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.CollisionRule PUSH_OWN_TEAM;
         public static murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.CollisionRule[] field_1439;
@@ -70,15 +70,15 @@ public class AbstractTeam {
             return null;
         }
 
-        public static java.lang.Object createCodec(java.util.function.Supplier p0) {
+        public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0) {
             return null;
         }
 
-        public static java.lang.Object createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
+        public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
             return null;
         }
 
-        public static java.util.function.Function createMapper(java.lang.Object[] p0, java.util.function.Function p1) {
+        public static java.util.function.Function createMapper(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0, java.util.function.Function p1) {
             return null;
         }
 
@@ -90,7 +90,7 @@ public class AbstractTeam {
             return 0;
         }
 
-        public static com.mojang.serialization.Keyable toKeyable(java.lang.Object[] p0) {
+        public static com.mojang.serialization.Keyable toKeyable(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0) {
             return null;
         }
 
@@ -107,14 +107,14 @@ public class AbstractTeam {
 
     }
 
-    public static class VisibilityRule {
+    public static class VisibilityRule implements murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable {
         public static murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.VisibilityRule ALWAYS;
-        public static com.mojang.serialization.Codec CODEC;
+        public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.VisibilityRule> CODEC;
         public static murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.VisibilityRule HIDE_FOR_OTHER_TEAMS;
         public static murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.VisibilityRule HIDE_FOR_OWN_TEAM;
-        public static java.util.function.IntFunction INDEX_MAPPER;
+        public static java.util.function.IntFunction<murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.VisibilityRule> INDEX_MAPPER;
         public static murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.VisibilityRule NEVER;
-        public static java.lang.Object PACKET_CODEC;
+        public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<io.netty.buffer.ByteBuf, murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.VisibilityRule> PACKET_CODEC;
         public static murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.VisibilityRule[] field_1448;
         public int index;
         public java.lang.String name;
@@ -130,15 +130,15 @@ public class AbstractTeam {
             return null;
         }
 
-        public static java.lang.Object createCodec(java.util.function.Supplier p0) {
+        public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0) {
             return null;
         }
 
-        public static java.lang.Object createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
+        public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
             return null;
         }
 
-        public static java.util.function.Function createMapper(java.lang.Object[] p0, java.util.function.Function p1) {
+        public static java.util.function.Function createMapper(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0, java.util.function.Function p1) {
             return null;
         }
 
@@ -150,7 +150,7 @@ public class AbstractTeam {
             return 0;
         }
 
-        public static com.mojang.serialization.Keyable toKeyable(java.lang.Object[] p0) {
+        public static com.mojang.serialization.Keyable toKeyable(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0) {
             return null;
         }
 

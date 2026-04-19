@@ -4,7 +4,7 @@ package murat.simv2.simulation.mirror.net.minecraft.entity.data;
 public class TrackedData<T> {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedDataHandler dataType;
+    public murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedDataHandler<java.lang.Object> dataType;
     public int id;
 
     public TrackedData(int p0, murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedDataHandler p1) {

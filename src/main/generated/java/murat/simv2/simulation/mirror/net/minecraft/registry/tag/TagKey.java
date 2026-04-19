@@ -4,9 +4,9 @@ package murat.simv2.simulation.mirror.net.minecraft.registry.tag;
 public class TagKey<T> {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.google.common.collect.Interner INTERNER;
+    public static com.google.common.collect.Interner<murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey<?>> INTERNER;
     public murat.simv2.simulation.mirror.net.minecraft.util.Identifier id;
-    public murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey registryRef;
+    public murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey<? extends murat.simv2.simulation.mirror.net.minecraft.registry.Registry<java.lang.Object>> registryRef;
 
     public TagKey(murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p0, murat.simv2.simulation.mirror.net.minecraft.util.Identifier p1) {
     }
@@ -35,7 +35,7 @@ public class TagKey<T> {
         return null;
     }
 
-    public static java.lang.Object packetCodec(murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec packetCodec(murat.simv2.simulation.mirror.net.minecraft.registry.RegistryKey p0) {
         return null;
     }
 

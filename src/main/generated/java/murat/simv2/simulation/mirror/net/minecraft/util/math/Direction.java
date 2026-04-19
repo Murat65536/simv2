@@ -1,23 +1,23 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.math;
 
 // Generated mirror stub for simulation closure.
-public class Direction {
+public class Direction implements murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction[] ALL;
-    public static java.lang.Object CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec<murat.simv2.simulation.mirror.net.minecraft.util.math.Direction> CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction DOWN;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction EAST;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction[] HORIZONTAL;
-    public static com.mojang.serialization.Codec HORIZONTAL_QUARTER_TURNS_CODEC;
-    public static com.mojang.serialization.Codec INDEX_CODEC;
-    public static java.util.function.IntFunction INDEX_TO_VALUE_FUNCTION;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.util.math.Direction> HORIZONTAL_QUARTER_TURNS_CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.util.math.Direction> INDEX_CODEC;
+    public static java.util.function.IntFunction<murat.simv2.simulation.mirror.net.minecraft.util.math.Direction> INDEX_TO_VALUE_FUNCTION;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction NORTH;
-    public static java.lang.Object PACKET_CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<io.netty.buffer.ByteBuf, murat.simv2.simulation.mirror.net.minecraft.util.math.Direction> PACKET_CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction SOUTH;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction UP;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction[] VALUES;
-    public static com.mojang.serialization.Codec VERTICAL_CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.util.math.Direction> VERTICAL_CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction WEST;
     public murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis axis;
     public murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.AxisDirection direction;
@@ -49,15 +49,15 @@ public class Direction {
         return null;
     }
 
-    public static java.lang.Object createCodec(java.util.function.Supplier p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0) {
         return null;
     }
 
-    public static java.lang.Object createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
         return null;
     }
 
-    public static java.util.function.Function createMapper(java.lang.Object[] p0, java.util.function.Function p1) {
+    public static java.util.function.Function createMapper(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0, java.util.function.Function p1) {
         return null;
     }
 
@@ -225,7 +225,7 @@ public class Direction {
         return null;
     }
 
-    public static com.mojang.serialization.Keyable toKeyable(java.lang.Object[] p0) {
+    public static com.mojang.serialization.Keyable toKeyable(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0) {
         return null;
     }
 
@@ -252,8 +252,8 @@ public class Direction {
     public Direction() {
     }
 
-    public static class Axis {
-        public static java.lang.Object CODEC;
+    public static class Axis implements murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable {
+        public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec<murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis> CODEC;
         public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis[] VALUES;
         public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis X;
         public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis Y;
@@ -284,15 +284,15 @@ public class Direction {
             return null;
         }
 
-        public static java.lang.Object createCodec(java.util.function.Supplier p0) {
+        public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0) {
             return null;
         }
 
-        public static java.lang.Object createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
+        public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
             return null;
         }
 
-        public static java.util.function.Function createMapper(java.lang.Object[] p0, java.util.function.Function p1) {
+        public static java.util.function.Function createMapper(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0, java.util.function.Function p1) {
             return null;
         }
 
@@ -340,7 +340,7 @@ public class Direction {
             return false;
         }
 
-        public static com.mojang.serialization.Keyable toKeyable(java.lang.Object[] p0) {
+        public static com.mojang.serialization.Keyable toKeyable(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0) {
             return null;
         }
 

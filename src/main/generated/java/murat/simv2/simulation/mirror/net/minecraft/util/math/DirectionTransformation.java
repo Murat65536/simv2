@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.math;
 
 // Generated mirror stub for simulation closure.
-public class DirectionTransformation {
+public class DirectionTransformation implements murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis[] AXES;
@@ -61,7 +61,7 @@ public class DirectionTransformation {
     public boolean flipX;
     public boolean flipY;
     public boolean flipZ;
-    public java.util.Map mappings;
+    public java.util.Map<murat.simv2.simulation.mirror.net.minecraft.util.math.Direction, murat.simv2.simulation.mirror.net.minecraft.util.math.Direction> mappings;
     public org.joml.Matrix3fc matrix;
     public java.lang.String name;
 
@@ -76,19 +76,19 @@ public class DirectionTransformation {
         return null;
     }
 
-    public static java.lang.Object createCodec(java.util.function.Supplier p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0) {
         return null;
     }
 
-    public static java.lang.Object createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable.EnumCodec createCodec(java.util.function.Supplier p0, java.util.function.Function p1) {
         return null;
     }
 
-    public static java.util.function.Function createMapper(java.lang.Object[] p0, java.util.function.Function p1) {
+    public static java.util.function.Function createMapper(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0, java.util.function.Function p1) {
         return null;
     }
 
-    public static murat.simv2.simulation.mirror.net.minecraft.util.math.DirectionTransformation fromRotations(java.lang.Object p0, java.lang.Object p1) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.math.DirectionTransformation fromRotations(murat.simv2.simulation.mirror.net.minecraft.util.math.AxisRotation p0, murat.simv2.simulation.mirror.net.minecraft.util.math.AxisRotation p1) {
         return null;
     }
 
@@ -104,7 +104,7 @@ public class DirectionTransformation {
         return null;
     }
 
-    public java.lang.Object mapJigsawOrientation(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.block.enums.Orientation mapJigsawOrientation(murat.simv2.simulation.mirror.net.minecraft.block.enums.Orientation p0) {
         return null;
     }
 
@@ -128,7 +128,7 @@ public class DirectionTransformation {
         return false;
     }
 
-    public static com.mojang.serialization.Keyable toKeyable(java.lang.Object[] p0) {
+    public static com.mojang.serialization.Keyable toKeyable(murat.simv2.simulation.mirror.net.minecraft.util.StringIdentifiable[] p0) {
         return null;
     }
 

@@ -12,22 +12,22 @@ public class Team extends murat.simv2.simulation.mirror.net.minecraft.scoreboard
     public static int field_31885;
     public boolean friendlyFire;
     public java.lang.String name;
-    public java.lang.Object nameStyle;
+    public murat.simv2.simulation.mirror.net.minecraft.text.Style nameStyle;
     public murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.VisibilityRule nameTagVisibilityRule;
-    public java.util.Set playerList;
+    public java.util.Set<java.lang.String> playerList;
     public murat.simv2.simulation.mirror.net.minecraft.text.Text prefix;
-    public java.lang.Object scoreboard;
+    public murat.simv2.simulation.mirror.net.minecraft.scoreboard.Scoreboard scoreboard;
     public boolean showFriendlyInvisibles;
     public murat.simv2.simulation.mirror.net.minecraft.text.Text suffix;
 
-    public Team(java.lang.Object p0, java.lang.String p1) {
+    public Team(murat.simv2.simulation.mirror.net.minecraft.scoreboard.Scoreboard p0, java.lang.String p1) {
     }
 
-    public static java.lang.Object decorateName(murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam p0, murat.simv2.simulation.mirror.net.minecraft.text.Text p1) {
+    public static murat.simv2.simulation.mirror.net.minecraft.text.MutableText decorateName(murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam p0, murat.simv2.simulation.mirror.net.minecraft.text.Text p1) {
         return null;
     }
 
-    public java.lang.Object decorateName(murat.simv2.simulation.mirror.net.minecraft.text.Text p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.text.MutableText decorateName(murat.simv2.simulation.mirror.net.minecraft.text.Text p0) {
         return null;
     }
 
@@ -47,7 +47,7 @@ public class Team extends murat.simv2.simulation.mirror.net.minecraft.scoreboard
         return null;
     }
 
-    public java.lang.Object getFormattedName() {
+    public murat.simv2.simulation.mirror.net.minecraft.text.MutableText getFormattedName() {
         return null;
     }
 
@@ -71,7 +71,7 @@ public class Team extends murat.simv2.simulation.mirror.net.minecraft.scoreboard
         return null;
     }
 
-    public java.lang.Object getScoreboard() {
+    public murat.simv2.simulation.mirror.net.minecraft.scoreboard.Scoreboard getScoreboard() {
         return null;
     }
 
@@ -129,17 +129,17 @@ public class Team extends murat.simv2.simulation.mirror.net.minecraft.scoreboard
     }
 
     public static class Packed {
-        public static com.mojang.serialization.Codec CODEC;
+        public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.scoreboard.Team.Packed> CODEC;
         public boolean allowFriendlyFire;
         public murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.CollisionRule collisionRule;
-        public java.util.Optional color;
+        public java.util.Optional<murat.simv2.simulation.mirror.net.minecraft.util.Formatting> color;
         public murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.VisibilityRule deathMessageVisibility;
-        public java.util.Optional displayName;
+        public java.util.Optional<murat.simv2.simulation.mirror.net.minecraft.text.Text> displayName;
         public murat.simv2.simulation.mirror.net.minecraft.text.Text memberNamePrefix;
         public murat.simv2.simulation.mirror.net.minecraft.text.Text memberNameSuffix;
         public java.lang.String name;
         public murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.VisibilityRule nameTagVisibility;
-        public java.util.List players;
+        public java.util.List<java.lang.String> players;
         public boolean seeFriendlyInvisibles;
 
         public Packed(java.lang.String p0, java.util.Optional p1, java.util.Optional p2, boolean p3, boolean p4, murat.simv2.simulation.mirror.net.minecraft.text.Text p5, murat.simv2.simulation.mirror.net.minecraft.text.Text p6, murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.VisibilityRule p7, murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.VisibilityRule p8, murat.simv2.simulation.mirror.net.minecraft.scoreboard.AbstractTeam.CollisionRule p9, java.util.List p10) {

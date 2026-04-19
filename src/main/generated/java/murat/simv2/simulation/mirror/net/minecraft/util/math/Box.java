@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.math;
 
 // Generated mirror stub for simulation closure.
-public class Box {
+public class Box extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static double EPSILON;
@@ -57,7 +57,7 @@ public class Box {
         return null;
     }
 
-    public static murat.simv2.simulation.mirror.net.minecraft.util.math.Box from(java.lang.Object p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.util.math.Box from(murat.simv2.simulation.mirror.net.minecraft.util.math.BlockBox p0) {
         return null;
     }
 
@@ -224,7 +224,7 @@ public class Box {
     public Box() {
     }
 
-    public static class Builder {
+    public static class Builder extends java.lang.Object {
         public float maxX;
         public float maxY;
         public float maxZ;

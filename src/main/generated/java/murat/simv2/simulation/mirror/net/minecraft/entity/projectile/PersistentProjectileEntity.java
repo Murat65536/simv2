@@ -14,21 +14,21 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
     public static byte DEFAULT_PIERCE_LEVEL;
     public static int DEFAULT_PORTAL_COOLDOWN;
     public static byte DEFAULT_SHAKE;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData FLAGS;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Byte> FLAGS;
     public static int FREEZING_DAMAGE_INTERVAL;
     public static int GLIDING_FLAG_INDEX;
     public static int GLOWING_FLAG_INDEX;
     public static java.lang.String ID_KEY;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData IN_GROUND;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Boolean> IN_GROUND;
     public static int MAX_COMMAND_TAGS;
     public static int MAX_RIDING_COOLDOWN;
     public static float MIN_RISING_BUBBLE_COLUMN_SPEED;
     public static int NO_CLIP_FLAG;
     public static int ON_FIRE_FLAG_INDEX;
     public static java.lang.String PASSENGERS_KEY;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData PIERCE_LEVEL;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData POSE;
-    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData PROJECTILE_FLAGS;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Byte> PIERCE_LEVEL;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<murat.simv2.simulation.mirror.net.minecraft.entity.EntityPose> POSE;
+    public static murat.simv2.simulation.mirror.net.minecraft.entity.data.TrackedData<java.lang.Byte> PROJECTILE_FLAGS;
     public static java.lang.String UUID_KEY;
     public int age;
     public murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos blockPos;
@@ -48,7 +48,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
     public static int field_54968;
     public static float field_55017;
     public boolean firstUpdate;
-    public it.unimi.dsi.fastutil.objects.Object2DoubleMap fluidHeight;
+    public it.unimi.dsi.fastutil.objects.Object2DoubleMap<murat.simv2.simulation.mirror.net.minecraft.registry.tag.TagKey<murat.simv2.simulation.mirror.net.minecraft.fluid.Fluid>> fluidHeight;
     public boolean forceUpdateSupportingBlockPos;
     public boolean groundCollision;
     public boolean horizontalCollision;
@@ -69,9 +69,9 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
     public boolean noClip;
     public murat.simv2.simulation.mirror.net.minecraft.entity.projectile.PersistentProjectileEntity.PickupPermission pickupType;
     public it.unimi.dsi.fastutil.ints.IntOpenHashSet piercedEntities;
-    public java.util.List piercingKilledEntities;
+    public java.util.List<murat.simv2.simulation.mirror.net.minecraft.entity.Entity> piercingKilledEntities;
     public long pistonMovementTick;
-    public java.lang.Object portalManager;
+    public murat.simv2.simulation.mirror.net.minecraft.world.dimension.PortalManager portalManager;
     public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d pos;
     public murat.simv2.simulation.mirror.net.minecraft.util.math.random.Random random;
     public int ridingCooldown;
@@ -82,7 +82,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
     public float standingEyeHeight;
     public murat.simv2.simulation.mirror.net.minecraft.block.BlockState stateAtPos;
     public boolean submergedInWater;
-    public java.util.Optional supportingBlockPos;
+    public java.util.Optional<murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos> supportingBlockPos;
     public int timeUntilRegen;
     public boolean touchingWater;
     public java.util.UUID uuid;
@@ -164,11 +164,11 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
     public void applyGravity() {
     }
 
-    public float applyMirror(java.lang.Object p0) {
+    public float applyMirror(murat.simv2.simulation.mirror.net.minecraft.util.BlockMirror p0) {
         return 0.0F;
     }
 
-    public float applyRotation(java.lang.Object p0) {
+    public float applyRotation(murat.simv2.simulation.mirror.net.minecraft.util.BlockRotation p0) {
         return 0.0F;
     }
 
@@ -233,7 +233,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return false;
     }
 
-    public boolean canExplosionDestroyBlock(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, float p4) {
+    public boolean canExplosionDestroyBlock(murat.simv2.simulation.mirror.net.minecraft.world.explosion.Explosion p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, float p4) {
         return false;
     }
 
@@ -273,7 +273,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return false;
     }
 
-    public static java.lang.Object castComponentValue(java.lang.Object p0, java.lang.Object p1) {
+    public static java.lang.Object castComponentValue(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1) {
         return null;
     }
 
@@ -301,11 +301,11 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return false;
     }
 
-    public boolean copyComponentFrom(java.lang.Object p0, java.lang.Object p1) {
+    public boolean copyComponentFrom(murat.simv2.simulation.mirror.net.minecraft.component.ComponentsAccess p0, murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p1) {
         return false;
     }
 
-    public void copyComponentsFrom(java.lang.Object p0) {
+    public void copyComponentsFrom(murat.simv2.simulation.mirror.net.minecraft.component.ComponentsAccess p0) {
     }
 
     public void copyComponentsFrom(murat.simv2.simulation.mirror.net.minecraft.item.ItemStack p0) {
@@ -321,7 +321,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return false;
     }
 
-    public java.lang.Object createSpawnPacket(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.network.packet.Packet createSpawnPacket(murat.simv2.simulation.mirror.net.minecraft.server.network.EntityTrackerEntry p0) {
         return null;
     }
 
@@ -361,11 +361,11 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return false;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity dropItem(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, java.lang.Object p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity dropItem(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemConvertible p1) {
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity dropItem(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, java.lang.Object p1, int p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.ItemEntity dropItem(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.item.ItemConvertible p1, int p2) {
         return null;
     }
 
@@ -399,11 +399,11 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
     public void fall(double p0, boolean p1, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p2, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p3) {
     }
 
-    public static java.lang.Object fromName(java.lang.String p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.scoreboard.ScoreHolder fromName(java.lang.String p0) {
         return null;
     }
 
-    public static java.lang.Object fromProfile(com.mojang.authlib.GameProfile p0) {
+    public static murat.simv2.simulation.mirror.net.minecraft.scoreboard.ScoreHolder fromProfile(com.mojang.authlib.GameProfile p0) {
         return null;
     }
 
@@ -475,7 +475,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return null;
     }
 
-    public java.lang.Object getCommandSource(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.server.command.ServerCommandSource getCommandSource(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0) {
         return null;
     }
 
@@ -495,7 +495,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return null;
     }
 
-    public java.lang.Object getDamageSources() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.damage.DamageSources getDamageSources() {
         return null;
     }
 
@@ -531,11 +531,11 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return null;
     }
 
-    public float getEffectiveExplosionResistance(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState p4, float p5) {
+    public float getEffectiveExplosionResistance(murat.simv2.simulation.mirror.net.minecraft.world.explosion.Explosion p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockView p1, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p2, murat.simv2.simulation.mirror.net.minecraft.block.BlockState p3, murat.simv2.simulation.mirror.net.minecraft.fluid.FluidState p4, float p5) {
         return 0.0F;
     }
 
-    public java.lang.Object getEntityCollision(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.hit.EntityHitResult getEntityCollision(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
         return null;
     }
 
@@ -619,7 +619,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return null;
     }
 
-    public java.lang.Object getHoverEvent() {
+    public murat.simv2.simulation.mirror.net.minecraft.text.HoverEvent getHoverEvent() {
         return null;
     }
 
@@ -719,7 +719,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return null;
     }
 
-    public java.lang.Object getOrDefault(java.lang.Object p0, java.lang.Object p1) {
+    public java.lang.Object getOrDefault(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1) {
         return null;
     }
 
@@ -767,7 +767,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return (byte) 0;
     }
 
-    public java.lang.Object getPistonBehavior() {
+    public murat.simv2.simulation.mirror.net.minecraft.block.piston.PistonBehavior getPistonBehavior() {
         return null;
     }
 
@@ -811,7 +811,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return null;
     }
 
-    public java.lang.Object getRegistryManager() {
+    public murat.simv2.simulation.mirror.net.minecraft.registry.DynamicRegistryManager getRegistryManager() {
         return null;
     }
 
@@ -859,7 +859,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return null;
     }
 
-    public java.lang.Object getServer() {
+    public murat.simv2.simulation.mirror.net.minecraft.server.MinecraftServer getServer() {
         return null;
     }
 
@@ -875,7 +875,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return null;
     }
 
-    public java.lang.Object getStackReference(int p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.inventory.StackReference getStackReference(int p0) {
         return null;
     }
 
@@ -923,11 +923,11 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return 0;
     }
 
-    public java.lang.Object getTrackedPosition() {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.TrackedPosition getTrackedPosition() {
         return null;
     }
 
-    public java.lang.Object getTyped(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.component.Component getTyped(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0) {
         return null;
     }
 
@@ -999,7 +999,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return 0.0D;
     }
 
-    public java.lang.Object get(java.lang.Object p0) {
+    public java.lang.Object get(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0) {
         return null;
     }
 
@@ -1078,11 +1078,11 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
     public void initDataTracker(murat.simv2.simulation.mirror.net.minecraft.entity.data.DataTracker.Builder p0) {
     }
 
-    public java.lang.Object interactAt(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1, murat.simv2.simulation.mirror.net.minecraft.util.Hand p2) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult interactAt(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1, murat.simv2.simulation.mirror.net.minecraft.util.Hand p2) {
         return null;
     }
 
-    public java.lang.Object interact(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.util.Hand p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.ActionResult interact(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerEntity p0, murat.simv2.simulation.mirror.net.minecraft.util.Hand p1) {
         return null;
     }
 
@@ -1154,7 +1154,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return false;
     }
 
-    public boolean isImmuneToExplosion(java.lang.Object p0) {
+    public boolean isImmuneToExplosion(murat.simv2.simulation.mirror.net.minecraft.world.explosion.Explosion p0) {
         return false;
     }
 
@@ -1334,7 +1334,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
     public void limitFallDistance() {
     }
 
-    public void lookAt(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
+    public void lookAt(murat.simv2.simulation.mirror.net.minecraft.command.argument.EntityAnchorArgumentType.EntityAnchor p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p1) {
     }
 
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d movementInputToVelocity(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0, float p1, float p2) {
@@ -1378,7 +1378,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
     public void onDeflected(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0, boolean p1) {
     }
 
-    public void onEntityHit(java.lang.Object p0) {
+    public void onEntityHit(murat.simv2.simulation.mirror.net.minecraft.util.hit.EntityHitResult p0) {
     }
 
     public void onExplodedBy(murat.simv2.simulation.mirror.net.minecraft.entity.Entity p0) {
@@ -1406,7 +1406,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
     public void onRemove(murat.simv2.simulation.mirror.net.minecraft.entity.Entity.RemovalReason p0) {
     }
 
-    public void onSpawnPacket(java.lang.Object p0) {
+    public void onSpawnPacket(murat.simv2.simulation.mirror.net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket p0) {
     }
 
     public void onStartedTrackingBy(murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity p0) {
@@ -1415,7 +1415,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
     public void onStoppedTrackingBy(murat.simv2.simulation.mirror.net.minecraft.server.network.ServerPlayerEntity p0) {
     }
 
-    public void onStruckByLightning(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, java.lang.Object p1) {
+    public void onStruckByLightning(murat.simv2.simulation.mirror.net.minecraft.server.world.ServerWorld p0, murat.simv2.simulation.mirror.net.minecraft.entity.LightningEntity p1) {
     }
 
     public void onSwimmingStart() {
@@ -1454,7 +1454,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
     public void populateCrashReport(murat.simv2.simulation.mirror.net.minecraft.util.crash.CrashReportSection p0) {
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d positionInPortal(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis p0, java.lang.Object p1) {
+    public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d positionInPortal(murat.simv2.simulation.mirror.net.minecraft.util.math.Direction.Axis p0, murat.simv2.simulation.mirror.net.minecraft.world.BlockLocating.Rectangle p1) {
         return null;
     }
 
@@ -1553,7 +1553,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
     public void setAngles(float p0, float p1) {
     }
 
-    public boolean setApplicableComponent(java.lang.Object p0, java.lang.Object p1) {
+    public boolean setApplicableComponent(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1) {
         return false;
     }
 
@@ -1563,10 +1563,10 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
     public void setBoundingBox(murat.simv2.simulation.mirror.net.minecraft.util.math.Box p0) {
     }
 
-    public void setChangeListener(java.lang.Object p0) {
+    public void setChangeListener(murat.simv2.simulation.mirror.net.minecraft.world.entity.EntityChangeListener p0) {
     }
 
-    public void setComponent(java.lang.Object p0, java.lang.Object p1) {
+    public void setComponent(murat.simv2.simulation.mirror.net.minecraft.component.ComponentType p0, java.lang.Object p1) {
     }
 
     public void setCritical(boolean p0) {
@@ -1662,7 +1662,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
     public void setPosition(double p0, double p1, double p2) {
     }
 
-    public void setPosition(java.lang.Object p0, java.util.Set p1) {
+    public void setPosition(murat.simv2.simulation.mirror.net.minecraft.entity.player.PlayerPosition p0, java.util.Set p1) {
     }
 
     public void setPosition(murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d p0) {
@@ -1840,7 +1840,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return null;
     }
 
-    public murat.simv2.simulation.mirror.net.minecraft.entity.Entity teleportTo(java.lang.Object p0) {
+    public murat.simv2.simulation.mirror.net.minecraft.entity.Entity teleportTo(murat.simv2.simulation.mirror.net.minecraft.world.TeleportTarget p0) {
         return null;
     }
 
@@ -1880,7 +1880,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
         return false;
     }
 
-    public void tryUsePortal(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
+    public void tryUsePortal(murat.simv2.simulation.mirror.net.minecraft.block.Portal p0, murat.simv2.simulation.mirror.net.minecraft.util.math.BlockPos p1) {
     }
 
     public void unsetRemoved() {
@@ -1959,7 +1959,7 @@ public class PersistentProjectileEntity extends murat.simv2.simulation.mirror.ne
 
     public static class PickupPermission {
         public static murat.simv2.simulation.mirror.net.minecraft.entity.projectile.PersistentProjectileEntity.PickupPermission ALLOWED;
-        public static com.mojang.serialization.Codec CODEC;
+        public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.entity.projectile.PersistentProjectileEntity.PickupPermission> CODEC;
         public static murat.simv2.simulation.mirror.net.minecraft.entity.projectile.PersistentProjectileEntity.PickupPermission CREATIVE_ONLY;
         public static murat.simv2.simulation.mirror.net.minecraft.entity.projectile.PersistentProjectileEntity.PickupPermission DISALLOWED;
         public static murat.simv2.simulation.mirror.net.minecraft.entity.projectile.PersistentProjectileEntity.PickupPermission[] field_7591;

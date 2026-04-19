@@ -1,7 +1,7 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity.player;
 
 // Generated mirror stub for simulation closure.
-public class PlayerAbilities {
+public class PlayerAbilities extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static boolean DEFAULT_ALLOW_FLYING;

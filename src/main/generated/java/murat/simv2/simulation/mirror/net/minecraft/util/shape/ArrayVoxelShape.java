@@ -19,7 +19,7 @@ public class ArrayVoxelShape extends murat.simv2.simulation.mirror.net.minecraft
         return null;
     }
 
-    public double calculateMaxDistance(java.lang.Object p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p1, double p2) {
+    public double calculateMaxDistance(murat.simv2.simulation.mirror.net.minecraft.util.math.AxisCycleDirection p0, murat.simv2.simulation.mirror.net.minecraft.util.math.Box p1, double p2) {
         return 0.0D;
     }
 

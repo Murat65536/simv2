@@ -1,11 +1,11 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.math;
 
 // Generated mirror stub for simulation closure.
-public class Vec3d {
+public class Vec3d extends java.lang.Object implements murat.simv2.simulation.mirror.net.minecraft.util.math.Position {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.Codec CODEC;
-    public static java.lang.Object PACKET_CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d> CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<io.netty.buffer.ByteBuf, murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d> PACKET_CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d ZERO;
     public double x;
     public double y;
@@ -100,7 +100,7 @@ public class Vec3d {
         return 0.0D;
     }
 
-    public boolean isInRange(java.lang.Object p0, double p1) {
+    public boolean isInRange(murat.simv2.simulation.mirror.net.minecraft.util.math.Position p0, double p1) {
         return false;
     }
 

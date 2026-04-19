@@ -1,11 +1,11 @@
 package murat.simv2.simulation.mirror.net.minecraft.entity;
 
 // Generated mirror stub for simulation closure.
-public class PositionInterpolator {
+public class PositionInterpolator extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static int DEFAULT_INTERPOLATION_DURATION;
-    public java.util.function.Consumer callback;
+    public java.util.function.Consumer<murat.simv2.simulation.mirror.net.minecraft.entity.PositionInterpolator> callback;
     public murat.simv2.simulation.mirror.net.minecraft.entity.PositionInterpolator.Data data;
     public murat.simv2.simulation.mirror.net.minecraft.entity.Entity entity;
     public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d lastPos;
@@ -55,7 +55,7 @@ public class PositionInterpolator {
     public PositionInterpolator() {
     }
 
-    public static class Data {
+    public static class Data extends java.lang.Object {
         public float pitch;
         public murat.simv2.simulation.mirror.net.minecraft.util.math.Vec3d pos;
         public int step;

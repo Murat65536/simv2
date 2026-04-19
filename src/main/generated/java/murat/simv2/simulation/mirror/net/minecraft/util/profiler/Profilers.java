@@ -1,12 +1,12 @@
 package murat.simv2.simulation.mirror.net.minecraft.util.profiler;
 
 // Generated mirror stub for simulation closure.
-public class Profilers {
+public class Profilers extends java.lang.Object {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
     public static java.util.concurrent.atomic.AtomicInteger ACTIVE_BUILTIN_PROFILER_COUNT;
-    public static java.lang.ThreadLocal BUILTIN_PROFILER;
-    public static java.lang.ThreadLocal TRACY_PROFILER;
+    public static java.lang.ThreadLocal<murat.simv2.simulation.mirror.net.minecraft.util.profiler.Profiler> BUILTIN_PROFILER;
+    public static java.lang.ThreadLocal<java.lang.Object> TRACY_PROFILER;
 
     public Profilers() {
     }

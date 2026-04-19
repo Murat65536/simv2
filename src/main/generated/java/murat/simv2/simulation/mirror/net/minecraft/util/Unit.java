@@ -4,9 +4,9 @@ package murat.simv2.simulation.mirror.net.minecraft.util;
 public class Unit {
 
     // BEGIN GENERATED MIRROR NESTED STUBS
-    public static com.mojang.serialization.Codec CODEC;
+    public static com.mojang.serialization.Codec<murat.simv2.simulation.mirror.net.minecraft.util.Unit> CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.util.Unit INSTANCE;
-    public static java.lang.Object PACKET_CODEC;
+    public static murat.simv2.simulation.mirror.net.minecraft.network.codec.PacketCodec<io.netty.buffer.ByteBuf, murat.simv2.simulation.mirror.net.minecraft.util.Unit> PACKET_CODEC;
     public static murat.simv2.simulation.mirror.net.minecraft.util.Unit[] field_17275;
 
     public Unit(java.lang.String p0, int p1) {
