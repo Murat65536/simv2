@@ -1,151 +1,43 @@
 package murat.simv2.analysis;
 
-import com.ibm.wala.types.TypeReference;
-
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Static configuration for the movement-field analysis.
+ * <p>
+ * The analysis answers a single question: <em>what code on the client player
+ * affects {@code Entity.pos} during a single tick?</em> Everything else — the
+ * field manifest, the mirror closure, the generated sync code — is derived
+ * mechanically from the WALA backward slice of that question.
+ */
 public final class AnalysisConfig {
 
-    private AnalysisConfig() {}
+    private AnalysisConfig() {
+    }
 
-    public static final Set<String> TARGET_CLASSES = Set.of(
-        "Lnet/minecraft/entity/Entity",
-        "Lnet/minecraft/entity/LivingEntity",
-        "Lnet/minecraft/entity/player/PlayerEntity",
-        "Lnet/minecraft/client/network/AbstractClientPlayerEntity",
-        "Lnet/minecraft/client/network/ClientPlayerEntity"
+    /** The internal name of {@link net.minecraft.entity.Entity}. */
+    public static final String ENTITY_INTERNAL = "Lnet/minecraft/entity/Entity";
+
+    /** Internal name of the seed field — the only thing we slice backward from. */
+    public static final String SEED_FIELD_NAME = "pos";
+
+    /** The single backward-slice seed: {@code Entity.pos} writes inside the call graph. */
+    public static final SeedField SEED_FIELD = new SeedField(ENTITY_INTERNAL, SEED_FIELD_NAME);
+
+    /** Entry point method (class, method, descriptor) for the call graph. */
+    public static final EntryMethod ENTRY_METHOD = new EntryMethod(
+        "Lnet/minecraft/client/network/ClientPlayerEntity",
+        "tickMovement",
+        "()V"
     );
 
-    public static final String CLIENT_PLAYER_CLASS = "Lnet/minecraft/client/network/ClientPlayerEntity";
-
-    public static final List<EntryMethod> ENTRY_METHODS = List.of(
-        new EntryMethod(CLIENT_PLAYER_CLASS, "tickMovement", "()V")
-    );
-
-    public static final Set<String> SEED_FIELDS = Set.of(
-        "pos"
-    );
-
-    public static final Set<String> SEED_METHODS = Set.of(
-        "setPosition"
-    );
-
-    // Fields that WALA discovers as reachable but must not be synced.
-    // These are identity fields, shared references, or internal bookkeeping
-    // that would corrupt entity state if copied between instances.
-    public static final Set<String> EXCLUDED_FIELDS = Set.of(
-        // Identity — copying these makes the game treat sim as the real player
-        "uuid", "uuidString", "id", "type", "gameProfile",
-        // Shared references — must not alias between entities
-        "dataTracker", "world", "random", "changeListener",
-        "collisionHandler", "currentlyCheckedCollisions", "queuedCollisionChecks",
-        "collidedBlockPositions", "brain", "tickables", "passengerList",
-        "lastEquipmentStacks", "itemCooldownManager", "portalManager",
-        "playerScreenHandler", "currentScreenHandler",
-        // Internal bookkeeping recomputed each tick
-        "removalReason", "firstUpdate", "age",
-        // Damage/combat state — not relevant to movement prediction
-        "damageTracker", "lastDamageSource", "lastDamageTaken", "lastDamageTime",
-        "attackerReference", "attacking", "attackingPlayer",
-        "lastAttackTime", "lastAttackedTime", "hurtTime", "maxHurtTime",
-        "playerHitTimer", "dead", "deathTime", "experienceDroppingDisabled",
-        // Render interpolation — only relevant on the rendering side
-        "lastRenderX", "lastRenderY", "lastRenderZ",
-        "lastRenderPitch", "lastRenderYaw", "renderPitch", "renderYaw",
-        "headTrackingIncrements", "interpolator", "serverHeadYaw",
-        "limbAnimator", "capeX", "capeY", "capeZ",
-        "lastCapeX", "lastCapeY", "lastCapeZ",
-        "distanceMoved", "lastDistanceMoved", "lastVelocity",
-        // Non-movement player state
-        "experienceLevel", "experienceProgress", "experiencePickUpDelay",
-        "totalExperience", "enchantingTableSeed", "enderChestInventory",
-        "shoulderEntityAddedTime", "damageTiltYaw",
-        "sleepTimer", "lastDeathPos", "playerListEntry",
-        "despawnCounter", "riptideAttackDamage", "riptideStack",
-        "selectedItem", "remainingLoadTicks",
-        "currentExplosionImpactPos", "currentExplosionResetGraceTime",
-        "ignoreFallDamageFromCurrentExplosion", "explodedBy",
-        // Visual-only
-        "hasVisualFire", "lastChimeAge", "lastChimeIntensity",
-        "distanceTraveled", "nextStepSoundDistance",
-        "stuckArrowTimer", "stuckStingerTimer",
-        "handSwingProgress", "lastHandSwingProgress", "handSwingTicks", "handSwinging",
-        "preferredHand",
-        // Network sync state — not relevant for local prediction
-        "lastXClient", "lastYClient", "lastZClient",
-        "lastYawClient", "lastPitchClient",
-        "lastSneaking", "lastSprinting", "lastOnGround", "lastHorizontalCollision",
-        "lastPlayerInput", "ticksSinceLastPositionPacketSent",
-        "itemDropCooldown",
-        // Client state that should be read but not copied
-        "client", "networkHandler"
-    );
-
-    public static final List<String> EXCLUSIONS = List.of(
-        // Rendering
-//        "net/minecraft/client/render/.*",
-//        "net/minecraft/client/gui/.*",
-//        "net/minecraft/client/font/.*",
-//        "net/minecraft/client/texture/.*",
-//        "net/minecraft/client/gl/.*",
-//        "net/minecraft/client/particle/.*",
-//        "net/minecraft/client/sound/.*",
-//        "net/minecraft/client/realms/.*",
-//        "net/minecraft/client/toast/.*",
-//        "net/minecraft/client/tutorial/.*",
-//        "net/minecraft/client/resource/.*",
-//        "net/minecraft/client/search/.*",
-//        "net/minecraft/client/option/.*",
-//        // Server
-//        "net/minecraft/server/.*",
-//        "net/minecraft/dedicated/.*",
-//        // Networking
-//        "net/minecraft/network/.*",
-//        // Data / non-movement systems
-//        "net/minecraft/data/.*",
-//        "net/minecraft/advancement/.*",
-//        "net/minecraft/recipe/.*",
-//        "net/minecraft/loot/.*",
-//        "net/minecraft/command/.*",
-//        "net/minecraft/scoreboard/.*",
-//        "net/minecraft/text/.*",
-//        "net/minecraft/nbt/.*",
-//        "net/minecraft/datafixer/.*",
-//        "net/minecraft/stat/.*",
-//        "net/minecraft/village/.*",
-//        "net/minecraft/structure/.*",
-//        "net/minecraft/screen/.*",
-//        "net/minecraft/inventory/.*",
-//        "net/minecraft/enchantment/.*",
-//        "net/minecraft/component/.*",
-//        "net/minecraft/registry/.*",
-//        "net/minecraft/resource/.*",
-//        "net/minecraft/predicate/.*",
-//        "net/minecraft/particle/.*",
-//        "net/minecraft/sound/.*",
-//        // Entity registries — truly irrelevant to movement
-//        "net/minecraft/entity/EntityType",
-//        "net/minecraft/entity/EntityType\\$.*",
-//        "net/minecraft/entity/SpawnGroup",
-//        "net/minecraft/entity/SpawnReason",
-//        "net/minecraft/entity/ExperienceOrbEntity",
-//        "net/minecraft/entity/damage/.*",
-//        // World systems irrelevant to movement
-//        "net/minecraft/world/chunk/.*",
-//        "net/minecraft/world/biome/.*",
-//        "net/minecraft/world/gen/.*",
-//        "net/minecraft/world/dimension/.*",
-//        "net/minecraft/world/event/GameEvent",
-//        "net/minecraft/world/GameRules.*",
-//        // Keep primordial JDK and common third-party libraries in scope.
-//        // Excluding these breaks pointer analysis and often collapses the call graph.
-        "java/awt/.*",
-        "javax/swing/.*"
-    );
-
-    // Dot-notation class names for Spoon
-    public static final List<String> TARGET_CLASSES_DOT = List.of(
+    /**
+     * Concrete vanilla classes that MUST appear in the mirror closure even if
+     * the slice never reaches them. Includes the player hierarchy so that the
+     * mirror produces a constructable {@code ClientPlayerEntity} subclass.
+     */
+    public static final List<String> REQUIRED_PRIMARY_CLASSES = List.of(
         "net.minecraft.entity.Entity",
         "net.minecraft.entity.LivingEntity",
         "net.minecraft.entity.player.PlayerEntity",
@@ -153,5 +45,98 @@ public final class AnalysisConfig {
         "net.minecraft.client.network.ClientPlayerEntity"
     );
 
-    public record EntryMethod(String className, String methodName, String descriptor) {}
+    /**
+     * WALA scope exclusions. We deliberately keep the exclusion list focused
+     * on packages that only exist for rendering / data / network and never
+     * influence movement. We do NOT exclude {@code java.*} — pointer analysis
+     * requires it.
+     */
+    public static final List<String> WALA_EXCLUSIONS = List.of(
+        "net/minecraft/client/render/.*",
+        "net/minecraft/client/gui/.*",
+        "net/minecraft/client/font/.*",
+        "net/minecraft/client/texture/.*",
+        "net/minecraft/client/gl/.*",
+        "net/minecraft/client/particle/.*",
+        "net/minecraft/client/sound/.*",
+        "net/minecraft/client/realms/.*",
+        "net/minecraft/client/toast/.*",
+        "net/minecraft/client/tutorial/.*",
+        "net/minecraft/client/resource/.*",
+        "net/minecraft/client/search/.*",
+        "net/minecraft/client/option/.*",
+        "net/minecraft/server/.*",
+        "net/minecraft/dedicated/.*",
+        "net/minecraft/network/.*",
+        "net/minecraft/data/.*",
+        "net/minecraft/advancement/.*",
+        "net/minecraft/recipe/.*",
+        "net/minecraft/loot/.*",
+        "net/minecraft/command/.*",
+        "net/minecraft/scoreboard/.*",
+        "net/minecraft/text/.*",
+        "net/minecraft/nbt/.*",
+        "net/minecraft/datafixer/.*",
+        "net/minecraft/stat/.*",
+        "net/minecraft/village/.*",
+        "net/minecraft/structure/.*",
+        "net/minecraft/screen/.*",
+        "net/minecraft/inventory/.*",
+        "net/minecraft/enchantment/.*",
+        "net/minecraft/world/chunk/.*",
+        "net/minecraft/world/biome/.*",
+        "net/minecraft/world/gen/.*",
+        "net/minecraft/world/dimension/.*"
+    );
+
+    /**
+     * Heap-flow exclusions for SDG construction. These types stay in the
+     * call graph but the slicer will not track per-instance heap data flow
+     * through them. This keeps the IFDS solver tractable on JDK string and
+     * collection internals and on a few enormous {@code <clinit>}s in MC.
+     */
+    public static final List<String> SLICER_HEAP_EXCLUSIONS = List.of(
+        "java/lang/String",
+        "java/lang/AbstractStringBuilder",
+        "java/lang/StringBuilder",
+        "java/lang/StringBuffer",
+        "java/lang/StringUTF16",
+        "java/lang/StringLatin1",
+        "java/lang/StringConcatHelper",
+        "java/lang/Throwable",
+        "java/lang/Exception",
+        "java/lang/RuntimeException",
+        "java/lang/Class",
+        "java/lang/Module.*",
+        "net/minecraft/block/.*",
+        "net/minecraft/state/.*",
+        "net/minecraft/entity/attribute/.*",
+        "net/minecraft/util/Identifier",
+        "net/minecraft/util/Formatting",
+        "net/minecraft/util/DyeColor",
+        "net/minecraft/util/Rarity"
+    );
+
+    /**
+     * Fields the runtime sync MUST NOT copy because they would alias real-game
+     * state into the simulator (same world, same UUID, same network handler).
+     * This is a deliberately tiny list — anything that needs more nuance lives
+     * in the slice, not here.
+     */
+    public static final Set<String> DO_NOT_SYNC_FIELDS = Set.of(
+        "uuid", "uuidString", "id",
+        "world", "networkHandler", "client",
+        "type", "gameProfile",
+        "dataTracker",
+        "passengerList", "vehicle"
+    );
+
+    public record SeedField(String declaringClassInternal, String fieldName) {
+    }
+
+    public record EntryMethod(String classInternal, String name, String descriptor) {
+        public String selector() {
+            return name + descriptor;
+        }
+    }
 }

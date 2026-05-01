@@ -2,86 +2,52 @@ package murat.simv2.analysis;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.Set;
 
+/**
+ * Entry point for the analysis CLI.
+ * <p>
+ * Three modes:
+ * <ul>
+ *   <li>{@code wala} — run the WALA backward slice from {@code Entity.pos}
+ *       writes; emit the slice JSON, the mirror closure, the field manifest,
+ *       the access widener, and {@code GeneratedSync.java}.</li>
+ *   <li>{@code spoon} — read the WALA artifacts and build the mirror classes
+ *       in {@code murat.simv2.simulation.mirror.net.minecraft.*}.</li>
+ *   <li>{@code all} — both, in order.</li>
+ * </ul>
+ */
 public final class MovementFieldAnalyzer {
     private MovementFieldAnalyzer() {
     }
 
     public static void main(String[] args) throws Exception {
         AnalysisRunConfig config = AnalysisRunConfig.parse(args);
-        if (config.mode() == AnalysisMode.SPOON_ONLY) {
-            runSpoonOnly(config);
-            System.out.println("\n=== Spoon phase complete ===");
-            return;
-        }
-        if (config.mode() == AnalysisMode.ALL) {
-            requireSourcesJarForSpoon(config, AnalysisMode.ALL);
-        }
+        Files.createDirectories(config.outputDir());
 
-        WalaPipelineResult walaResult = new WalaPipelineRunner().run(config);
-        if (config.mode() == AnalysisMode.WALA_ONLY) {
-            System.out.println("\nWALA-only mode selected — skipping Spoon phase.");
-            System.out.println("\n=== Analysis complete ===");
-            return;
+        switch (config.mode()) {
+            case WALA -> runWala(config);
+            case SPOON -> runSpoon(config);
+            case ALL -> {
+                runWala(config);
+                runSpoon(config);
+            }
         }
-        if (!walaResult.isSpoonReady()) {
-            throw new IllegalStateException(
-                "ALL mode requires Spoon prerequisites, but WALA did not produce usable slice lines. "
-                    + walaResult.spoonReadinessDetail()
-                    + " Action: rerun with inputs where pointer analysis succeeds, "
-                    + "or run with mode=wala for WALA-only output.");
-        }
-        runSpoonPhase(config, walaResult.sliceLines(), walaResult.mirrorClosure());
-        System.out.println("\n=== Analysis complete ===");
+        System.out.println("\n=== Analysis complete (" + config.mode() + ") ===");
     }
 
-    private static void runSpoonOnly(AnalysisRunConfig config) throws Exception {
-        requireSourcesJarForSpoon(config, AnalysisMode.SPOON_ONLY);
-        SpoonArtifacts artifacts = AnalysisArtifacts.loadForSpoon(config.outputDir(), config);
-        runSpoonPhase(config, artifacts.sliceLines(), artifacts.mirrorClosure());
+    private static void runWala(AnalysisRunConfig config) throws Exception {
+        new WalaPipelineRunner().run(config);
     }
 
-    private static void runSpoonPhase(AnalysisRunConfig config,
-                                      Map<String, Map<String, Set<Integer>>> sliceLines,
-                                      MirrorClosure mirrorClosure) throws Exception {
-        Path sourcesJarPath = requireSourcesJarForSpoon(config, config.mode());
-
-        System.out.println("\nRunning Spoon source pruning...");
-        SpoonSlicePruner pruner = new SpoonSlicePruner(
-            sourcesJarPath,
-            Path.of(config.minecraftJar()),
-            sliceLines
-        );
-        Map<String, String> slicedPrimarySources = pruner.pruneAndCollect(
-            config.outputDir().resolve("java/murat/simv2/simulation/sliced")
-        );
-
-        MirrorClassEmitter mirrorEmitter = new MirrorClassEmitter(
-            config.outputDir(),
-            Path.of(config.minecraftJar())
-        );
-        mirrorEmitter.emit(mirrorClosure, slicedPrimarySources);
-    }
-
-    private static Path requireSourcesJarForSpoon(AnalysisRunConfig config, AnalysisMode mode) {
-        String sourcesJar = config.sourcesJar();
-        String modeLabel = switch (mode) {
-            case ALL -> "ALL mode";
-            case SPOON_ONLY -> "SPOON_ONLY mode";
-            case WALA_ONLY -> "Spoon phase";
-        };
-        if (sourcesJar.isBlank()) {
-            throw new IllegalStateException(modeLabel
-                + " requires a sources JAR. Pass -PsourcesJar=<path-to-sources.jar>.");
+    private static void runSpoon(AnalysisRunConfig config) throws Exception {
+        Path sourcesJar = config.sourcesJar();
+        if (sourcesJar == null) {
+            throw new IllegalStateException("Spoon phase requires -PsourcesJar=<path>.");
         }
-        Path sourcesJarPath = Path.of(sourcesJar);
-        if (!Files.exists(sourcesJarPath)) {
-            throw new IllegalStateException(modeLabel + " requires an existing sources JAR, but it was not found: "
-                + sourcesJarPath + ". Pass -PsourcesJar=<path-to-sources.jar>.");
+        if (!Files.exists(sourcesJar)) {
+            throw new IllegalStateException("Sources jar not found: " + sourcesJar);
         }
-        return sourcesJarPath;
+        AnalysisArtifacts.requireWalaArtifacts(config.outputDir());
+        new MirrorBuilder().run(config);
     }
-
 }

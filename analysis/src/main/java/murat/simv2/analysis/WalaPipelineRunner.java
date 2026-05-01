@@ -3,7 +3,6 @@ package murat.simv2.analysis;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.core.util.config.AnalysisScopeReader;
-import com.ibm.wala.ipa.callgraph.AnalysisCache;
 import com.ibm.wala.ipa.callgraph.AnalysisCacheImpl;
 import com.ibm.wala.ipa.callgraph.AnalysisOptions;
 import com.ibm.wala.ipa.callgraph.AnalysisScope;
@@ -20,283 +19,118 @@ import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeReference;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 
+/**
+ * Runs the WALA half of the pipeline:
+ * <ol>
+ *   <li>Build call graph + pointer analysis from {@code ClientPlayerEntity#tickMovement()}.</li>
+ *   <li>Compute the backward slice from every {@code putfield Entity.pos} in the CG.</li>
+ *   <li>Derive (a) per-method bytecode line numbers, (b) MOD/REF field categories,
+ *       (c) the class closure from the slice.</li>
+ *   <li>Persist all four artifacts plus an inputs fingerprint, plus a generated
+ *       sync class and access widener for the runtime side.</li>
+ * </ol>
+ */
 final class WalaPipelineRunner {
-    private static final List<String> REQUIRED_PRIMORDIAL_TYPES = List.of(
-        "Ljava/lang/Object",
-        "Ljava/lang/Throwable",
-        "Ljava/lang/RuntimeException"
-    );
 
-    WalaPipelineResult run(AnalysisRunConfig config) throws Exception {
-        System.out.println("=== WALA Movement Field Analysis ===");
-        System.out.println("Minecraft JAR: " + config.minecraftJar());
-        System.out.println("Output dir: " + config.outputDir());
+    void run(AnalysisRunConfig config) throws Exception {
+        System.out.println("=== WALA Movement Slice ===");
+        System.out.println("Minecraft jar:  " + config.minecraftJar());
+        System.out.println("Output dir:     " + config.outputDir());
 
-        File exclusionsFile = writeExclusions();
+        File exclusionsFile = writeExclusionsFile();
         try {
-            AnalysisScope scope = buildScope(config.minecraftJar(), exclusionsFile);
-            IClassHierarchy cha = buildClassHierarchy(scope);
+            AnalysisScope scope = AnalysisScopeReader.instance.makeJavaBinaryAnalysisScope(
+                config.minecraftJar().toString(), exclusionsFile);
+
+            System.out.println("\nBuilding class hierarchy...");
+            IClassHierarchy cha = ClassHierarchyFactory.make(scope);
+            System.out.println("CHA: " + cha.getNumberOfClasses() + " classes");
+
             Set<Entrypoint> entrypoints = createEntrypoints(cha);
             if (entrypoints.isEmpty()) {
-                throw new IllegalStateException("No entry points found.");
-            }
-            System.out.println("Entry points: " + entrypoints.size());
-
-            CallGraphState callGraphState = buildCallGraph(scope, cha, entrypoints);
-            CallGraph cg = callGraphState.callGraph();
-            PointerAnalysis<InstanceKey> pa = callGraphState.pointerAnalysis();
-
-            System.out.println("\nRunning field analysis...");
-            SliceAnalysis sliceAnalysis = new SliceAnalysis(cg, pa, cha);
-            Set<SliceAnalysis.FieldInfo> slicedFields = sliceAnalysis.analyze();
-            System.out.println("Discovered fields: " + slicedFields.size());
-            for (SliceAnalysis.FieldInfo field : slicedFields) {
-                System.out.println("  " + (field.isWrite() ? "W" : "R")
-                    + " " + field.declaringClass() + "." + field.fieldName());
+                throw new IllegalStateException("No entrypoint resolved for "
+                    + AnalysisConfig.ENTRY_METHOD.classInternal() + "."
+                    + AnalysisConfig.ENTRY_METHOD.selector());
             }
 
-            System.out.println("\nClassifying fields...");
-            ModRefClassifier classifier = new ModRefClassifier(cg, pa);
-            List<FieldResult> classified = classifier.classify(slicedFields);
-            for (FieldResult result : classified) {
-                System.out.println("  " + result.category()
-                    + " " + result.declaringClass() + "." + result.fieldName());
+            System.out.println("\nBuilding 0-1-Container-CFA call graph...");
+            AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
+            CallGraphBuilder<InstanceKey> builder = Util.makeZeroOneContainerCFABuilder(
+                options, new AnalysisCacheImpl(), cha, scope);
+            long cgStart = System.currentTimeMillis();
+            CallGraph cg = builder.makeCallGraph(options, new PrintingProgressMonitor());
+            PointerAnalysis<InstanceKey> pa = builder.getPointerAnalysis();
+            long cgMs = System.currentTimeMillis() - cgStart;
+            System.out.printf("Call graph: %d nodes in %.1fs%n",
+                cg.getNumberOfNodes(), cgMs / 1000.0);
+            if (cg.getNumberOfNodes() < 50) {
+                throw new IllegalStateException(
+                    "Call graph is suspiciously small (" + cg.getNumberOfNodes()
+                        + " nodes). Check exclusions and entrypoints.");
             }
 
-            System.out.println("\nGenerating code...");
-            SyncCodeGenerator generator = new SyncCodeGenerator(cha, config.outputDir());
-            generator.generate(classified);
+            System.out.println("\nRunning backward slice from Entity.pos writes...");
+            WalaSlicer.SliceResult slice = new WalaSlicer(cg, pa, cha).slice();
+            System.out.printf(
+                "Slice: %d statements -> %d classes, %d methods, %d fields%n",
+                slice.statementsConsidered(),
+                slice.lineByMethod().size(),
+                slice.lineByMethod().values().stream().mapToInt(Map::size).sum(),
+                slice.fields().size());
 
-            SliceExportResult sliceExportResult = exportSliceLinesIfAvailable(
-                config, cg, pa, cha, classified);
-            return new WalaPipelineResult(
-                List.copyOf(classified),
-                sliceExportResult.sliceLines(),
-                sliceExportResult.mirrorClosure(),
-                sliceExportResult.prerequisiteStatus());
+            MirrorClosure closure = ClosureBuilder.build(slice, cha);
+            System.out.println("Closure: " + closure.classes().size() + " classes ("
+                + closure.slicedMethodsByClass().size() + " sliced)");
+
+            // Persist artifacts.
+            Path outputDir = config.outputDir();
+            Files.createDirectories(outputDir);
+            AnalysisArtifacts.writeSlice(AnalysisArtifacts.slicePath(outputDir), slice.lineByMethod());
+            AnalysisArtifacts.writeClosure(AnalysisArtifacts.closurePath(outputDir), closure);
+            AnalysisArtifacts.writeFieldManifest(AnalysisArtifacts.fieldManifestPath(outputDir), slice.fields());
+            AnalysisArtifacts.writeInputs(AnalysisArtifacts.inputsPath(outputDir), config);
+
+            new SyncCodeGenerator(outputDir).generate(slice.fields());
+
+            System.out.println("\nWALA artifacts written to " + outputDir);
         } finally {
+            //noinspection ResultOfMethodCallIgnored
             exclusionsFile.delete();
         }
     }
 
-    private AnalysisScope buildScope(String minecraftJar, File exclusionsFile) throws Exception {
-        System.out.println("\nBuilding analysis scope...");
-        AnalysisScope scope = AnalysisScopeReader.instance.makeJavaBinaryAnalysisScope(
-            minecraftJar, exclusionsFile);
-        boolean javaBaseVisible = scope.getModules(ClassLoaderReference.Primordial)
-            .stream()
-            .anyMatch(module -> String.valueOf(module).contains("java.base"));
-        System.out.println("Application loader modules: "
-            + scope.getModules(ClassLoaderReference.Application));
-        System.out.println("Primordial loader modules: "
-            + scope.getModules(ClassLoaderReference.Primordial).size() + " modules");
-        System.out.println("Primordial java.base visible: " + javaBaseVisible);
-        return scope;
-    }
-
-    private IClassHierarchy buildClassHierarchy(AnalysisScope scope) throws Exception {
-        System.out.println("Building class hierarchy...");
-        IClassHierarchy cha = ClassHierarchyFactory.make(scope);
-        System.out.println("Class hierarchy: " + cha.getNumberOfClasses() + " classes");
-        verifyPrimordialTypesPresent(cha);
-        for (String targetClass : AnalysisConfig.TARGET_CLASSES) {
-            TypeReference tr = TypeReference.findOrCreate(ClassLoaderReference.Application, targetClass);
-            IClass c = cha.lookupClass(tr);
-            System.out.println("  " + targetClass + " -> "
-                + (c != null ? c.getAllMethods().size() + " methods" : "NOT FOUND"));
-            if (c == null) {
-                throw new IllegalStateException(
-                    "Target class missing from class hierarchy: " + targetClass
-                        + ". Check analysis scope/classpath exclusions.");
-            }
+    private Set<Entrypoint> createEntrypoints(IClassHierarchy cha) {
+        AnalysisConfig.EntryMethod em = AnalysisConfig.ENTRY_METHOD;
+        TypeReference owner = TypeReference.findOrCreate(
+            ClassLoaderReference.Application, em.classInternal());
+        IClass ownerClass = cha.lookupClass(owner);
+        if (ownerClass == null) {
+            throw new IllegalStateException("Entry owner class not in CHA: " + em.classInternal());
         }
-        return cha;
-    }
-
-    private void verifyPrimordialTypesPresent(IClassHierarchy cha) {
-        for (String typeName : REQUIRED_PRIMORDIAL_TYPES) {
-            TypeReference tr = TypeReference.findOrCreate(ClassLoaderReference.Primordial, typeName);
-            IClass klass = cha.lookupClass(tr);
-            if (klass == null) {
-                throw new IllegalStateException(
-                    "Required primordial type not found: " + typeName
-                        + ". JDK base classes are missing from WALA scope.");
-            }
-        }
-    }
-
-    private CallGraphState buildCallGraph(AnalysisScope scope,
-                                          IClassHierarchy cha,
-                                          Set<Entrypoint> entrypoints) throws Exception {
-        System.out.println("Attempting 0-1-Container-CFA call graph...");
-        AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
-        AnalysisCache cache = new AnalysisCacheImpl();
-        CallGraphBuilder<InstanceKey> builder = Util.makeZeroOneContainerCFABuilder(
-            options, cache, cha, scope);
-
-        long cgStart = System.currentTimeMillis();
-        CallGraph cg = builder.makeCallGraph(options, new PrintingProgressMonitor());
-        PointerAnalysis<InstanceKey> pa = builder.getPointerAnalysis();
-        long cgTime = System.currentTimeMillis() - cgStart;
-        System.out.println("0-1-Container-CFA call graph: "
-            + cg.getNumberOfNodes() + " nodes in " + (cgTime / 1000) + "s");
-        if (cg.getNumberOfNodes() <= 5) {
+        MethodReference ref = MethodReference.findOrCreate(
+            owner, Selector.make(em.selector()));
+        IMethod resolved = cha.resolveMethod(ref);
+        if (resolved == null) {
             throw new IllegalStateException(
-                "0-1-Container-CFA produced a trivial call graph (" + cg.getNumberOfNodes()
-                    + " nodes). Check exclusions and analysis inputs.");
+                "Entry method not found: " + em.classInternal() + "." + em.selector());
         }
-        if (pa == null) {
-            throw new IllegalStateException(
-                "0-1-Container-CFA did not produce pointer analysis.");
-        }
-        return new CallGraphState(cg, pa);
+        System.out.println("Entry: " + em.classInternal() + "." + em.selector()
+            + " (-> " + resolved.getDeclaringClass().getName() + ")");
+        return Set.of(new DefaultEntrypoint(ref, cha));
     }
 
-    private SliceExportResult exportSliceLinesIfAvailable(AnalysisRunConfig config,
-                                                          CallGraph cg,
-                                                          PointerAnalysis<InstanceKey> pa,
-                                                          IClassHierarchy cha,
-                                                          List<FieldResult> classifiedFields) throws Exception {
-        Path outputDir = config.outputDir();
-        Path sliceJsonPath = AnalysisArtifacts.sliceJsonPath(outputDir);
-        Path mirrorClosurePath = AnalysisArtifacts.mirrorClosurePath(outputDir);
-        Path analysisInputsPath = AnalysisArtifacts.analysisInputsPath(outputDir);
-        if (pa == null) {
-            removeStaleArtifacts(sliceJsonPath, mirrorClosurePath, analysisInputsPath);
-            System.out.println(
-                "\nBackward slice unavailable: pointer analysis is unavailable from call-graph build.");
-            System.out.println("Spoon prerequisites are not satisfied for this run.");
-            return new SliceExportResult(
-                null,
-                null,
-                WalaPipelineResult.SpoonPrerequisiteStatus.POINTER_ANALYSIS_UNAVAILABLE);
-        }
-        System.out.println("\n=== Phase 2: Backward Slice + Spoon Pruning ===");
-        BackwardSliceExporter exporter = new BackwardSliceExporter(cg, pa, cha);
-        Map<String, Map<String, Set<Integer>>> sliceLines = exporter.computeSliceLines();
-        if (sliceLines == null || sliceLines.isEmpty()) {
-            removeStaleArtifacts(sliceJsonPath, mirrorClosurePath, analysisInputsPath);
-            System.out.println("Backward slice produced no source line mappings.");
-            System.out.println("Spoon prerequisites are not satisfied for this run.");
-            return new SliceExportResult(
-                null,
-                null,
-                WalaPipelineResult.SpoonPrerequisiteStatus.SLICE_LINES_NOT_PRODUCED);
-        }
-        exporter.exportToJson(sliceLines, sliceJsonPath);
-        MirrorClosure mirrorClosure = buildMirrorClosure(sliceLines, classifiedFields);
-        AnalysisArtifacts.writeMirrorClosure(mirrorClosure, mirrorClosurePath);
-        AnalysisArtifacts.writeAnalysisInputs(config, analysisInputsPath);
-        return new SliceExportResult(
-            Map.copyOf(sliceLines),
-            mirrorClosure,
-            WalaPipelineResult.SpoonPrerequisiteStatus.READY);
-    }
-
-    private MirrorClosure buildMirrorClosure(Map<String, Map<String, Set<Integer>>> sliceLines,
-                                             List<FieldResult> classifiedFields) {
-        TreeSet<String> classes = new TreeSet<>();
-        TreeMap<String, Set<String>> methodsByClass = new TreeMap<>();
-
-        for (Map.Entry<String, Map<String, Set<Integer>>> classEntry : sliceLines.entrySet()) {
-            String className = classEntry.getKey();
-            if (className == null || className.isBlank()) {
-                continue;
-            }
-            if (!className.startsWith("net.minecraft.")) {
-                continue;
-            }
-            classes.add(className);
-            TreeSet<String> selectors = new TreeSet<>();
-            for (String selector : classEntry.getValue().keySet()) {
-                if (selector != null && !selector.isBlank()) {
-                    selectors.add(selector.trim());
-                }
-            }
-            methodsByClass.put(className, Set.copyOf(selectors));
-        }
-
-        for (FieldResult field : classifiedFields) {
-            String className = toDotClassName(field.declaringClass());
-            if (className != null) {
-                classes.add(className);
-                methodsByClass.putIfAbsent(className, Set.of());
-            }
-        }
-
-        return new MirrorClosure(Set.copyOf(classes), Map.copyOf(new LinkedHashMap<>(methodsByClass)));
-    }
-
-    private String toDotClassName(String internalName) {
-        if (internalName == null || internalName.isBlank()) {
-            return null;
-        }
-        String normalized = internalName.startsWith("L")
-            ? internalName.substring(1)
-            : internalName;
-        if (normalized.endsWith(";")) {
-            normalized = normalized.substring(0, normalized.length() - 1);
-        }
-        String dotName = normalized.replace('/', '.');
-        return dotName.startsWith("net.minecraft.") ? dotName : null;
-    }
-
-    private void removeStaleArtifacts(Path... artifactPaths) throws Exception {
-        for (Path artifactPath : artifactPaths) {
-            if (artifactPath != null && Files.deleteIfExists(artifactPath)) {
-                System.out.println("Removed stale artifact: " + artifactPath);
-            }
-        }
-    }
-
-    private File writeExclusions() throws Exception {
+    private File writeExclusionsFile() throws Exception {
         File file = File.createTempFile("wala-exclusions", ".txt");
         file.deleteOnExit();
-        Files.writeString(file.toPath(), String.join("\n", AnalysisConfig.EXCLUSIONS) + "\n");
+        Files.writeString(file.toPath(), String.join("\n", AnalysisConfig.WALA_EXCLUSIONS) + "\n");
         return file;
-    }
-
-    private Set<Entrypoint> createEntrypoints(IClassHierarchy cha) {
-        Set<Entrypoint> entrypoints = new HashSet<>();
-        for (AnalysisConfig.EntryMethod em : AnalysisConfig.ENTRY_METHODS) {
-            TypeReference ownerType = TypeReference.findOrCreate(
-                ClassLoaderReference.Application, em.className());
-            IClass ownerClass = cha.lookupClass(ownerType);
-            if (ownerClass == null) {
-                System.err.println("WARNING: Entry owner class not found: " + em.className());
-                continue;
-            }
-            MethodReference concreteMethodRef = MethodReference.findOrCreate(
-                ownerType, Selector.make(em.methodName() + em.descriptor()));
-            IMethod resolved = cha.resolveMethod(concreteMethodRef);
-            if (resolved == null) {
-                System.err.println("WARNING: Method not found: "
-                    + em.className() + "." + em.methodName());
-                continue;
-            }
-            entrypoints.add(new DefaultEntrypoint(concreteMethodRef, cha));
-            System.out.println("  Entry: " + em.className() + "." + em.methodName() + em.descriptor()
-                + " (resolves to " + resolved.getDeclaringClass().getName() + ")");
-        }
-        return entrypoints;
-    }
-
-    private record CallGraphState(CallGraph callGraph, PointerAnalysis<InstanceKey> pointerAnalysis) {
-    }
-
-    private record SliceExportResult(Map<String, Map<String, Set<Integer>>> sliceLines,
-                                     MirrorClosure mirrorClosure,
-                                     WalaPipelineResult.SpoonPrerequisiteStatus prerequisiteStatus) {
     }
 }

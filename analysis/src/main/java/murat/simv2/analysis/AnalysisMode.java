@@ -2,21 +2,21 @@ package murat.simv2.analysis;
 
 import java.util.Locale;
 
-enum AnalysisMode {
+public enum AnalysisMode {
     ALL,
-    WALA_ONLY,
-    SPOON_ONLY;
+    WALA,
+    SPOON;
 
-    static AnalysisMode from(String raw) {
+    public static AnalysisMode parse(String raw) {
         if (raw == null || raw.isBlank()) {
             return ALL;
         }
         return switch (raw.trim().toLowerCase(Locale.ROOT)) {
             case "all" -> ALL;
-            case "wala" -> WALA_ONLY;
-            case "spoon" -> SPOON_ONLY;
+            case "wala" -> WALA;
+            case "spoon" -> SPOON;
             default -> throw new IllegalArgumentException(
-                "Unknown mode '" + raw + "'. Use one of: all, wala, spoon.");
+                "Unknown analysis mode '" + raw + "'. Expected one of: all, wala, spoon.");
         };
     }
 }

@@ -9,477 +9,223 @@ import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.regex.Pattern;
 
-final class AnalysisArtifacts {
-    static final String FIELD_MANIFEST_SCHEMA = "movement-fields";
-    static final int FIELD_MANIFEST_VERSION = 1;
-    static final String MIRROR_CLOSURE_SCHEMA = "mirror-closure";
-    static final int MIRROR_CLOSURE_VERSION = 1;
-    static final String ANALYSIS_INPUTS_SCHEMA = "analysis-inputs";
-    static final int ANALYSIS_INPUTS_VERSION = 1;
-    static final Comparator<FieldResult> FIELD_MANIFEST_ORDER = Comparator
-        .comparing(FieldResult::declaringClass)
-        .thenComparing(FieldResult::fieldName)
-        .thenComparing(FieldResult::typeDescriptor)
-        .thenComparing(field -> field.category().name());
+/**
+ * On-disk artifact layout shared between the WALA and Spoon phases.
+ *
+ * <p>Each artifact starts with a contract string {@code "<schema>/v<version>"}
+ * so the Spoon phase can detect a stale or incompatible WALA run.
+ */
+public final class AnalysisArtifacts {
+    public static final String SCHEMA_VERSION = "movement-analysis/v2";
 
-    private static final String FIELD_MANIFEST_CONTRACT_PREFIX = "manifest ";
-    private static final Pattern FIELD_MANIFEST_CONTRACT_PATTERN = Pattern.compile("^([a-z0-9-]+)/v(\\d+)$");
-    private static final String FIELD_MANIFEST_COLUMNS =
-        "CATEGORY declaring_class field_name type_descriptor";
-    private static final Gson PRETTY_GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private AnalysisArtifacts() {
     }
 
-    static Path fieldManifestPath(Path outputDir) {
-        return outputDir.resolve("movement-fields.txt");
-    }
-
-    static Path sliceJsonPath(Path outputDir) {
+    public static Path slicePath(Path outputDir) {
         return outputDir.resolve("movement-slice.json");
     }
 
-    static Path mirrorClosurePath(Path outputDir) {
+    public static Path closurePath(Path outputDir) {
         return outputDir.resolve("mirror-closure.json");
     }
 
-    static Path analysisInputsPath(Path outputDir) {
+    public static Path inputsPath(Path outputDir) {
         return outputDir.resolve("analysis-inputs.json");
     }
 
-    static SpoonArtifacts loadForSpoon(Path outputDir, AnalysisRunConfig runConfig) throws IOException {
-        validateAnalysisInputs(outputDir, runConfig);
-        Map<String, Map<String, Set<Integer>>> sliceLines = loadSliceLines(sliceJsonPath(outputDir));
-        MirrorClosure mirrorClosure = loadMirrorClosure(mirrorClosurePath(outputDir));
-        return new SpoonArtifacts(sliceLines, mirrorClosure);
+    public static Path fieldManifestPath(Path outputDir) {
+        return outputDir.resolve("movement-fields.txt");
     }
 
-    static String expectedFieldManifestContractLine() {
-        return FIELD_MANIFEST_CONTRACT_PREFIX + FIELD_MANIFEST_SCHEMA + "/v" + FIELD_MANIFEST_VERSION;
+    public static Path accessWidenerPath(Path outputDir) {
+        return outputDir.resolve("sim-v2.accesswidener");
     }
 
-    static List<FieldResult> loadFieldManifest(Path manifestPath) throws IOException {
-        if (!Files.exists(manifestPath)) {
-            throw new IllegalStateException("Missing movement field manifest: " + manifestPath
-                + ". Run WALA phase first.");
+    public static Path resourcesAccessWidenerPath(Path outputDir) {
+        // outputDir is .../src/main/generated; resources sits next to it.
+        return outputDir.getParent().resolve("resources").resolve("sim-v2.accesswidener");
+    }
+
+    // ── Slice ──
+
+    public static void writeSlice(Path path, Map<String, Map<String, Set<Integer>>> slice) throws IOException {
+        SlicePayload payload = new SlicePayload();
+        payload.contract = SCHEMA_VERSION;
+        payload.lines = new TreeMap<>();
+        for (var e : slice.entrySet()) {
+            Map<String, List<Integer>> methodMap = new TreeMap<>();
+            for (var m : e.getValue().entrySet()) {
+                methodMap.put(m.getKey(), new ArrayList<>(new TreeSet<>(m.getValue())));
+            }
+            payload.lines.put(e.getKey(), methodMap);
         }
+        Files.writeString(path, GSON.toJson(payload));
+    }
 
-        List<FieldResult> fields = new ArrayList<>();
-        Set<String> uniqueKeys = new LinkedHashSet<>();
-        boolean contractRead = false;
-        int lineNumber = 0;
-        for (String line : Files.readAllLines(manifestPath)) {
-            lineNumber++;
+    public static Map<String, Map<String, Set<Integer>>> readSlice(Path path) throws IOException {
+        SlicePayload payload = GSON.fromJson(Files.readString(path), SlicePayload.class);
+        if (payload == null || !SCHEMA_VERSION.equals(payload.contract)) {
+            throw new IllegalStateException("Slice JSON " + path + " has wrong contract; expected "
+                + SCHEMA_VERSION + ", got " + (payload == null ? "null" : payload.contract));
+        }
+        Map<String, Map<String, Set<Integer>>> result = new TreeMap<>();
+        if (payload.lines != null) {
+            for (var e : payload.lines.entrySet()) {
+                Map<String, Set<Integer>> methods = new TreeMap<>();
+                for (var m : e.getValue().entrySet()) {
+                    methods.put(m.getKey(), Set.copyOf(new TreeSet<>(m.getValue())));
+                }
+                result.put(e.getKey(), Map.copyOf(methods));
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    // ── Closure ──
+
+    public static void writeClosure(Path path, MirrorClosure closure) throws IOException {
+        ClosurePayload payload = new ClosurePayload();
+        payload.contract = SCHEMA_VERSION;
+        payload.classes = new ArrayList<>(new TreeSet<>(closure.classes()));
+        payload.slicedMethodsByClass = new TreeMap<>();
+        for (var e : closure.slicedMethodsByClass().entrySet()) {
+            payload.slicedMethodsByClass.put(e.getKey(), new ArrayList<>(new TreeSet<>(e.getValue())));
+        }
+        Files.writeString(path, GSON.toJson(payload));
+    }
+
+    public static MirrorClosure readClosure(Path path) throws IOException {
+        ClosurePayload payload = GSON.fromJson(Files.readString(path), ClosurePayload.class);
+        if (payload == null || !SCHEMA_VERSION.equals(payload.contract)) {
+            throw new IllegalStateException("Closure JSON " + path + " has wrong contract; expected "
+                + SCHEMA_VERSION + ", got " + (payload == null ? "null" : payload.contract));
+        }
+        Set<String> classes = payload.classes == null ? Set.of() : Set.copyOf(new TreeSet<>(payload.classes));
+        Map<String, Set<String>> sliced = new LinkedHashMap<>();
+        if (payload.slicedMethodsByClass != null) {
+            for (var e : payload.slicedMethodsByClass.entrySet()) {
+                sliced.put(e.getKey(), Set.copyOf(new LinkedHashSet<>(e.getValue())));
+            }
+        }
+        return new MirrorClosure(classes, Map.copyOf(sliced));
+    }
+
+    // ── Field manifest (human-readable) ──
+
+    public static void writeFieldManifest(Path path, List<FieldResult> fields) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        sb.append("# Movement field manifest\n");
+        sb.append("# contract: ").append(SCHEMA_VERSION).append("\n");
+        sb.append("# format: <category> <declaringClass> <fieldName> <typeDescriptor>\n");
+        for (FieldResult f : fields) {
+            sb.append(String.format(Locale.ROOT, "%-7s %s %s %s%n",
+                f.category(), f.declaringClass(), f.fieldName(), f.typeDescriptor()));
+        }
+        Files.writeString(path, sb.toString());
+    }
+
+    public static List<FieldResult> readFieldManifest(Path path) throws IOException {
+        List<FieldResult> result = new ArrayList<>();
+        for (String line : Files.readAllLines(path)) {
             String trimmed = line.trim();
             if (trimmed.isEmpty() || trimmed.startsWith("#")) {
                 continue;
             }
-
-            if (!contractRead) {
-                validateManifestContract(trimmed, manifestPath, lineNumber, line);
-                contractRead = true;
-                continue;
-            }
-
             String[] parts = trimmed.split("\\s+");
             if (parts.length != 4) {
-                throw malformedManifest(
-                    manifestPath,
-                    lineNumber,
-                    "Expected exactly 4 columns (" + FIELD_MANIFEST_COLUMNS + "), found " + parts.length + ".",
-                    line
-                );
+                throw new IllegalStateException("Malformed manifest line in " + path + ": " + line);
             }
-
-            FieldResult.FieldCategory category = parseFieldCategory(parts[0], manifestPath, lineNumber, line);
-            if (!parts[1].startsWith("L") || parts[1].length() < 2) {
-                throw malformedManifest(
-                    manifestPath,
-                    lineNumber,
-                    "Invalid declaring_class '" + parts[1]
-                        + "'. Expected an internal class name like Lnet/minecraft/...",
-                    line
-                );
-            }
-
-            FieldResult field = new FieldResult(
-                parts[1],
-                parts[2],
-                parts[3],
-                category
-            );
-            if (!uniqueKeys.add(field.key())) {
-                throw malformedManifest(
-                    manifestPath,
-                    lineNumber,
-                    "Duplicate field entry: " + field.key() + ".",
-                    line
-                );
-            }
-            fields.add(field);
+            result.add(new FieldResult(parts[1], parts[2], parts[3], FieldResult.Category.valueOf(parts[0])));
         }
-
-        if (!contractRead) {
-            throw new IllegalStateException("Movement field manifest is missing contract line in " + manifestPath
-                + ". Expected '" + expectedFieldManifestContractLine()
-                + "' near the top of the file. Run WALA phase (:analysis:runWala) to regenerate artifacts.");
-        }
-        if (fields.isEmpty()) {
-            throw new IllegalStateException("Movement field manifest has no field entries: " + manifestPath
-                + ". Run WALA phase (:analysis:runWala) to regenerate artifacts.");
-        }
-        return List.copyOf(fields);
+        return result;
     }
 
-    private static void validateManifestContract(String trimmed, Path manifestPath, int lineNumber, String line) {
-        if (!trimmed.startsWith(FIELD_MANIFEST_CONTRACT_PREFIX)) {
-            throw malformedManifest(
-                manifestPath,
-                lineNumber,
-                "Missing manifest contract line. Expected '" + expectedFieldManifestContractLine()
-                    + "' before field entries.",
-                line
-            );
-        }
-        String contractValue = trimmed.substring(FIELD_MANIFEST_CONTRACT_PREFIX.length()).trim();
-        var matcher = FIELD_MANIFEST_CONTRACT_PATTERN.matcher(contractValue);
-        if (!matcher.matches()) {
-            throw malformedManifest(
-                manifestPath,
-                lineNumber,
-                "Malformed contract value '" + contractValue
-                    + "'. Expected '<schema>/v<version>' (for example: "
-                    + FIELD_MANIFEST_SCHEMA + "/v" + FIELD_MANIFEST_VERSION + ").",
-                line
-            );
-        }
+    // ── Inputs fingerprint (so Spoon can detect a stale WALA run) ──
 
-        String schema = matcher.group(1);
-        int version = Integer.parseInt(matcher.group(2));
-        if (!FIELD_MANIFEST_SCHEMA.equals(schema)) {
-            throw malformedManifest(
-                manifestPath,
-                lineNumber,
-                "Unsupported manifest schema '" + schema + "'. Expected '" + FIELD_MANIFEST_SCHEMA + "'.",
-                line
-            );
-        }
-        if (version != FIELD_MANIFEST_VERSION) {
-            throw malformedManifest(
-                manifestPath,
-                lineNumber,
-                "Unsupported manifest version " + version + ". Supported version is "
-                    + FIELD_MANIFEST_VERSION + ".",
-                line
-            );
+    public static void writeInputs(Path path, AnalysisRunConfig config) throws IOException {
+        InputsPayload payload = new InputsPayload();
+        payload.contract = SCHEMA_VERSION;
+        payload.minecraftJar = fingerprint(config.minecraftJar());
+        payload.sourcesJar = config.sourcesJar() == null ? null : fingerprint(config.sourcesJar());
+        Files.writeString(path, GSON.toJson(payload));
+    }
+
+    public static void requireWalaArtifacts(Path outputDir) {
+        Path[] required = { slicePath(outputDir), closurePath(outputDir), fieldManifestPath(outputDir),
+            inputsPath(outputDir) };
+        for (Path p : required) {
+            if (!Files.exists(p)) {
+                throw new IllegalStateException(
+                    "Missing WALA artifact: " + p + ". Run :analysis:runWala first.");
+            }
         }
     }
 
-    private static FieldResult.FieldCategory parseFieldCategory(
-        String rawCategory,
-        Path manifestPath,
-        int lineNumber,
-        String line
-    ) {
+    private static Fingerprint fingerprint(Path file) throws IOException {
+        Fingerprint fp = new Fingerprint();
+        fp.path = file.toAbsolutePath().normalize().toString();
+        fp.sizeBytes = Files.size(file);
+        fp.sha256 = sha256(file);
+        return fp;
+    }
+
+    private static String sha256(Path file) throws IOException {
         try {
-            return FieldResult.FieldCategory.valueOf(rawCategory);
-        } catch (IllegalArgumentException ex) {
-            throw malformedManifest(
-                manifestPath,
-                lineNumber,
-                "Unsupported category '" + rawCategory + "'. Expected one of: MOD, REF, MOD_REF.",
-                line
-            );
-        }
-    }
-
-    private static IllegalStateException malformedManifest(Path manifestPath, int lineNumber, String detail, String line) {
-        return new IllegalStateException(
-            "Invalid movement field manifest at " + manifestPath + ":" + lineNumber + ". "
-                + detail + " Line: " + line
-                + ". Run WALA phase (:analysis:runWala) to regenerate artifacts."
-        );
-    }
-
-    static Map<String, Map<String, Set<Integer>>> loadSliceLines(Path slicePath) throws IOException {
-        if (!Files.exists(slicePath)) {
-            throw new IllegalStateException("Missing movement slice JSON: " + slicePath
-                + ". Run WALA phase first. If WALA fell back to CHA or produced no slice lines, "
-                + "rerun WALA with pointer analysis available.");
-        }
-
-        Type mapType = new TypeToken<Map<String, Map<String, Set<Integer>>>>() {
-        }.getType();
-        String json = Files.readString(slicePath);
-        Map<String, Map<String, Set<Integer>>> rawSliceLines = new Gson().fromJson(json, mapType);
-        if (rawSliceLines == null || rawSliceLines.isEmpty()) {
-            throw new IllegalStateException("Movement slice JSON is empty: " + slicePath
-                + ". WALA did not produce usable slice lines.");
-        }
-        return canonicalizeSliceLines(rawSliceLines);
-    }
-
-    static String expectedMirrorClosureContract() {
-        return MIRROR_CLOSURE_SCHEMA + "/v" + MIRROR_CLOSURE_VERSION;
-    }
-
-    static String expectedAnalysisInputsContract() {
-        return ANALYSIS_INPUTS_SCHEMA + "/v" + ANALYSIS_INPUTS_VERSION;
-    }
-
-    static void writeAnalysisInputs(AnalysisRunConfig runConfig, Path analysisInputsPath) throws IOException {
-        AnalysisInputsPayload payload = new AnalysisInputsPayload();
-        payload.contract = expectedAnalysisInputsContract();
-        payload.minecraftJar = fingerprint(Path.of(runConfig.minecraftJar()), "minecraft jar");
-        payload.sourcesJar = runConfig.sourcesJar().isBlank()
-            ? null
-            : fingerprint(Path.of(runConfig.sourcesJar()), "sources jar");
-        Files.writeString(analysisInputsPath, PRETTY_GSON.toJson(payload));
-    }
-
-    private static void validateAnalysisInputs(Path outputDir, AnalysisRunConfig runConfig) throws IOException {
-        Path metadataPath = analysisInputsPath(outputDir);
-        if (!Files.exists(metadataPath)) {
-            throw new IllegalStateException("Missing analysis inputs metadata: " + metadataPath
-                + ". Run WALA phase (:analysis:runWala) to regenerate artifacts.");
-        }
-
-        AnalysisInputsPayload payload = new Gson().fromJson(Files.readString(metadataPath), AnalysisInputsPayload.class);
-        if (payload == null) {
-            throw new IllegalStateException("Analysis inputs metadata could not be parsed: " + metadataPath);
-        }
-        if (!expectedAnalysisInputsContract().equals(payload.contract)) {
-            throw new IllegalStateException("Analysis inputs contract mismatch in " + metadataPath
-                + ". Expected '" + expectedAnalysisInputsContract() + "', found '" + payload.contract
-                + "'. Run WALA phase (:analysis:runWala) to regenerate artifacts.");
-        }
-        if (payload.minecraftJar == null) {
-            throw new IllegalStateException("Analysis inputs metadata is missing minecraftJar fingerprint in "
-                + metadataPath + ". Regenerate artifacts with :analysis:runWala.");
-        }
-        if (payload.sourcesJar == null) {
-            throw new IllegalStateException("Analysis inputs metadata is missing sourcesJar fingerprint in "
-                + metadataPath + ". Regenerate artifacts with :analysis:runWala using a valid sources jar.");
-        }
-
-        InputFingerprint currentMinecraft = fingerprint(Path.of(runConfig.minecraftJar()), "minecraft jar");
-        InputFingerprint currentSources = fingerprint(Path.of(runConfig.sourcesJar()), "sources jar");
-        verifyMatchingInput("minecraft jar", payload.minecraftJar, currentMinecraft, metadataPath);
-        verifyMatchingInput("sources jar", payload.sourcesJar, currentSources, metadataPath);
-    }
-
-    private static void verifyMatchingInput(String label,
-                                            InputFingerprint expected,
-                                            InputFingerprint current,
-                                            Path metadataPath) {
-        if (!Objects.equals(expected.sha256, current.sha256)
-            || !Objects.equals(expected.sizeBytes, current.sizeBytes)) {
-            throw new IllegalStateException(
-                "Artifact input mismatch for " + label + ". "
-                    + "Stored fingerprint in " + metadataPath + " does not match current input. "
-                    + "Run :analysis:runWala to regenerate artifacts for the current inputs.");
-        }
-    }
-
-    private static InputFingerprint fingerprint(Path inputPath, String label) throws IOException {
-        Path normalized = inputPath.toAbsolutePath().normalize();
-        if (!Files.exists(normalized)) {
-            throw new IllegalStateException("Missing " + label + " for artifact validation: " + normalized);
-        }
-        InputFingerprint fingerprint = new InputFingerprint();
-        fingerprint.path = normalized.toString();
-        fingerprint.sizeBytes = Files.size(normalized);
-        fingerprint.lastModifiedEpochMillis = Files.getLastModifiedTime(normalized).toMillis();
-        fingerprint.sha256 = sha256(normalized);
-        return fingerprint;
-    }
-
-    private static String sha256(Path path) throws IOException {
-        MessageDigest digest;
-        try {
-            digest = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException ex) {
-            throw new IllegalStateException("SHA-256 is unavailable in this JVM.", ex);
-        }
-        try (InputStream input = Files.newInputStream(path)) {
-            byte[] buffer = new byte[8192];
-            int read;
-            while ((read = input.read(buffer)) >= 0) {
-                if (read > 0) {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            try (InputStream in = Files.newInputStream(file)) {
+                byte[] buffer = new byte[64 * 1024];
+                int read;
+                while ((read = in.read(buffer)) >= 0) {
                     digest.update(buffer, 0, read);
                 }
             }
+            byte[] hash = digest.digest();
+            StringBuilder hex = new StringBuilder(hash.length * 2);
+            for (byte b : hash) {
+                hex.append(String.format(Locale.ROOT, "%02x", b));
+            }
+            return hex.toString();
+        } catch (Exception ex) {
+            throw new IOException("Failed to fingerprint " + file, ex);
         }
-        byte[] hash = digest.digest();
-        StringBuilder sb = new StringBuilder(hash.length * 2);
-        for (byte value : hash) {
-            sb.append(String.format("%02x", value));
-        }
-        return sb.toString();
     }
 
-    static void writeMirrorClosure(MirrorClosure mirrorClosure, Path closurePath) throws IOException {
-        MirrorClosure canonical = canonicalizeMirrorClosure(mirrorClosure);
-        MirrorClosurePayload payload = new MirrorClosurePayload();
-        payload.contract = expectedMirrorClosureContract();
-        payload.classes = canonical.classes().stream().sorted().toList();
-        Map<String, List<String>> methodsByClass = new TreeMap<>();
-        for (Map.Entry<String, Set<String>> entry : canonical.methodsByClass().entrySet()) {
-            methodsByClass.put(entry.getKey(), entry.getValue().stream().sorted().toList());
-        }
-        payload.methodsByClass = methodsByClass;
-        Files.writeString(closurePath, PRETTY_GSON.toJson(payload));
+    // ── Gson payloads ──
+
+    static final Type SLICE_TYPE = new TypeToken<Map<String, Map<String, List<Integer>>>>() { }.getType();
+
+    private static final class SlicePayload {
+        String contract;
+        Map<String, Map<String, List<Integer>>> lines;
     }
 
-    static MirrorClosure loadMirrorClosure(Path closurePath) throws IOException {
-        if (!Files.exists(closurePath)) {
-            throw new IllegalStateException("Missing mirror closure JSON: " + closurePath
-                + ". Run WALA phase (:analysis:runWala) to regenerate artifacts.");
-        }
-        MirrorClosurePayload payload = new Gson().fromJson(Files.readString(closurePath), MirrorClosurePayload.class);
-        if (payload == null) {
-            throw new IllegalStateException("Mirror closure JSON could not be parsed: " + closurePath);
-        }
-        if (!expectedMirrorClosureContract().equals(payload.contract)) {
-            throw new IllegalStateException("Mirror closure contract mismatch in " + closurePath
-                + ". Expected '" + expectedMirrorClosureContract() + "', found '" + payload.contract
-                + "'. Run WALA phase (:analysis:runWala) to regenerate artifacts.");
-        }
-
-        Set<String> classes = payload.classes == null ? Set.of() : new LinkedHashSet<>(payload.classes);
-        Map<String, Set<String>> methodsByClass = new LinkedHashMap<>();
-        if (payload.methodsByClass != null) {
-            for (Map.Entry<String, List<String>> entry : payload.methodsByClass.entrySet()) {
-                List<String> selectors = entry.getValue();
-                methodsByClass.put(
-                    entry.getKey(),
-                    selectors == null ? Set.of() : new LinkedHashSet<>(selectors)
-                );
-            }
-        }
-
-        return canonicalizeMirrorClosure(new MirrorClosure(classes, methodsByClass));
-    }
-
-    private static MirrorClosure canonicalizeMirrorClosure(MirrorClosure mirrorClosure) {
-        if (mirrorClosure == null) {
-            throw new IllegalStateException("Mirror closure data is null.");
-        }
-
-        TreeSet<String> classes = new TreeSet<>();
-        if (mirrorClosure.classes() != null) {
-            for (String className : mirrorClosure.classes()) {
-                classes.add(validateMirrorClassName(className));
-            }
-        }
-
-        TreeMap<String, Set<String>> methodsByClass = new TreeMap<>();
-        if (mirrorClosure.methodsByClass() != null) {
-            for (Map.Entry<String, Set<String>> entry : mirrorClosure.methodsByClass().entrySet()) {
-                String className = validateMirrorClassName(entry.getKey());
-                classes.add(className);
-
-                TreeSet<String> selectors = new TreeSet<>();
-                Set<String> rawSelectors = entry.getValue();
-                if (rawSelectors != null) {
-                    for (String selector : rawSelectors) {
-                        if (selector == null || selector.isBlank()) {
-                            throw new IllegalStateException(
-                                "Mirror closure contains empty method selector for class " + className);
-                        }
-                        selectors.add(selector.trim());
-                    }
-                }
-                methodsByClass.put(className, Set.copyOf(selectors));
-            }
-        }
-
-        if (classes.isEmpty()) {
-            throw new IllegalStateException("Mirror closure has no classes after validation.");
-        }
-        return new MirrorClosure(Set.copyOf(classes), Map.copyOf(new LinkedHashMap<>(methodsByClass)));
-    }
-
-    private static String validateMirrorClassName(String className) {
-        if (className == null || className.isBlank()) {
-            throw new IllegalStateException("Mirror closure contains empty class name.");
-        }
-        String normalized = className.trim();
-        if (!normalized.startsWith("net.minecraft.")) {
-            throw new IllegalStateException("Mirror closure class must be in net.minecraft.* but found: " + className);
-        }
-        return normalized;
-    }
-
-    private static Map<String, Map<String, Set<Integer>>> canonicalizeSliceLines(
-        Map<String, Map<String, Set<Integer>>> rawSliceLines
-    ) {
-        Map<String, Map<String, Set<Integer>>> canonical = new TreeMap<>();
-        for (Map.Entry<String, Map<String, Set<Integer>>> classEntry : rawSliceLines.entrySet()) {
-            String className = classEntry.getKey();
-            if (className == null || className.isBlank()) {
-                throw new IllegalStateException("Slice JSON contains empty class name.");
-            }
-            Map<String, Set<Integer>> methodMap = classEntry.getValue();
-            if (methodMap == null || methodMap.isEmpty()) {
-                continue;
-            }
-            Map<String, Set<Integer>> methods = new TreeMap<>();
-            for (Map.Entry<String, Set<Integer>> methodEntry : methodMap.entrySet()) {
-                String methodSelector = methodEntry.getKey();
-                if (methodSelector == null || methodSelector.isBlank()) {
-                    throw new IllegalStateException("Slice JSON contains empty method selector in " + className);
-                }
-                Set<Integer> lines = methodEntry.getValue();
-                TreeSet<Integer> sortedLines = new TreeSet<>(Comparator.naturalOrder());
-                if (lines != null) {
-                    for (Integer line : lines) {
-                        if (line != null && line > 0) {
-                            sortedLines.add(line);
-                        }
-                    }
-                }
-                methods.put(methodSelector, sortedLines.isEmpty() ? Set.of() : Set.copyOf(sortedLines));
-            }
-            if (!methods.isEmpty()) {
-                canonical.put(className, new LinkedHashMap<>(methods));
-            }
-        }
-        if (canonical.isEmpty()) {
-            throw new IllegalStateException("Slice JSON had no usable slice lines after validation.");
-        }
-        return Map.copyOf(canonical);
-    }
-
-    private static final class MirrorClosurePayload {
+    private static final class ClosurePayload {
         String contract;
         List<String> classes;
-        Map<String, List<String>> methodsByClass;
+        Map<String, List<String>> slicedMethodsByClass;
     }
 
-    private static final class AnalysisInputsPayload {
+    private static final class InputsPayload {
         String contract;
-        InputFingerprint minecraftJar;
-        InputFingerprint sourcesJar;
+        Fingerprint minecraftJar;
+        Fingerprint sourcesJar;
     }
 
-    private static final class InputFingerprint {
+    private static final class Fingerprint {
         String path;
-        Long sizeBytes;
-        Long lastModifiedEpochMillis;
+        long sizeBytes;
         String sha256;
     }
 }
