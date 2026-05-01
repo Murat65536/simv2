@@ -9,11 +9,8 @@ import com.ibm.wala.types.TypeReference;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
@@ -53,8 +50,11 @@ final class ClosureBuilder {
             IClass klass = lookup(cha, dotClass);
             if (klass == null) continue;
 
-            // Hierarchy.
-            for (IClass sup : superClassChain(klass)) {
+            // Hierarchy. We only enqueue the immediate superclass; the BFS
+            // pops it next and walks *its* superclass, so the full chain
+            // converges in N iterations rather than N×depth.
+            IClass sup = klass.getSuperclass();
+            if (sup != null) {
                 addIfNew(closure, work, classNameOf(sup));
             }
             for (IClass iface : klass.getAllImplementedInterfaces()) {
@@ -95,11 +95,7 @@ final class ClosureBuilder {
             }
         }
 
-        Map<String, Set<String>> sliced = new LinkedHashMap<>();
-        for (var e : new TreeMap<>(slice.lineByMethod()).entrySet()) {
-            sliced.put(e.getKey(), Set.copyOf(new LinkedHashSet<>(e.getValue().keySet())));
-        }
-        return new MirrorClosure(Set.copyOf(closure), Map.copyOf(sliced));
+        return new MirrorClosure(Set.copyOf(closure));
     }
 
     private static void addIfNew(Set<String> closure, Deque<String> work, String name) {
@@ -121,15 +117,6 @@ final class ClosureBuilder {
         String internal = klass.getName().toString();
         if (!internal.startsWith("Lnet/minecraft/")) return null;
         return internal.substring(1).replace('/', '.');
-    }
-
-    private static Iterable<IClass> superClassChain(IClass klass) {
-        Set<IClass> chain = new LinkedHashSet<>();
-        IClass current = klass.getSuperclass();
-        while (current != null && chain.add(current)) {
-            current = current.getSuperclass();
-        }
-        return chain;
     }
 
     /**

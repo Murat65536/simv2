@@ -12,10 +12,8 @@ import java.util.Set;
 import spoon.Launcher;
 import spoon.processing.Processor;
 import spoon.reflect.code.CtBlock;
-import spoon.reflect.code.CtComment;
 import spoon.reflect.code.CtExpression;
 import spoon.reflect.code.CtIf;
-import spoon.reflect.code.CtLocalVariable;
 import spoon.reflect.code.CtLoop;
 import spoon.reflect.code.CtReturn;
 import spoon.reflect.code.CtStatement;
@@ -84,6 +82,9 @@ final class MirrorSourceTransformer {
         launcher.getEnvironment().setIgnoreSyntaxErrors(true);
         launcher.getEnvironment().setComplianceLevel(21);
         launcher.getEnvironment().setAutoImports(false);
+        // Mirror sources are machine-read; suppress comments at the printer
+        // level instead of walking each AST to delete them.
+        launcher.getEnvironment().setCommentEnabled(false);
 
         Set<String> uniqueEntries = new LinkedHashSet<>();
         for (var e : sourcesByClass.entrySet()) {
@@ -107,47 +108,50 @@ final class MirrorSourceTransformer {
             String fqcn = topLevel.getQualifiedName();
             if (fqcn == null || !fqcn.startsWith("net.minecraft.")) continue;
             try {
-                String mirrorSource = transformTopLevel(topLevel, factory);
+                String mirrorSource = transformTopLevel(topLevel, factory, emitted);
                 if (mirrorSource == null) continue;
                 writeMirrorSource(mirrorRoot, fqcn, mirrorSource);
                 emitted.add(fqcn);
-                for (CtType<?> nested : topLevel.getElements(new TypeFilter<>(CtType.class))) {
-                    if (nested != topLevel) {
-                        emitted.add(nested.getQualifiedName());
-                    }
-                }
             } catch (RuntimeException ex) {
                 System.err.println("Failed to transform " + fqcn + ": " + ex.getMessage());
             }
         }
     }
 
-    private String transformTopLevel(CtType<?> topLevel, Factory factory) {
+    private String transformTopLevel(CtType<?> topLevel, Factory factory, Set<String> emitted) {
         String originalFqcn = topLevel.getQualifiedName();
         boolean primary = primaryClasses.contains(originalFqcn);
         Map<String, Set<Integer>> methodLines = slice.getOrDefault(originalFqcn, Map.of());
 
         for (CtType<?> type : topLevel.getElements(new TypeFilter<>(CtType.class))) {
-            if (primaryClasses.contains(type.getQualifiedName())) {
+            // Capture nested-type FQCNs while everything is still in its
+            // original net.minecraft.* package — after the package move below,
+            // qualified names get the mirror prefix.
+            if (type != topLevel) {
+                emitted.add(type.getQualifiedName());
+            }
+            boolean primaryType = primaryClasses.contains(type.getQualifiedName());
+            if (primaryType) {
                 injectNoArgConstructorIfMissing(type, factory);
             }
             for (CtField<?> field : type.getFields()) {
-                makeFieldMirrorVisible(field);
+                makeFieldMirrorVisible(field, primaryType);
             }
             for (CtMethod<?> method : new ArrayList<>(type.getMethods())) {
                 rewriteMethodBody(method, primary, methodLines, factory);
             }
-            stripJavadoc(type);
         }
 
-        rewriteTypeReferences(topLevel);
-
-        // Move into the mirror package.
+        // Move into the mirror package first, then rewrite all internal type
+        // references so the new self-package and external references both
+        // get the mirror prefix in a single sweep.
         String originalPackage = topLevel.getPackage().getQualifiedName();
         String mirrorPackage = MIRROR_PACKAGE_PREFIX + originalPackage;
         CtPackage targetPackage = factory.Package().getOrCreate(mirrorPackage);
         topLevel.getPackage().removeType(topLevel);
         targetPackage.addType(topLevel);
+
+        rewriteTypeReferences(topLevel);
 
         CompilationUnit cu = factory.Core().createCompilationUnit();
         cu.setFile(Path.of(topLevel.getSimpleName() + ".java").toFile());
@@ -185,15 +189,42 @@ final class MirrorSourceTransformer {
             replaceWithDefaultReturn(method, factory);
             return;
         }
-        pruneToSliceLines(method.getBody(), sliceLines);
+        Set<CtStatement> kept = computeKeptStatements(method.getBody(), sliceLines);
+        pruneToSliceLines(method.getBody(), kept);
         ensureReturnsValue(method, factory);
     }
 
-    /** Recursively drops statements whose own line and all descendant lines lie outside the slice. */
-    private void pruneToSliceLines(CtBlock<?> block, Set<Integer> sliceLines) {
+    /**
+     * One subtree walk over {@code body} collects every statement whose own
+     * source line is in {@code sliceLines}, then we mark each such statement's
+     * ancestor chain. The result is the set of every statement that should be
+     * preserved by {@link #pruneToSliceLines}. Pruning is then O(N) by
+     * identity-membership rather than the previous O(N²) per-statement
+     * subtree walk.
+     */
+    private Set<CtStatement> computeKeptStatements(CtBlock<?> body, Set<Integer> sliceLines) {
+        Set<CtStatement> kept = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        // CtStatement#equals is structural — multiple distinct nodes can compare
+        // equal — so we key the kept-set on object identity.
+        for (CtStatement stmt : body.getElements(new TypeFilter<>(CtStatement.class))) {
+            if (stmt.getPosition() == null || !stmt.getPosition().isValidPosition()) continue;
+            if (!sliceLines.contains(stmt.getPosition().getLine())) continue;
+            CtElement cursor = stmt;
+            while (cursor != null && cursor != body) {
+                if (cursor instanceof CtStatement ancestor) {
+                    if (!kept.add(ancestor)) break; // already marked, stop walk
+                }
+                cursor = cursor.getParent();
+            }
+        }
+        return kept;
+    }
+
+    /** Drops statements not in {@code kept}; recurses into kept compound statements. */
+    private void pruneToSliceLines(CtBlock<?> block, Set<CtStatement> kept) {
         if (block == null) return;
         for (CtStatement stmt : new ArrayList<>(block.getStatements())) {
-            if (!isOrContainsSliceLine(stmt, sliceLines)) {
+            if (!kept.contains(stmt)) {
                 try {
                     stmt.delete();
                 } catch (RuntimeException ignored) {
@@ -201,44 +232,29 @@ final class MirrorSourceTransformer {
                 }
                 continue;
             }
-            descendIntoChildren(stmt, sliceLines);
+            descendIntoChildren(stmt, kept);
         }
     }
 
-    private void descendIntoChildren(CtStatement stmt, Set<Integer> sliceLines) {
+    private void descendIntoChildren(CtStatement stmt, Set<CtStatement> kept) {
         if (stmt instanceof CtIf ctIf) {
             if (ctIf.getThenStatement() instanceof CtBlock<?> thenBlock) {
-                pruneToSliceLines(thenBlock, sliceLines);
+                pruneToSliceLines(thenBlock, kept);
             }
             if (ctIf.getElseStatement() instanceof CtBlock<?> elseBlock) {
-                pruneToSliceLines(elseBlock, sliceLines);
+                pruneToSliceLines(elseBlock, kept);
             }
         } else if (stmt instanceof CtLoop loop && loop.getBody() instanceof CtBlock<?> body) {
-            pruneToSliceLines(body, sliceLines);
+            pruneToSliceLines(body, kept);
         } else if (stmt instanceof CtBlock<?> nested) {
-            pruneToSliceLines(nested, sliceLines);
+            pruneToSliceLines(nested, kept);
         } else if (stmt instanceof CtSwitch<?> ctSwitch) {
             for (CtStatement inner : ctSwitch.getCases()) {
                 if (inner instanceof CtBlock<?> innerBlock) {
-                    pruneToSliceLines(innerBlock, sliceLines);
+                    pruneToSliceLines(innerBlock, kept);
                 }
             }
         }
-    }
-
-    private boolean isOrContainsSliceLine(CtStatement stmt, Set<Integer> sliceLines) {
-        if (stmt.getPosition() != null && stmt.getPosition().isValidPosition()
-            && sliceLines.contains(stmt.getPosition().getLine())) {
-            return true;
-        }
-        for (CtStatement desc : stmt.getElements(new TypeFilter<>(CtStatement.class))) {
-            if (desc == stmt) continue;
-            if (desc.getPosition() != null && desc.getPosition().isValidPosition()
-                && sliceLines.contains(desc.getPosition().getLine())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private void ensureReturnsValue(CtMethod<?> method, Factory factory) {
@@ -283,28 +299,35 @@ final class MirrorSourceTransformer {
     }
 
     private void rewriteTypeReferences(CtType<?> topLevel) {
+        Factory factory = topLevel.getFactory();
         for (CtTypeReference<?> ref : topLevel.getElements(new TypeFilter<>(CtTypeReference.class))) {
             String qname = ref.getQualifiedName();
             if (qname == null || !qname.startsWith("net.minecraft.")) continue;
-            // Don't touch the primary type's self-reference — Spoon updates it
-            // automatically when we move the package, which would otherwise
-            // collide with our manual rewrite.
-            if (ref == topLevel.getReference()) continue;
-            String mirrorQname = MIRROR_PACKAGE_PREFIX + qname;
-            ref.setPackage(ref.getFactory().Package().getOrCreate(mirrorQname.substring(0, mirrorQname.lastIndexOf('.'))).getReference());
+            int lastDot = qname.lastIndexOf('.');
+            if (lastDot <= 0) continue;
+            String oldPackage = qname.substring(0, lastDot);
+            String mirrorPackage = MIRROR_PACKAGE_PREFIX + oldPackage;
+            ref.setPackage(factory.Package().getOrCreate(mirrorPackage).getReference());
         }
     }
 
-    private void makeFieldMirrorVisible(CtField<?> field) {
+    private void makeFieldMirrorVisible(CtField<?> field, boolean primaryType) {
         if (field == null) return;
-        if (field.hasModifier(ModifierKind.STATIC)) return;
+        boolean isStatic = field.hasModifier(ModifierKind.STATIC);
+        // Static fields are made public only on primary classes (where the
+        // runtime reaches in to read tracked-data keys / flag-bit indices).
+        // Elsewhere we leave them at original visibility so package-private
+        // initializers behave the same.
+        if (isStatic && !primaryType) {
+            return;
+        }
         field.removeModifier(ModifierKind.PRIVATE);
         field.removeModifier(ModifierKind.PROTECTED);
         if (!field.hasModifier(ModifierKind.PUBLIC)) {
             field.addModifier(ModifierKind.PUBLIC);
         }
-        // Drop final on writable mirror fields so sync code can assign.
-        if (field.getDefaultExpression() == null) {
+        if (!isStatic && field.getDefaultExpression() == null) {
+            // Drop final on writable instance fields so sync code can assign.
             field.removeModifier(ModifierKind.FINAL);
         }
     }
@@ -320,15 +343,6 @@ final class MirrorSourceTransformer {
         @SuppressWarnings({ "unchecked", "rawtypes" })
         CtClass raw = ctClass;
         raw.addConstructor(ctor);
-    }
-
-    private void stripJavadoc(CtType<?> type) {
-        java.util.List<CtComment> comments = type.getElements(new TypeFilter<CtComment>(CtComment.class));
-        for (CtComment comment : new ArrayList<>(comments)) {
-            if (comment.getCommentType() == CtComment.CommentType.JAVADOC) {
-                comment.delete();
-            }
-        }
     }
 
     private String methodSelector(CtMethod<?> method) {
@@ -363,25 +377,5 @@ final class MirrorSourceTransformer {
         Path target = mirrorRoot.resolve(originalFqcn.replace('.', '/') + ".java");
         Files.createDirectories(target.getParent());
         Files.writeString(target, source);
-    }
-
-    /**
-     * Used by tests / other transformers to short-circuit when a {@link CtLocalVariable}
-     * declaration was deleted but the variable is still referenced.
-     */
-    @SuppressWarnings("unused")
-    private boolean referencesUndeclaredLocals(CtBlock<?> block) {
-        Set<String> declared = new LinkedHashSet<>();
-        for (CtLocalVariable<?> local : block.getElements(new TypeFilter<>(CtLocalVariable.class))) {
-            declared.add(local.getSimpleName());
-        }
-        for (var ref : block.getElements(new TypeFilter<>(spoon.reflect.code.CtVariableAccess.class))) {
-            if (ref.getVariable() != null
-                && ref.getVariable().getDeclaration() == null
-                && !declared.contains(ref.getVariable().getSimpleName())) {
-                return true;
-            }
-        }
-        return false;
     }
 }

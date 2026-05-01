@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -66,24 +65,28 @@ final class WalaSlicer {
         }
         System.out.println("Seeds: " + seeds.size() + " putfield Entity.pos statements");
 
+        // Single SDG with combined data + control dependence. Building two
+        // SDGs sequentially (and re-running the IFDS solver) is the heaviest
+        // step in the pipeline; the combined edge set produces the same
+        // closure in one pass.
         HeapExclusions heapExcl = buildHeapExclusions();
-
-        // One SDG covers data + control dependence in a single pass.
-        long sdgStart = System.currentTimeMillis();
+        long t0 = System.currentTimeMillis();
         SDG<InstanceKey> sdg = new SDG<>(cg, pa, ModRef.make(),
             DataDependenceOptions.NO_BASE_PTRS,
             ControlDependenceOptions.NO_EXCEPTIONAL_EDGES,
             heapExcl);
-        long sdgMs = System.currentTimeMillis() - sdgStart;
-        System.out.printf("SDG built in %.1fs (%d nodes)%n", sdgMs / 1000.0, sdg.getNumberOfNodes());
+        System.out.printf("SDG built in %.1fs (%d nodes)%n",
+            (System.currentTimeMillis() - t0) / 1000.0, sdg.getNumberOfNodes());
 
-        Set<Statement> all = new HashSet<>();
+        long sliceStart = System.currentTimeMillis();
+        Collection<Statement> all;
         try {
-            all.addAll(Slicer.computeBackwardSlice(sdg, seeds));
+            all = Slicer.computeBackwardSlice(sdg, seeds);
         } catch (Exception ex) {
-            throw new RuntimeException("Backward slice failed", ex);
+            throw new RuntimeException("Backward slice failed: " + ex.getMessage(), ex);
         }
-        System.out.println("Slice contains " + all.size() + " statements");
+        System.out.printf("Slice: %d statements in %.1fs%n",
+            all.size(), (System.currentTimeMillis() - sliceStart) / 1000.0);
 
         return analyzeStatements(all, entitySubtypes);
     }
@@ -108,10 +111,21 @@ final class WalaSlicer {
     /**
      * Seeds: every {@code putfield} of a field named {@code pos} declared on
      * {@code Entity} or a subclass, reached anywhere in the call graph.
+     *
+     * <p>Pre-filters CG nodes by declaring class — {@code putfield} of an
+     * instance field can only be emitted by code on the declaring class or a
+     * subclass, so iterating the full CG (and forcing {@link CGNode#getIR()})
+     * for non-entity methods is wasted work.
      */
     private List<Statement> findSeedStatements(Set<TypeReference> entitySubtypes) {
+        Set<String> entityInternalNames = new HashSet<>(entitySubtypes.size() * 2);
+        for (TypeReference t : entitySubtypes) {
+            entityInternalNames.add(t.getName().toString());
+        }
         List<Statement> seeds = new ArrayList<>();
         for (CGNode node : cg) {
+            String declInternal = node.getMethod().getDeclaringClass().getName().toString();
+            if (!entityInternalNames.contains(declInternal)) continue;
             IR ir = node.getIR();
             if (ir == null) continue;
             SSAInstruction[] insns = ir.getInstructions();

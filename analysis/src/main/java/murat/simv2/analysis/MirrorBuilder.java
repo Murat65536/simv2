@@ -61,10 +61,11 @@ final class MirrorBuilder {
         needsStub.removeAll(emitted);
         if (!needsStub.isEmpty()) {
             System.out.println("Stubbing " + needsStub.size() + " classes from bytecode");
-            MirrorBytecodeStubber stubber = new MirrorBytecodeStubber(config.minecraftJar());
-            for (String className : needsStub) {
-                if (stubber.emitStub(className, mirrorRoot)) {
-                    emitted.add(className);
+            try (MirrorBytecodeStubber stubber = new MirrorBytecodeStubber(config.minecraftJar())) {
+                for (String className : needsStub) {
+                    if (stubber.emitStub(className, mirrorRoot)) {
+                        emitted.add(className);
+                    }
                 }
             }
         }

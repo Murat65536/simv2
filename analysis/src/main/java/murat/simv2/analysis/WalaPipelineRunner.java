@@ -88,7 +88,7 @@ final class WalaPipelineRunner {
 
             MirrorClosure closure = ClosureBuilder.build(slice, cha);
             System.out.println("Closure: " + closure.classes().size() + " classes ("
-                + closure.slicedMethodsByClass().size() + " sliced)");
+                + slice.lineByMethod().size() + " sliced)");
 
             // Persist artifacts.
             Path outputDir = config.outputDir();
@@ -96,7 +96,6 @@ final class WalaPipelineRunner {
             AnalysisArtifacts.writeSlice(AnalysisArtifacts.slicePath(outputDir), slice.lineByMethod());
             AnalysisArtifacts.writeClosure(AnalysisArtifacts.closurePath(outputDir), closure);
             AnalysisArtifacts.writeFieldManifest(AnalysisArtifacts.fieldManifestPath(outputDir), slice.fields());
-            AnalysisArtifacts.writeInputs(AnalysisArtifacts.inputsPath(outputDir), config);
 
             new SyncCodeGenerator(outputDir).generate(slice.fields());
 

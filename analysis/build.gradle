@@ -95,7 +95,7 @@ def configureAnalysisExec = { JavaExec execTask, String mode ->
         if (mode == 'spoon') {
             def outputDir = file(resolvedArgs[1])
             def required = ['movement-slice.json', 'mirror-closure.json',
-                            'movement-fields.txt', 'analysis-inputs.json']
+                            'movement-fields.txt']
             def missing = required.findAll { !outputDir.toPath().resolve(it).toFile().exists() }
             if (!missing.isEmpty()) {
                 throw new GradleException(

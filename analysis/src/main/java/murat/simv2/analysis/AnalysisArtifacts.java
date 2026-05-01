@@ -2,16 +2,10 @@ package murat.simv2.analysis;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,10 +33,6 @@ public final class AnalysisArtifacts {
 
     public static Path closurePath(Path outputDir) {
         return outputDir.resolve("mirror-closure.json");
-    }
-
-    public static Path inputsPath(Path outputDir) {
-        return outputDir.resolve("analysis-inputs.json");
     }
 
     public static Path fieldManifestPath(Path outputDir) {
@@ -85,12 +75,12 @@ public final class AnalysisArtifacts {
             for (var e : payload.lines.entrySet()) {
                 Map<String, Set<Integer>> methods = new TreeMap<>();
                 for (var m : e.getValue().entrySet()) {
-                    methods.put(m.getKey(), Set.copyOf(new TreeSet<>(m.getValue())));
+                    methods.put(m.getKey(), new TreeSet<>(m.getValue()));
                 }
-                result.put(e.getKey(), Map.copyOf(methods));
+                result.put(e.getKey(), methods);
             }
         }
-        return Map.copyOf(result);
+        return result;
     }
 
     // ── Closure ──
@@ -99,10 +89,6 @@ public final class AnalysisArtifacts {
         ClosurePayload payload = new ClosurePayload();
         payload.contract = SCHEMA_VERSION;
         payload.classes = new ArrayList<>(new TreeSet<>(closure.classes()));
-        payload.slicedMethodsByClass = new TreeMap<>();
-        for (var e : closure.slicedMethodsByClass().entrySet()) {
-            payload.slicedMethodsByClass.put(e.getKey(), new ArrayList<>(new TreeSet<>(e.getValue())));
-        }
         Files.writeString(path, GSON.toJson(payload));
     }
 
@@ -113,13 +99,7 @@ public final class AnalysisArtifacts {
                 + SCHEMA_VERSION + ", got " + (payload == null ? "null" : payload.contract));
         }
         Set<String> classes = payload.classes == null ? Set.of() : Set.copyOf(new TreeSet<>(payload.classes));
-        Map<String, Set<String>> sliced = new LinkedHashMap<>();
-        if (payload.slicedMethodsByClass != null) {
-            for (var e : payload.slicedMethodsByClass.entrySet()) {
-                sliced.put(e.getKey(), Set.copyOf(new LinkedHashSet<>(e.getValue())));
-            }
-        }
-        return new MirrorClosure(classes, Map.copyOf(sliced));
+        return new MirrorClosure(classes);
     }
 
     // ── Field manifest (human-readable) ──
@@ -152,19 +132,8 @@ public final class AnalysisArtifacts {
         return result;
     }
 
-    // ── Inputs fingerprint (so Spoon can detect a stale WALA run) ──
-
-    public static void writeInputs(Path path, AnalysisRunConfig config) throws IOException {
-        InputsPayload payload = new InputsPayload();
-        payload.contract = SCHEMA_VERSION;
-        payload.minecraftJar = fingerprint(config.minecraftJar());
-        payload.sourcesJar = config.sourcesJar() == null ? null : fingerprint(config.sourcesJar());
-        Files.writeString(path, GSON.toJson(payload));
-    }
-
     public static void requireWalaArtifacts(Path outputDir) {
-        Path[] required = { slicePath(outputDir), closurePath(outputDir), fieldManifestPath(outputDir),
-            inputsPath(outputDir) };
+        Path[] required = { slicePath(outputDir), closurePath(outputDir), fieldManifestPath(outputDir) };
         for (Path p : required) {
             if (!Files.exists(p)) {
                 throw new IllegalStateException(
@@ -173,38 +142,7 @@ public final class AnalysisArtifacts {
         }
     }
 
-    private static Fingerprint fingerprint(Path file) throws IOException {
-        Fingerprint fp = new Fingerprint();
-        fp.path = file.toAbsolutePath().normalize().toString();
-        fp.sizeBytes = Files.size(file);
-        fp.sha256 = sha256(file);
-        return fp;
-    }
-
-    private static String sha256(Path file) throws IOException {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            try (InputStream in = Files.newInputStream(file)) {
-                byte[] buffer = new byte[64 * 1024];
-                int read;
-                while ((read = in.read(buffer)) >= 0) {
-                    digest.update(buffer, 0, read);
-                }
-            }
-            byte[] hash = digest.digest();
-            StringBuilder hex = new StringBuilder(hash.length * 2);
-            for (byte b : hash) {
-                hex.append(String.format(Locale.ROOT, "%02x", b));
-            }
-            return hex.toString();
-        } catch (Exception ex) {
-            throw new IOException("Failed to fingerprint " + file, ex);
-        }
-    }
-
     // ── Gson payloads ──
-
-    static final Type SLICE_TYPE = new TypeToken<Map<String, Map<String, List<Integer>>>>() { }.getType();
 
     private static final class SlicePayload {
         String contract;
@@ -214,18 +152,5 @@ public final class AnalysisArtifacts {
     private static final class ClosurePayload {
         String contract;
         List<String> classes;
-        Map<String, List<String>> slicedMethodsByClass;
-    }
-
-    private static final class InputsPayload {
-        String contract;
-        Fingerprint minecraftJar;
-        Fingerprint sourcesJar;
-    }
-
-    private static final class Fingerprint {
-        String path;
-        long sizeBytes;
-        String sha256;
     }
 }
