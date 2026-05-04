@@ -46,32 +46,59 @@ if (analysisVerboseFixedPoint) {
 }
 
 def resolveAnalysisArgs = { String mode ->
-    // Find a linemapped JAR + sources JAR pair from the same hash
-    def loomCache = file("${rootProject.projectDir}/.gradle/loom-cache/minecraftMaven/net/minecraft")
-    def linemappedJar = ""
-    def sourcesJar = ""
-    if (loomCache.exists()) {
-        loomCache.eachDir { hashDir ->
+    // Find merged jars from project-local and Gradle-user-home Loom caches.
+    def cacheRoots = [
+        file("${rootProject.projectDir}/.gradle/loom-cache/minecraftMaven/net/minecraft"),
+        file("${gradle.gradleUserHomeDir}/caches/fabric-loom/minecraftMaven/net/minecraft"),
+        file("${gradle.gradleUserHomeDir}/loom-cache/minecraftMaven/net/minecraft")
+    ]
+
+    def mergedVersionDirs = []
+    cacheRoots.findAll { it.exists() }.each { cacheRoot ->
+        cacheRoot.eachDir { hashDir ->
             if (!hashDir.name.startsWith('minecraft-merged-')) return
             hashDir.eachDir { versionDir ->
-                def sources = versionDir.listFiles()?.find { it.name.endsWith('-sources.jar') }
-                def jar = versionDir.listFiles()?.find {
-                    it.name.endsWith('.jar') && !it.name.contains('sources') && !it.name.contains('backup')
-                }
-                if (sources != null && jar != null) {
-                    linemappedJar = jar.absolutePath
-                    sourcesJar = sources.absolutePath
-                }
+                mergedVersionDirs << versionDir
             }
         }
     }
-    def defaultMcJar = linemappedJar
+
+    def mergedJars = []
+    def mergedSources = []
+    mergedVersionDirs.each { versionDir ->
+        versionDir.listFiles()?.findAll { it.isFile() }.each { candidate ->
+            if (candidate.name.endsWith('-sources.jar')) {
+                mergedSources << candidate
+            } else if (candidate.name.endsWith('.jar') && !candidate.name.contains('backup')) {
+                mergedJars << candidate
+            }
+        }
+    }
+
+    def newestByModified = { List<File> files ->
+        files.isEmpty() ? null : files.max { it.lastModified() }
+    }
+
+    def selectedJar = newestByModified(mergedJars)
+    def selectedSources = null
+    if (selectedJar != null) {
+        def expectedName = selectedJar.name.replaceFirst(/\.jar$/, '-sources.jar')
+        selectedSources = selectedJar.parentFile
+            .listFiles()
+            ?.find { it.isFile() && it.name == expectedName }
+    }
+    if (selectedSources == null) {
+        selectedSources = newestByModified(mergedSources)
+    }
+
+    def defaultMcJar = selectedJar?.absolutePath ?: ""
     def defaultOutputDir = file("${rootProject.projectDir}/src/main/generated").absolutePath
+    def defaultSourcesJar = selectedSources?.absolutePath ?: (mode == 'wala' ? '-' : '')
 
     return [
         project.findProperty('mcJar') ?: defaultMcJar,
         project.findProperty('outputDir') ?: defaultOutputDir,
-        project.findProperty('sourcesJar') ?: sourcesJar,
+        project.findProperty('sourcesJar') ?: defaultSourcesJar,
         mode
     ]
 }
@@ -91,6 +118,20 @@ def configureAnalysisExec = { JavaExec execTask, String mode ->
             throw new GradleException(
                 "Minecraft merged JAR not found: ${minecraftJar}. "
                     + "Pass -PmcJar=<path-to-minecraft-merged.jar>.")
+        }
+        if (mode == 'all' || mode == 'spoon') {
+            def sourcesJarArg = (resolvedArgs[2] ?: "").toString()
+            if (sourcesJarArg.isBlank() || sourcesJarArg == '-') {
+                throw new GradleException(
+                    "Could not resolve a Minecraft sources JAR for analysis mode '${mode}'. "
+                        + "Pass -PsourcesJar=<path-to-minecraft-merged-sources.jar>.")
+            }
+            def sourcesJar = file(sourcesJarArg)
+            if (!sourcesJar.exists() || !sourcesJar.isFile()) {
+                throw new GradleException(
+                    "Minecraft sources JAR not found: ${sourcesJar}. "
+                        + "Pass -PsourcesJar=<path-to-minecraft-merged-sources.jar>.")
+            }
         }
         if (mode == 'spoon') {
             def outputDir = file(resolvedArgs[1])
