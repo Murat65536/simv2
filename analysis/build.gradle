@@ -45,33 +45,39 @@ if (analysisVerboseFixedPoint) {
     analysisJvmArgs.add('-Dcom.ibm.wala.fixedpoint.impl.verbose=true')
 }
 
-def resolveAnalysisArgs = { String mode ->
-    // Find merged jars from project-local and Gradle-user-home Loom caches.
-    def cacheRoots = [
-        file("${rootProject.projectDir}/.gradle/loom-cache/minecraftMaven/net/minecraft"),
-        file("${gradle.gradleUserHomeDir}/caches/fabric-loom/minecraftMaven/net/minecraft"),
-        file("${gradle.gradleUserHomeDir}/loom-cache/minecraftMaven/net/minecraft")
-    ]
+def analysisCacheSearchRoots = [
+    file("${rootProject.projectDir}/.gradle/loom-cache"),
+    file("${rootProject.projectDir}/.gradle/caches/fabric-loom"),
+    file("${rootProject.projectDir}/.gradle"),
+    file("${gradle.gradleUserHomeDir}/caches/fabric-loom"),
+    file("${gradle.gradleUserHomeDir}/loom-cache"),
+    file("${gradle.gradleUserHomeDir}/caches")
+].collect { it.canonicalFile }
+ .toSet()
+ .toList()
 
-    def mergedVersionDirs = []
-    cacheRoots.findAll { it.exists() }.each { cacheRoot ->
-        cacheRoot.eachDir { hashDir ->
-            if (!hashDir.name.startsWith('minecraft-merged-')) return
-            hashDir.eachDir { versionDir ->
-                mergedVersionDirs << versionDir
+def resolveAnalysisArgs = { String mode ->
+    // Find merged jars across possible Loom cache layouts.
+    def mergedCandidates = new LinkedHashSet<File>()
+    analysisCacheSearchRoots.findAll { it.exists() }.each { cacheRoot ->
+        fileTree(cacheRoot) {
+            include '**/minecraft-merged-*/**/*.jar'
+        }.files.each { candidate ->
+            if (candidate.name.endsWith('.jar') && !candidate.name.contains('backup')) {
+                mergedCandidates << candidate
             }
         }
     }
 
     def mergedJars = []
     def mergedSources = []
-    mergedVersionDirs.each { versionDir ->
-        versionDir.listFiles()?.findAll { it.isFile() }.each { candidate ->
-            if (candidate.name.endsWith('-sources.jar')) {
-                mergedSources << candidate
-            } else if (candidate.name.endsWith('.jar') && !candidate.name.contains('backup')) {
-                mergedJars << candidate
-            }
+    def jarsByParent = [:].withDefault { [] }
+    mergedCandidates.each { candidate ->
+        jarsByParent[candidate.parentFile] << candidate
+        if (candidate.name.endsWith('-sources.jar')) {
+            mergedSources << candidate
+        } else {
+            mergedJars << candidate
         }
     }
 
@@ -79,8 +85,24 @@ def resolveAnalysisArgs = { String mode ->
         files.isEmpty() ? null : files.max { it.lastModified() }
     }
 
-    def selectedJar = newestByModified(mergedJars)
-    def selectedSources = null
+    def pairedSelection = jarsByParent.values()
+        .collect { siblings ->
+            def mainJar = newestByModified(siblings.findAll { !it.name.endsWith('-sources.jar') })
+            def sourcesJar = newestByModified(siblings.findAll { it.name.endsWith('-sources.jar') })
+            if (mainJar != null && sourcesJar != null) {
+                return [
+                    jar: mainJar,
+                    sources: sourcesJar,
+                    modified: Math.max(mainJar.lastModified(), sourcesJar.lastModified())
+                ]
+            }
+            return null
+        }
+        .findAll { it != null }
+        .max { it.modified }
+
+    def selectedJar = pairedSelection?.jar ?: newestByModified(mergedJars)
+    def selectedSources = pairedSelection?.sources
     if (selectedJar != null) {
         def expectedName = selectedJar.name.replaceFirst(/\.jar$/, '-sources.jar')
         selectedSources = selectedJar.parentFile
@@ -109,8 +131,13 @@ def configureAnalysisExec = { JavaExec execTask, String mode ->
         def resolvedArgs = resolveAnalysisArgs(mode)
         def minecraftJarArg = (resolvedArgs[0] ?: "").toString()
         if (minecraftJarArg.isBlank()) {
+            def searchedRoots = analysisCacheSearchRoots
+                .findAll { it.exists() }
+                .collect { it.absolutePath }
+                .join(', ')
             throw new GradleException(
                 "Could not resolve a Minecraft merged JAR for analysis. "
+                    + "Checked cache roots: ${searchedRoots}. "
                     + "Pass -PmcJar=<path-to-minecraft-merged.jar>.")
         }
         def minecraftJar = file(minecraftJarArg)
