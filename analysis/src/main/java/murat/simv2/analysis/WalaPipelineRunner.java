@@ -81,12 +81,23 @@ final class WalaPipelineRunner {
 
             System.out.println("\nRunning backward slice from Entity.pos writes...");
             WalaSlicer.SliceResult slice = new WalaSlicer(cg, pa, cha).slice();
+            int slicedMethods = slice.lineByMethod().values().stream().mapToInt(Map::size).sum();
             System.out.printf(
                 "Slice: %d statements -> %d classes, %d methods, %d fields%n",
                 slice.statementsConsidered(),
                 slice.lineByMethod().size(),
-                slice.lineByMethod().values().stream().mapToInt(Map::size).sum(),
+                slicedMethods,
                 slice.fields().size());
+            if (slice.lineByMethod().isEmpty()
+                || slice.statementsConsidered() <= slice.seedCount()
+                || slice.fields().isEmpty()) {
+                throw new IllegalStateException(
+                    "Slice is suspiciously small (statements=" + slice.statementsConsidered()
+                        + ", seeds=" + slice.seedCount()
+                        + ", classes=" + slice.lineByMethod().size()
+                        + ", fields=" + slice.fields().size()
+                        + "). Exclusions may be too aggressive.");
+            }
 
             MirrorClosure closure = ClosureBuilder.build(slice, cha);
             System.out.println("Closure: " + closure.classes().size() + " classes ("

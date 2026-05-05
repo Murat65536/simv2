@@ -1,5 +1,9 @@
 package murat.simv2.analysis;
 
+import com.ibm.wala.dataflow.IFDS.PartiallyBalancedTabulationProblem;
+import com.ibm.wala.dataflow.IFDS.PartiallyBalancedTabulationSolver;
+import com.ibm.wala.dataflow.IFDS.PathEdge;
+import com.ibm.wala.dataflow.IFDS.TabulationResult;
 import com.ibm.wala.classLoader.IBytecodeMethod;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IField;
@@ -12,6 +16,7 @@ import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.modref.ModRef;
 import com.ibm.wala.ipa.slicer.HeapExclusions;
 import com.ibm.wala.ipa.slicer.NormalStatement;
+import com.ibm.wala.ipa.slicer.PDG;
 import com.ibm.wala.ipa.slicer.SDG;
 import com.ibm.wala.ipa.slicer.Slicer;
 import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
@@ -25,6 +30,8 @@ import com.ibm.wala.ssa.SSAPutInstruction;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.FieldReference;
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.CancelException;
+import com.ibm.wala.util.MonitorUtil.IProgressMonitor;
 import com.ibm.wala.util.config.FileOfClasses;
 
 import java.io.ByteArrayInputStream;
@@ -34,6 +41,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -45,6 +53,8 @@ import java.util.TreeSet;
  * categorization, all extracted from a single SDG traversal.
  */
 final class WalaSlicer {
+    private static final long SLICE_HEARTBEAT_MILLIS = 10_000L;
+
     private final CallGraph cg;
     private final PointerAnalysis<InstanceKey> pa;
     private final IClassHierarchy cha;
@@ -81,14 +91,14 @@ final class WalaSlicer {
         long sliceStart = System.currentTimeMillis();
         Collection<Statement> all;
         try {
-            all = Slicer.computeBackwardSlice(sdg, seeds);
+            all = computeBackwardSliceWithTelemetry(sdg, seeds);
         } catch (Exception ex) {
             throw new RuntimeException("Backward slice failed: " + ex.getMessage(), ex);
         }
         System.out.printf("Slice: %d statements in %.1fs%n",
             all.size(), (System.currentTimeMillis() - sliceStart) / 1000.0);
 
-        return analyzeStatements(all, entitySubtypes);
+        return analyzeStatements(all, entitySubtypes, seeds.size());
     }
 
     /** Collects {@code Entity} and every reachable subclass we may see in the CG. */
@@ -147,7 +157,8 @@ final class WalaSlicer {
      * Anything outside {@code net.minecraft.*} is dropped — primordial
      * helpers don't need mirroring.
      */
-    private SliceResult analyzeStatements(Collection<Statement> statements, Set<TypeReference> entitySubtypes) {
+    private SliceResult analyzeStatements(
+        Collection<Statement> statements, Set<TypeReference> entitySubtypes, int seedCount) {
         Map<String, Map<String, Set<Integer>>> lineByMethod = new TreeMap<>();
         Map<String, FieldResult.Category> categoryByField = new HashMap<>();
         Map<String, FieldRecord> fieldsByKey = new HashMap<>();
@@ -191,7 +202,7 @@ final class WalaSlicer {
             fields.add(new FieldResult(r.declaringClass, r.fieldName, r.descriptor, cat));
         }
 
-        return new SliceResult(statements.size(), Map.copyOf(lineByMethod), List.copyOf(fields));
+        return new SliceResult(statements.size(), seedCount, Map.copyOf(lineByMethod), List.copyOf(fields));
     }
 
     private void recordField(SSAFieldAccessInstruction insn,
@@ -247,6 +258,16 @@ final class WalaSlicer {
         }
     }
 
+    private Collection<Statement> computeBackwardSliceWithTelemetry(
+        SDG<InstanceKey> sdg, Collection<Statement> roots) throws CancelException {
+        PartiallyBalancedTabulationProblem<Statement, PDG<?>, Object> problem =
+            new Slicer.SliceProblem(roots, sdg, true);
+        SliceProgressSolver solver = new SliceProgressSolver(problem, null, SLICE_HEARTBEAT_MILLIS);
+        TabulationResult<Statement, PDG<?>, Object> result = solver.solve();
+        solver.printSummary();
+        return result.getSupergraphNodesReached();
+    }
+
     private static boolean isMinecraftClass(String internal) {
         return internal != null && internal.startsWith("Lnet/minecraft/");
     }
@@ -262,9 +283,85 @@ final class WalaSlicer {
     private record FieldRecord(String declaringClass, String fieldName, String descriptor) {
     }
 
+    private static final class SliceProgressSolver
+        extends PartiallyBalancedTabulationSolver<Statement, PDG<?>, Object> {
+        private final long heartbeatNanos;
+        private final long startNanos;
+        private long lastReportNanos = -1L;
+        private long enqueued = 0L;
+        private long processed = 0L;
+        private long frontier = 0L;
+        private long maxFrontier = 0L;
+
+        SliceProgressSolver(
+            PartiallyBalancedTabulationProblem<Statement, PDG<?>, Object> problem,
+            IProgressMonitor monitor,
+            long heartbeatMillis
+        ) {
+            super(problem, monitor);
+            if (heartbeatMillis <= 0) {
+                throw new IllegalArgumentException("heartbeatMillis must be > 0");
+            }
+            this.heartbeatNanos = heartbeatMillis * 1_000_000L;
+            this.startNanos = System.nanoTime();
+            System.out.println("Slicing IFDS loop (telemetry: elapsed/processed/frontier/rate)...");
+        }
+
+        @Override
+        protected void addToWorkList(Statement s_p, int i, Statement n, int j) {
+            super.addToWorkList(s_p, i, n, j);
+            enqueued++;
+            frontier++;
+            if (frontier > maxFrontier) {
+                maxFrontier = frontier;
+            }
+        }
+
+        @Override
+        protected PathEdge<Statement> popFromWorkList() {
+            PathEdge<Statement> edge = super.popFromWorkList();
+            processed++;
+            if (frontier > 0L) {
+                frontier--;
+            }
+            maybeReport();
+            return edge;
+        }
+
+        void printSummary() {
+            long now = System.nanoTime();
+            if (lastReportNanos < 0 || processed > 0) {
+                printReport(now, true);
+            }
+        }
+
+        private void maybeReport() {
+            long now = System.nanoTime();
+            if (lastReportNanos < 0 || (now - lastReportNanos) >= heartbeatNanos) {
+                printReport(now, false);
+            }
+        }
+
+        private void printReport(long nowNanos, boolean done) {
+            double elapsedSeconds = Math.max(0L, nowNanos - startNanos) / 1_000_000_000.0;
+            double rate = elapsedSeconds > 0.0 ? processed / elapsedSeconds : 0.0;
+            if (done) {
+                System.out.println(String.format(Locale.ROOT,
+                    "  [slice-progress] done %.1fs processed=%d frontier=%d peak=%d queued=%d rate=%.1f/s",
+                    elapsedSeconds, processed, frontier, maxFrontier, enqueued, rate));
+            } else {
+                System.out.println(String.format(Locale.ROOT,
+                    "  [slice-progress] %.1fs processed=%d frontier=%d rate=%.1f/s",
+                    elapsedSeconds, processed, frontier, rate));
+            }
+            lastReportNanos = nowNanos;
+        }
+    }
+
     /** Result of one full slice. */
     record SliceResult(
         int statementsConsidered,
+        int seedCount,
         Map<String, Map<String, Set<Integer>>> lineByMethod,
         List<FieldResult> fields
     ) {
