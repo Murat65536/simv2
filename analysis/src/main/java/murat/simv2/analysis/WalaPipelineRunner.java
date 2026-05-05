@@ -64,9 +64,11 @@ final class WalaPipelineRunner {
             System.out.println("\nBuilding 0-1-Container-CFA call graph...");
             AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
             CallGraphBuilder<InstanceKey> builder = Util.makeZeroOneContainerCFABuilder(
-                options, new AnalysisCacheImpl(), cha, scope);
+                options, new AnalysisCacheImpl(), cha);
+            PrintingProgressMonitor progressMonitor = new PrintingProgressMonitor();
             long cgStart = System.currentTimeMillis();
-            CallGraph cg = builder.makeCallGraph(options, new PrintingProgressMonitor());
+            CallGraph cg = builder.makeCallGraph(options, progressMonitor);
+            progressMonitor.done();
             PointerAnalysis<InstanceKey> pa = builder.getPointerAnalysis();
             long cgMs = System.currentTimeMillis() - cgStart;
             System.out.printf("Call graph: %d nodes in %.1fs%n",
