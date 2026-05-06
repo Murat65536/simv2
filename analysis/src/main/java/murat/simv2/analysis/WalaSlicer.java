@@ -46,6 +46,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Backward slice from every {@code putfield Entity.pos} reachable in the call
@@ -81,10 +84,13 @@ final class WalaSlicer {
         // closure in one pass.
         HeapExclusions heapExcl = buildHeapExclusions();
         long t0 = System.currentTimeMillis();
-        SDG<InstanceKey> sdg = new SDG<>(cg, pa, ModRef.make(),
-            DataDependenceOptions.NO_BASE_PTRS,
-            ControlDependenceOptions.NO_EXCEPTIONAL_EDGES,
-            heapExcl);
+        SDG<InstanceKey> sdg;
+        try (PhaseHeartbeat ignored = PhaseHeartbeat.start("SDG build", SLICE_HEARTBEAT_MILLIS)) {
+            sdg = new SDG<>(cg, pa, ModRef.make(),
+                DataDependenceOptions.NO_BASE_PTRS,
+                ControlDependenceOptions.NO_EXCEPTIONAL_EDGES,
+                heapExcl);
+        }
         System.out.printf("SDG built in %.1fs (%d nodes)%n",
             (System.currentTimeMillis() - t0) / 1000.0, sdg.getNumberOfNodes());
 
@@ -281,6 +287,42 @@ final class WalaSlicer {
     }
 
     private record FieldRecord(String declaringClass, String fieldName, String descriptor) {
+    }
+
+    private static final class PhaseHeartbeat implements AutoCloseable {
+        private final ScheduledExecutorService scheduler;
+        private final String phase;
+        private final long startNanos;
+
+        private PhaseHeartbeat(String phase, long intervalMillis) {
+            if (intervalMillis <= 0L) {
+                throw new IllegalArgumentException("intervalMillis must be > 0");
+            }
+            this.phase = phase;
+            this.startNanos = System.nanoTime();
+            this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "analysis-progress-heartbeat");
+                t.setDaemon(true);
+                return t;
+            });
+            System.out.println("  [slice-progress] " + phase + " started");
+            scheduler.scheduleAtFixedRate(this::printTick, intervalMillis, intervalMillis, TimeUnit.MILLISECONDS);
+        }
+
+        static PhaseHeartbeat start(String phase, long intervalMillis) {
+            return new PhaseHeartbeat(phase, intervalMillis);
+        }
+
+        private void printTick() {
+            double elapsedSeconds = Math.max(0L, System.nanoTime() - startNanos) / 1_000_000_000.0;
+            System.out.println(String.format(Locale.ROOT,
+                "  [slice-progress] %s running %.1fs", phase, elapsedSeconds));
+        }
+
+        @Override
+        public void close() {
+            scheduler.shutdownNow();
+        }
     }
 
     private static final class SliceProgressSolver
