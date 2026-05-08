@@ -42,7 +42,7 @@ def analysisDisableBytecodeVerify = (project.findProperty('analysisDisableByteco
     .toString()
     .toBoolean()
 def analysisJvmArgs = [
-        '-Xmx64',
+        '-Xmx64G',
         '-XX:+UseParallelGC'
 ]
 if (analysisDisableBytecodeVerify) {
