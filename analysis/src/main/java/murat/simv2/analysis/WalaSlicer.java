@@ -10,6 +10,7 @@ import com.ibm.wala.classLoader.IField;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
+import com.ibm.wala.ipa.callgraph.pruned.PrunedCallGraph;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
@@ -36,6 +37,7 @@ import com.ibm.wala.util.config.FileOfClasses;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -77,6 +79,14 @@ final class WalaSlicer {
                     + "Either the entry method is unreachable, or the exclusions are too aggressive.");
         }
         System.out.println("Seeds: " + seeds.size() + " putfield Entity.pos statements");
+        Set<CGNode> sdgNodes = collectBackwardReachableSeedAncestors(seeds);
+        CallGraph sdgCg = new PrunedCallGraph(cg, sdgNodes);
+        double keptPct = cg.getNumberOfNodes() == 0
+            ? 0.0
+            : (100.0 * sdgCg.getNumberOfNodes() / cg.getNumberOfNodes());
+        System.out.printf(Locale.ROOT,
+            "SDG prune: %d -> %d CG nodes (%.1f%% kept)%n",
+            cg.getNumberOfNodes(), sdgCg.getNumberOfNodes(), keptPct);
 
         // Single SDG with combined data + control dependence. Building two
         // SDGs sequentially (and re-running the IFDS solver) is the heaviest
@@ -86,7 +96,7 @@ final class WalaSlicer {
         long t0 = System.currentTimeMillis();
         SDG<InstanceKey> sdg;
         try (PhaseHeartbeat ignored = PhaseHeartbeat.start("SDG build", SLICE_HEARTBEAT_MILLIS)) {
-            sdg = new SDG<>(cg, pa, ModRef.make(),
+            sdg = new SDG<>(sdgCg, pa, ModRef.make(),
                 DataDependenceOptions.NO_BASE_PTRS,
                 ControlDependenceOptions.NO_EXCEPTIONAL_EDGES,
                 heapExcl);
@@ -156,6 +166,34 @@ final class WalaSlicer {
             }
         }
         return seeds;
+    }
+
+    /**
+     * Keep only methods that can reach a seed-containing method along call edges.
+     * This bounds SDG/PDG construction to methods that may contribute to the
+     * backward slice from {@code Entity.pos} writes.
+     */
+    private Set<CGNode> collectBackwardReachableSeedAncestors(Collection<Statement> seeds) {
+        Set<CGNode> keep = new HashSet<>();
+        ArrayDeque<CGNode> worklist = new ArrayDeque<>();
+        for (Statement seed : seeds) {
+            if (!(seed instanceof NormalStatement ns)) continue;
+            CGNode node = ns.getNode();
+            if (keep.add(node)) {
+                worklist.addLast(node);
+            }
+        }
+        while (!worklist.isEmpty()) {
+            CGNode node = worklist.removeFirst();
+            var preds = cg.getPredNodes(node);
+            while (preds.hasNext()) {
+                CGNode pred = preds.next();
+                if (keep.add(pred)) {
+                    worklist.addLast(pred);
+                }
+            }
+        }
+        return Set.copyOf(keep);
     }
 
     /**

@@ -14,10 +14,9 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
- * On-disk artifact layout shared between the WALA and Spoon phases.
+ * On-disk artifact layout for WALA output.
  *
- * <p>Each artifact starts with a contract string {@code "<schema>/v<version>"}
- * so the Spoon phase can detect a stale or incompatible WALA run.
+ * <p>Each artifact starts with a contract string {@code "<schema>/v<version>"}.
  */
 public final class AnalysisArtifacts {
     public static final String SCHEMA_VERSION = "movement-analysis/v2";
@@ -121,16 +120,6 @@ public final class AnalysisArtifacts {
             result.add(new FieldResult(parts[1], parts[2], parts[3], FieldResult.Category.valueOf(parts[0])));
         }
         return result;
-    }
-
-    public static void requireWalaArtifacts(Path outputDir) {
-        Path[] required = { slicePath(outputDir), closurePath(outputDir), fieldManifestPath(outputDir) };
-        for (Path p : required) {
-            if (!Files.exists(p)) {
-                throw new IllegalStateException(
-                    "Missing WALA artifact: " + p + ". Run :analysis:runWala first.");
-            }
-        }
     }
 
     // ── Gson payloads ──

@@ -28,13 +28,13 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Runs the WALA half of the pipeline:
+ * Runs the WALA pipeline:
  * <ol>
  *   <li>Build call graph + pointer analysis from {@code ClientPlayerEntity#tickMovement()}.</li>
  *   <li>Compute the backward slice from every {@code putfield Entity.pos} in the CG.</li>
  *   <li>Derive (a) per-method bytecode line numbers, (b) MOD/REF field categories,
  *       (c) the class closure from the slice.</li>
- *   <li>Persist the WALA artifacts plus an inputs fingerprint for the Spoon phase.</li>
+ *   <li>Persist the WALA artifacts.</li>
  * </ol>
  */
 final class WalaPipelineRunner {

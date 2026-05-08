@@ -19,7 +19,6 @@ dependencies {
     implementation 'com.ibm.wala:com.ibm.wala.core:1.6.9'
     implementation 'com.ibm.wala:com.ibm.wala.util:1.6.9'
     implementation 'com.ibm.wala:com.ibm.wala.shrike:1.6.9'
-    implementation 'fr.inria.gforge.spoon:spoon-core:11.1.0'
     implementation 'org.ow2.asm:asm:9.7'
     implementation 'org.ow2.asm:asm-tree:9.7'
     implementation 'org.slf4j:slf4j-simple:2.0.16'
@@ -62,7 +61,7 @@ def analysisCacheSearchRoots = [
  .toSet()
  .toList()
 
-def resolveAnalysisArgs = { String mode ->
+def resolveAnalysisArgs = { ->
     // Find merged jars across possible Loom cache layouts.
     def mergedCandidates = new LinkedHashSet<File>()
     analysisCacheSearchRoots.findAll { it.exists() }.each { cacheRoot ->
@@ -121,20 +120,19 @@ def resolveAnalysisArgs = { String mode ->
 
     def defaultMcJar = selectedJar?.absolutePath ?: ""
     def defaultOutputDir = file("${rootProject.projectDir}/src/main/generated").absolutePath
-    def defaultSourcesJar = selectedSources?.absolutePath ?: (mode == 'wala' ? '-' : '')
+    def defaultSourcesJar = selectedSources?.absolutePath ?: "-"
 
     return [
         project.findProperty('mcJar') ?: defaultMcJar,
         project.findProperty('outputDir') ?: defaultOutputDir,
-        project.findProperty('sourcesJar') ?: defaultSourcesJar,
-        mode
+        project.findProperty('sourcesJar') ?: defaultSourcesJar
     ]
 }
 
-def configureAnalysisExec = { JavaExec execTask, String mode ->
+def configureAnalysisExec = { JavaExec execTask ->
     execTask.jvmArgs = analysisJvmArgs
     execTask.doFirst {
-        def resolvedArgs = resolveAnalysisArgs(mode)
+        def resolvedArgs = resolveAnalysisArgs()
         def minecraftJarArg = (resolvedArgs[0] ?: "").toString()
         if (minecraftJarArg.isBlank()) {
             def searchedRoots = analysisCacheSearchRoots
@@ -152,58 +150,19 @@ def configureAnalysisExec = { JavaExec execTask, String mode ->
                 "Minecraft merged JAR not found: ${minecraftJar}. "
                     + "Pass -PmcJar=<path-to-minecraft-merged.jar>.")
         }
-        if (mode == 'all' || mode == 'spoon') {
-            def sourcesJarArg = (resolvedArgs[2] ?: "").toString()
-            if (sourcesJarArg.isBlank() || sourcesJarArg == '-') {
-                throw new GradleException(
-                    "Could not resolve a Minecraft sources JAR for analysis mode '${mode}'. "
-                        + "Pass -PsourcesJar=<path-to-minecraft-merged-sources.jar>.")
-            }
-            def sourcesJar = file(sourcesJarArg)
-            if (!sourcesJar.exists() || !sourcesJar.isFile()) {
-                throw new GradleException(
-                    "Minecraft sources JAR not found: ${sourcesJar}. "
-                        + "Pass -PsourcesJar=<path-to-minecraft-merged-sources.jar>.")
-            }
-        }
-        if (mode == 'spoon') {
-            def outputDir = file(resolvedArgs[1])
-            def required = ['movement-slice.json', 'mirror-closure.json',
-                            'movement-fields.txt']
-            def missing = required.findAll { !outputDir.toPath().resolve(it).toFile().exists() }
-            if (!missing.isEmpty()) {
-                throw new GradleException(
-                    "runSpoon requires WALA artifacts in ${outputDir}: ${missing.join(', ')}. "
-                        + "Run :analysis:runWala first or set -PoutputDir accordingly.")
-            }
-        }
         execTask.setArgs(resolvedArgs)
     }
 }
 
 tasks.named('run', JavaExec) { JavaExec runTask ->
-    configureAnalysisExec(runTask, 'all')
+    configureAnalysisExec(runTask)
 }
 
 tasks.register('runWala', JavaExec) { JavaExec walaTask ->
     group = 'application'
-    description = 'Run only the WALA analysis/codegen phase.'
+    description = 'Run the WALA analysis/codegen phase.'
     classpath = sourceSets.main.runtimeClasspath
     mainClass = application.mainClass
-    configureAnalysisExec(walaTask, 'wala')
+    configureAnalysisExec(walaTask)
 }
 
-tasks.register('runSpoon', JavaExec) { JavaExec spoonTask ->
-    group = 'application'
-    description = 'Run only the Spoon/runtime-generation phase using existing WALA artifacts.'
-    classpath = sourceSets.main.runtimeClasspath
-    mainClass = application.mainClass
-    configureAnalysisExec(spoonTask, 'spoon')
-    mustRunAfter 'runWala'
-}
-
-tasks.register('runFullAnalysis') {
-    group = 'application'
-    description = 'Run WALA and Spoon phases sequentially with validated artifacts.'
-    dependsOn 'runWala', 'runSpoon'
-}
