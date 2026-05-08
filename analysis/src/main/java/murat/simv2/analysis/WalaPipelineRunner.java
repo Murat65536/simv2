@@ -34,8 +34,7 @@ import java.util.Set;
  *   <li>Compute the backward slice from every {@code putfield Entity.pos} in the CG.</li>
  *   <li>Derive (a) per-method bytecode line numbers, (b) MOD/REF field categories,
  *       (c) the class closure from the slice.</li>
- *   <li>Persist all four artifacts plus an inputs fingerprint, plus a generated
- *       sync class and access widener for the runtime side.</li>
+ *   <li>Persist the WALA artifacts plus an inputs fingerprint for the Spoon phase.</li>
  * </ol>
  */
 final class WalaPipelineRunner {
@@ -109,8 +108,6 @@ final class WalaPipelineRunner {
             AnalysisArtifacts.writeSlice(AnalysisArtifacts.slicePath(outputDir), slice.lineByMethod());
             AnalysisArtifacts.writeClosure(AnalysisArtifacts.closurePath(outputDir), closure);
             AnalysisArtifacts.writeFieldManifest(AnalysisArtifacts.fieldManifestPath(outputDir), slice.fields());
-
-            new SyncCodeGenerator(outputDir).generate(slice.fields());
 
             System.out.println("\nWALA artifacts written to " + outputDir);
         } finally {

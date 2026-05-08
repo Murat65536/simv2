@@ -50,7 +50,7 @@ import spoon.support.compiler.VirtualFile;
  *       return) for methods the slice does not reach. For methods the
  *       slice does reach, keep statements whose source line is in the
  *       slice line set; drop the rest.</li>
- *   <li>Make every instance field public so {@code GeneratedSync} can
+ *   <li>Make every instance field public so simulator/runtime code can
  *       write to it directly.</li>
  *   <li>Inject a public no-arg constructor on every primary class so
  *       the runtime side can {@code new} a simulator subclass.</li>

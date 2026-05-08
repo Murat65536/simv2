@@ -22,7 +22,6 @@
 			"murat.simv2.SimV2Client"
 		]
 	},
-	"accessWidener": "sim-v2.accesswidener",
 	"mixins": [
 		"sim-v2.mixins.json"
 	],

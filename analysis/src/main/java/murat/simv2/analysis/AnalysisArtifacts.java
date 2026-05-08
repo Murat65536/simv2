@@ -39,15 +39,6 @@ public final class AnalysisArtifacts {
         return outputDir.resolve("movement-fields.txt");
     }
 
-    public static Path accessWidenerPath(Path outputDir) {
-        return outputDir.resolve("sim-v2.accesswidener");
-    }
-
-    public static Path resourcesAccessWidenerPath(Path outputDir) {
-        // outputDir is .../src/main/generated; resources sits next to it.
-        return outputDir.getParent().resolve("resources").resolve("sim-v2.accesswidener");
-    }
-
     // ── Slice ──
 
     public static void writeSlice(Path path, Map<String, Map<String, Set<Integer>>> slice) throws IOException {

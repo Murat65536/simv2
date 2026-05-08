@@ -9,8 +9,7 @@ import java.nio.file.Path;
  * Three modes:
  * <ul>
  *   <li>{@code wala} — run the WALA backward slice from {@code Entity.pos}
- *       writes; emit the slice JSON, the mirror closure, the field manifest,
- *       the access widener, and {@code GeneratedSync.java}.</li>
+ *       writes; emit the slice JSON, the mirror closure, and the field manifest.</li>
  *   <li>{@code spoon} — read the WALA artifacts and build the mirror classes
  *       in {@code murat.simv2.simulation.mirror.net.minecraft.*}.</li>
  *   <li>{@code all} — both, in order.</li>
