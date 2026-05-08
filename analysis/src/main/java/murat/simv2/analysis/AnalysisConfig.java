@@ -16,14 +16,10 @@ public final class AnalysisConfig {
     private AnalysisConfig() {
     }
 
-    /** The internal name of {@link net.minecraft.entity.Entity}. */
     public static final String ENTITY_INTERNAL = "Lnet/minecraft/entity/Entity";
 
     /** Internal name of the seed field — the only thing we slice backward from. */
     public static final String SEED_FIELD_NAME = "pos";
-
-    /** The single backward-slice seed: {@code Entity.pos} writes inside the call graph. */
-    public static final SeedField SEED_FIELD = new SeedField(ENTITY_INTERNAL, SEED_FIELD_NAME);
 
     /** Entry point method (class, method, descriptor) for the call graph. */
     public static final EntryMethod ENTRY_METHOD = new EntryMethod(
@@ -129,15 +125,11 @@ public final class AnalysisConfig {
         "java/util/concurrent/atomic/.*",
         "java/util/function/.*",
         "java/util/stream/.*",
-        "net/minecraft/block/.*",
-        "net/minecraft/block/entity/.*",
         "net/minecraft/component/.*",
         "net/minecraft/state/.*",
         "net/minecraft/entity/damage/.*",
         "net/minecraft/entity/attribute/.*",
         "net/minecraft/entity/effect/StatusEffects",
-        "net/minecraft/fluid/.*",
-        "net/minecraft/item/.*",
         "net/minecraft/nbt/.*",
         "net/minecraft/registry/.*",
         "net/minecraft/world/event/GameEvent",
@@ -150,23 +142,6 @@ public final class AnalysisConfig {
         "net/minecraft/util/DyeColor",
         "net/minecraft/util/Rarity"
     );
-
-    /**
-     * Fields the runtime sync MUST NOT copy because they would alias real-game
-     * state into the simulator (same world, same UUID, same network handler).
-     * This is a deliberately tiny list — anything that needs more nuance lives
-     * in the slice, not here.
-     */
-    public static final Set<String> DO_NOT_SYNC_FIELDS = Set.of(
-        "uuid", "uuidString", "id",
-        "world", "networkHandler", "client",
-        "type", "gameProfile",
-        "dataTracker",
-        "passengerList", "vehicle"
-    );
-
-    public record SeedField(String declaringClassInternal, String fieldName) {
-    }
 
     public record EntryMethod(String classInternal, String name, String descriptor) {
         public String selector() {

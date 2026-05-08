@@ -97,7 +97,7 @@ final class WalaSlicer {
         SDG<InstanceKey> sdg;
         try (PhaseHeartbeat ignored = PhaseHeartbeat.start("SDG build", SLICE_HEARTBEAT_MILLIS)) {
             sdg = new SDG<>(sdgCg, pa, ModRef.make(),
-                DataDependenceOptions.NO_BASE_PTRS,
+                DataDependenceOptions.FULL,
                 ControlDependenceOptions.NO_EXCEPTIONAL_EDGES,
                 heapExcl);
         }
