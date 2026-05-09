@@ -42,7 +42,7 @@ def analysisDisableBytecodeVerify = (project.findProperty('analysisDisableByteco
     .toString()
     .toBoolean()
 def analysisJvmArgs = [
-        '-Xmx200G',
+        '-Xmx170G',
         '-XX:+UseParallelGC',
         "-XX:ParallelGCThreads=${Runtime.runtime.availableProcessors()}",
         "-Djava.util.concurrent.ForkJoinPool.common.parallelism=${Runtime.runtime.availableProcessors()}"
