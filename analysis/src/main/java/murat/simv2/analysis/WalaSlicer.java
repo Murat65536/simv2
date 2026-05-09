@@ -148,24 +148,26 @@ final class WalaSlicer {
         for (TypeReference t : entitySubtypes) {
             entityInternalNames.add(t.getName().toString());
         }
-        List<Statement> seeds = new ArrayList<>();
-        for (CGNode node : cg) {
-            String declInternal = node.getMethod().getDeclaringClass().getName().toString();
-            if (!entityInternalNames.contains(declInternal)) continue;
-            IR ir = node.getIR();
-            if (ir == null) continue;
-            SSAInstruction[] insns = ir.getInstructions();
-            for (int i = 0; i < insns.length; i++) {
-                SSAInstruction insn = insns[i];
-                if (!(insn instanceof SSAPutInstruction put)) continue;
-                if (put.isStatic()) continue;
-                FieldReference field = put.getDeclaredField();
-                if (!AnalysisConfig.SEED_FIELD_NAME.equals(field.getName().toString())) continue;
-                if (!entitySubtypes.contains(field.getDeclaringClass())) continue;
-                seeds.add(new NormalStatement(node, i));
-            }
-        }
-        return seeds;
+        return java.util.stream.StreamSupport.stream(cg.spliterator(), true)
+            .flatMap(node -> {
+                String declInternal = node.getMethod().getDeclaringClass().getName().toString();
+                if (!entityInternalNames.contains(declInternal)) return java.util.stream.Stream.empty();
+                IR ir = node.getIR();
+                if (ir == null) return java.util.stream.Stream.empty();
+                SSAInstruction[] insns = ir.getInstructions();
+                List<Statement> localSeeds = new ArrayList<>();
+                for (int i = 0; i < insns.length; i++) {
+                    SSAInstruction insn = insns[i];
+                    if (!(insn instanceof SSAPutInstruction put)) continue;
+                    if (put.isStatic()) continue;
+                    FieldReference field = put.getDeclaredField();
+                    if (!AnalysisConfig.SEED_FIELD_NAME.equals(field.getName().toString())) continue;
+                    if (!entitySubtypes.contains(field.getDeclaringClass())) continue;
+                    localSeeds.add(new NormalStatement(node, i));
+                }
+                return localSeeds.stream();
+            })
+            .collect(java.util.stream.Collectors.toList());
     }
 
     /**
