@@ -20,7 +20,6 @@ import java.util.TreeSet;
  *
  * <p>Seeds:
  * <ul>
- *   <li>{@link AnalysisConfig#REQUIRED_PRIMARY_CLASSES} — always present.</li>
  *   <li>Every class that owns a method with sliced lines.</li>
  *   <li>Every class that owns a sliced field.</li>
  * </ul>
@@ -34,8 +33,7 @@ final class ClosureBuilder {
     }
 
     static MirrorClosure build(WalaSlicer.SliceResult slice, IClassHierarchy cha) {
-        Set<String> closure = new TreeSet<>(AnalysisConfig.REQUIRED_PRIMARY_CLASSES);
-        closure.addAll(slice.lineByMethod().keySet());
+        Set<String> closure = new TreeSet<>(slice.lineByMethod().keySet());
         for (FieldResult f : slice.fields()) {
             closure.add(f.declaringClass());
             String referenced = referenceFromDescriptor(f.typeDescriptor());

@@ -29,19 +29,6 @@ public final class AnalysisConfig {
     );
 
     /**
-     * Concrete vanilla classes that MUST appear in the mirror closure even if
-     * the slice never reaches them. Includes the player hierarchy so that the
-     * mirror produces a constructable {@code ClientPlayerEntity} subclass.
-     */
-    public static final List<String> REQUIRED_PRIMARY_CLASSES = List.of(
-        "net.minecraft.entity.Entity",
-        "net.minecraft.entity.LivingEntity",
-        "net.minecraft.entity.player.PlayerEntity",
-        "net.minecraft.client.network.AbstractClientPlayerEntity",
-        "net.minecraft.client.network.ClientPlayerEntity"
-    );
-
-    /**
      * WALA scope exclusions. We deliberately keep the exclusion list focused
      * on packages that only exist for rendering / data / network and never
      * influence movement. We do NOT exclude {@code java.*} — pointer analysis

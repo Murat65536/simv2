@@ -47,7 +47,7 @@ final class WalaPipelineRunner {
         File exclusionsFile = writeExclusionsFile();
         try {
             AnalysisScope scope = AnalysisScopeReader.instance.makeJavaBinaryAnalysisScope(
-                config.minecraftJar().toString(), exclusionsFile);
+                config.minecraftJar().toString(), null);
 
             System.out.println("\nBuilding class hierarchy...");
             IClassHierarchy cha = ClassHierarchyFactory.make(scope);

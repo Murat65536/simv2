@@ -95,11 +95,11 @@ final class WalaSlicer {
         HeapExclusions heapExcl = buildHeapExclusions();
         long t0 = System.currentTimeMillis();
         SDG<InstanceKey> sdg;
-        try (PhaseHeartbeat ignored = PhaseHeartbeat.start("SDG build", SLICE_HEARTBEAT_MILLIS)) {
+        try (PhaseHeartbeat ignored = PhaseHeartbeat.start()) {
             sdg = new SDG<>(sdgCg, pa, ModRef.make(),
                 DataDependenceOptions.FULL,
                 ControlDependenceOptions.NO_EXCEPTIONAL_EDGES,
-                heapExcl);
+                null);
         }
         System.out.printf("SDG built in %.1fs (%d nodes)%n",
             (System.currentTimeMillis() - t0) / 1000.0, sdg.getNumberOfNodes());
@@ -347,14 +347,14 @@ final class WalaSlicer {
             scheduler.scheduleAtFixedRate(this::printTick, intervalMillis, intervalMillis, TimeUnit.MILLISECONDS);
         }
 
-        static PhaseHeartbeat start(String phase, long intervalMillis) {
-            return new PhaseHeartbeat(phase, intervalMillis);
+        static PhaseHeartbeat start() {
+            return new PhaseHeartbeat("SDG build", WalaSlicer.SLICE_HEARTBEAT_MILLIS);
         }
 
         private void printTick() {
             double elapsedSeconds = Math.max(0L, System.nanoTime() - startNanos) / 1_000_000_000.0;
-            System.out.println(String.format(Locale.ROOT,
-                "  [slice-progress] %s running %.1fs", phase, elapsedSeconds));
+            System.out.printf(Locale.ROOT,
+                    "  [slice-progress] %s running %.1fs%n", phase, elapsedSeconds);
         }
 
         @Override
