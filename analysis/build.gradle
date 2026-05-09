@@ -43,7 +43,9 @@ def analysisDisableBytecodeVerify = (project.findProperty('analysisDisableByteco
     .toBoolean()
 def analysisJvmArgs = [
         '-Xmx64G',
-        '-XX:+UseParallelGC'
+        '-XX:+UseParallelGC',
+        "-XX:ParallelGCThreads=${Runtime.runtime.availableProcessors()}",
+        "-Djava.util.concurrent.ForkJoinPool.common.parallelism=${Runtime.runtime.availableProcessors()}"
 ]
 if (analysisDisableBytecodeVerify) {
     analysisJvmArgs.add('-noverify')

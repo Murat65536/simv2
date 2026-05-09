@@ -10,7 +10,6 @@ import com.ibm.wala.classLoader.IField;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
-import com.ibm.wala.ipa.callgraph.pruned.PrunedCallGraph;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
@@ -79,26 +78,17 @@ final class WalaSlicer {
                     + "Either the entry method is unreachable, or the exclusions are too aggressive.");
         }
         System.out.println("Seeds: " + seeds.size() + " putfield Entity.pos statements");
-        Set<CGNode> sdgNodes = collectBackwardReachableSeedAncestors(seeds);
-        CallGraph sdgCg = new PrunedCallGraph(cg, sdgNodes);
-        double keptPct = cg.getNumberOfNodes() == 0
-            ? 0.0
-            : (100.0 * sdgCg.getNumberOfNodes() / cg.getNumberOfNodes());
-        System.out.printf(Locale.ROOT,
-            "SDG prune: %d -> %d CG nodes (%.1f%% kept)%n",
-            cg.getNumberOfNodes(), sdgCg.getNumberOfNodes(), keptPct);
 
         // Single SDG with combined data + control dependence. Building two
         // SDGs sequentially (and re-running the IFDS solver) is the heaviest
         // step in the pipeline; the combined edge set produces the same
         // closure in one pass.
-        HeapExclusions heapExcl = buildHeapExclusions();
         long t0 = System.currentTimeMillis();
         SDG<InstanceKey> sdg;
         try (PhaseHeartbeat ignored = PhaseHeartbeat.start()) {
-            sdg = new SDG<>(sdgCg, pa, ModRef.make(),
+            sdg = new SDG<>(cg, pa, ModRef.make(),
                 DataDependenceOptions.FULL,
-                ControlDependenceOptions.NO_EXCEPTIONAL_EDGES,
+                ControlDependenceOptions.FULL,
                 null);
         }
         System.out.printf("SDG built in %.1fs (%d nodes)%n",
@@ -171,59 +161,31 @@ final class WalaSlicer {
     }
 
     /**
-     * Keep only methods that can reach a seed-containing method along call edges.
-     * This bounds SDG/PDG construction to methods that may contribute to the
-     * backward slice from {@code Entity.pos} writes.
-     */
-    private Set<CGNode> collectBackwardReachableSeedAncestors(Collection<Statement> seeds) {
-        Set<CGNode> keep = new HashSet<>();
-        ArrayDeque<CGNode> worklist = new ArrayDeque<>();
-        for (Statement seed : seeds) {
-            if (!(seed instanceof NormalStatement ns)) continue;
-            CGNode node = ns.getNode();
-            if (keep.add(node)) {
-                worklist.addLast(node);
-            }
-        }
-        while (!worklist.isEmpty()) {
-            CGNode node = worklist.removeFirst();
-            var preds = cg.getPredNodes(node);
-            while (preds.hasNext()) {
-                CGNode pred = preds.next();
-                if (keep.add(pred)) {
-                    worklist.addLast(pred);
-                }
-            }
-        }
-        return Set.copyOf(keep);
-    }
-
-    /**
      * Buckets the slice into per-method line sets and per-field MOD/REF.
      * Anything outside {@code net.minecraft.*} is dropped — primordial
      * helpers don't need mirroring.
      */
     private SliceResult analyzeStatements(
         Collection<Statement> statements, Set<TypeReference> entitySubtypes, int seedCount) {
-        Map<String, Map<String, Set<Integer>>> lineByMethod = new TreeMap<>();
-        Map<String, FieldResult.Category> categoryByField = new HashMap<>();
-        Map<String, FieldRecord> fieldsByKey = new HashMap<>();
+        Map<String, Map<String, Set<Integer>>> lineByMethod = new java.util.concurrent.ConcurrentSkipListMap<>();
+        Map<String, FieldResult.Category> categoryByField = new java.util.concurrent.ConcurrentHashMap<>();
+        Map<String, FieldRecord> fieldsByKey = new java.util.concurrent.ConcurrentHashMap<>();
 
-        for (Statement stmt : statements) {
-            if (stmt.getKind() != Statement.Kind.NORMAL) continue;
+        statements.parallelStream().forEach(stmt -> {
+            if (stmt.getKind() != Statement.Kind.NORMAL) return;
             NormalStatement ns = (NormalStatement) stmt;
             CGNode node = ns.getNode();
             IMethod method = node.getMethod();
             String declClassInternal = method.getDeclaringClass().getName().toString();
-            if (!isMinecraftClass(declClassInternal)) continue;
+            if (!isMinecraftClass(declClassInternal)) return;
 
             String dotClass = toDotClass(declClassInternal);
             String selector = method.getName().toString() + method.getDescriptor().toString();
             int line = sourceLine(method, ns.getInstructionIndex());
             if (line > 0) {
                 lineByMethod
-                    .computeIfAbsent(dotClass, k -> new TreeMap<>())
-                    .computeIfAbsent(selector, k -> new TreeSet<>())
+                    .computeIfAbsent(dotClass, k -> new java.util.concurrent.ConcurrentSkipListMap<>())
+                    .computeIfAbsent(selector, k -> new java.util.concurrent.ConcurrentSkipListSet<>())
                     .add(line);
             }
 
@@ -231,7 +193,7 @@ final class WalaSlicer {
             if (insn instanceof SSAFieldAccessInstruction fieldInsn && !fieldInsn.isStatic()) {
                 recordField(fieldInsn, fieldsByKey, categoryByField);
             }
-        }
+        });
 
         // Always include the seed field itself — it's the slice's purpose.
         FieldRecord seed = lookupSeedField(entitySubtypes);
@@ -291,16 +253,6 @@ final class WalaSlicer {
             return bc.getLineNumber(bcIndex);
         } catch (Exception ignored) {
             return -1;
-        }
-    }
-
-    private HeapExclusions buildHeapExclusions() {
-        try {
-            String text = String.join("\n", AnalysisConfig.SLICER_HEAP_EXCLUSIONS) + "\n";
-            return new HeapExclusions(new FileOfClasses(
-                new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8))));
-        } catch (Exception ex) {
-            throw new RuntimeException("Failed to build heap exclusions", ex);
         }
     }
 

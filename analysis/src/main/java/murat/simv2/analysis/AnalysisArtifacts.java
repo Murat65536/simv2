@@ -54,25 +54,6 @@ public final class AnalysisArtifacts {
         Files.writeString(path, GSON.toJson(payload));
     }
 
-    public static Map<String, Map<String, Set<Integer>>> readSlice(Path path) throws IOException {
-        SlicePayload payload = GSON.fromJson(Files.readString(path), SlicePayload.class);
-        if (payload == null || !SCHEMA_VERSION.equals(payload.contract)) {
-            throw new IllegalStateException("Slice JSON " + path + " has wrong contract; expected "
-                + SCHEMA_VERSION + ", got " + (payload == null ? "null" : payload.contract));
-        }
-        Map<String, Map<String, Set<Integer>>> result = new TreeMap<>();
-        if (payload.lines != null) {
-            for (var e : payload.lines.entrySet()) {
-                Map<String, Set<Integer>> methods = new TreeMap<>();
-                for (var m : e.getValue().entrySet()) {
-                    methods.put(m.getKey(), new TreeSet<>(m.getValue()));
-                }
-                result.put(e.getKey(), methods);
-            }
-        }
-        return result;
-    }
-
     // ── Closure ──
 
     public static void writeClosure(Path path, MirrorClosure closure) throws IOException {
@@ -80,16 +61,6 @@ public final class AnalysisArtifacts {
         payload.contract = SCHEMA_VERSION;
         payload.classes = new ArrayList<>(new TreeSet<>(closure.classes()));
         Files.writeString(path, GSON.toJson(payload));
-    }
-
-    public static MirrorClosure readClosure(Path path) throws IOException {
-        ClosurePayload payload = GSON.fromJson(Files.readString(path), ClosurePayload.class);
-        if (payload == null || !SCHEMA_VERSION.equals(payload.contract)) {
-            throw new IllegalStateException("Closure JSON " + path + " has wrong contract; expected "
-                + SCHEMA_VERSION + ", got " + (payload == null ? "null" : payload.contract));
-        }
-        Set<String> classes = payload.classes == null ? Set.of() : Set.copyOf(new TreeSet<>(payload.classes));
-        return new MirrorClosure(classes);
     }
 
     // ── Field manifest (human-readable) ──
@@ -106,21 +77,6 @@ public final class AnalysisArtifacts {
         Files.writeString(path, sb.toString());
     }
 
-    public static List<FieldResult> readFieldManifest(Path path) throws IOException {
-        List<FieldResult> result = new ArrayList<>();
-        for (String line : Files.readAllLines(path)) {
-            String trimmed = line.trim();
-            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
-                continue;
-            }
-            String[] parts = trimmed.split("\\s+");
-            if (parts.length != 4) {
-                throw new IllegalStateException("Malformed manifest line in " + path + ": " + line);
-            }
-            result.add(new FieldResult(parts[1], parts[2], parts[3], FieldResult.Category.valueOf(parts[0])));
-        }
-        return result;
-    }
 
     // ── Gson payloads ──
 

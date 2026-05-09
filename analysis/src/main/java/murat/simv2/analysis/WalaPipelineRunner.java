@@ -44,8 +44,6 @@ final class WalaPipelineRunner {
         System.out.println("Minecraft jar:  " + config.minecraftJar());
         System.out.println("Output dir:     " + config.outputDir());
 
-        File exclusionsFile = writeExclusionsFile();
-        try {
             AnalysisScope scope = AnalysisScopeReader.instance.makeJavaBinaryAnalysisScope(
                 config.minecraftJar().toString(), null);
 
@@ -110,10 +108,6 @@ final class WalaPipelineRunner {
             AnalysisArtifacts.writeFieldManifest(AnalysisArtifacts.fieldManifestPath(outputDir), slice.fields());
 
             System.out.println("\nWALA artifacts written to " + outputDir);
-        } finally {
-            //noinspection ResultOfMethodCallIgnored
-            exclusionsFile.delete();
-        }
     }
 
     private Set<Entrypoint> createEntrypoints(IClassHierarchy cha) {
@@ -134,12 +128,5 @@ final class WalaPipelineRunner {
         System.out.println("Entry: " + em.classInternal() + "." + em.selector()
             + " (-> " + resolved.getDeclaringClass().getName() + ")");
         return Set.of(new DefaultEntrypoint(ref, cha));
-    }
-
-    private File writeExclusionsFile() throws Exception {
-        File file = File.createTempFile("wala-exclusions", ".txt");
-        file.deleteOnExit();
-        Files.writeString(file.toPath(), String.join("\n", AnalysisConfig.WALA_EXCLUSIONS) + "\n");
-        return file;
     }
 }
