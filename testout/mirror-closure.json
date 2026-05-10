@@ -1,9 +1,0 @@
-{
-  "contract": "movement-analysis/v2",
-  "classes": [
-    "testproject.Changer1",
-    "testproject.Changer2",
-    "testproject.MainEntry",
-    "testproject.TargetEntity"
-  ]
-}

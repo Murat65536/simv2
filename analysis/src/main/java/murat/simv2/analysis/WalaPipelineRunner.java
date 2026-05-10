@@ -105,10 +105,6 @@ final class WalaPipelineRunner {
             // Persist artifacts.
             Path outputDir = config.outputDir();
             Files.createDirectories(outputDir);
-            AnalysisArtifacts.writeSlice(AnalysisArtifacts.slicePath(outputDir), slice.lineByMethod());
-            AnalysisArtifacts.writeClosure(AnalysisArtifacts.closurePath(outputDir), closure);
-            AnalysisArtifacts.writeFieldManifest(AnalysisArtifacts.fieldManifestPath(outputDir), slice.fields());
-
             Path outputJar = outputDir.resolve("test-sliced.jar");
             System.out.println("\nGenerating sliced JAR: " + outputJar);
             BytecodeSlicer.sliceJar(config.minecraftJar(), outputJar, slice);

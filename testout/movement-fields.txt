@@ -1,4 +1,0 @@
-# Movement field manifest
-# contract: movement-analysis/v2
-# format: <category> <declaringClass> <fieldName> <typeDescriptor>
-MOD_REF testproject.TargetEntity targetVar I

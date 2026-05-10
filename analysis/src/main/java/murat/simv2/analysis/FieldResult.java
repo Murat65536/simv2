@@ -16,10 +16,6 @@ public record FieldResult(
 ) {
     public enum Category { MOD, REF, MOD_REF }
 
-    public String key() {
-        return declaringClass + "." + fieldName;
-    }
-
     public static Category mergeWith(Category a, Category b) {
         if (a == b) return a;
         return Category.MOD_REF;

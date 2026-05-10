@@ -434,9 +434,9 @@ final class WalaSlicer {
                         "  [slice-progress] done %.1fs processed=%d frontier=%d peak=%d queued=%d rate=%.1f/s%n",
                     elapsedSeconds, processed, frontier, maxFrontier, enqueued, rate);
             } else {
-                System.out.println(String.format(Locale.ROOT,
-                    "  [slice-progress] %.1fs processed=%d frontier=%d rate=%.1f/s",
-                    elapsedSeconds, processed, frontier, rate));
+                System.out.printf(Locale.ROOT,
+                        "  [slice-progress] %.1fs processed=%d frontier=%d rate=%.1f/s%n",
+                    elapsedSeconds, processed, frontier, rate);
             }
             lastReportNanos = nowNanos;
         }
