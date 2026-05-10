@@ -13,15 +13,19 @@ public final class AnalysisConfig {
     private AnalysisConfig() {
     }
 
-    public static final String ENTITY_INTERNAL = "Lnet/minecraft/entity/Entity";
+    public static final String TARGET_PACKAGE_INTERNAL = "testproject/";
+    public static final String TARGET_PACKAGE_DOT = "testproject.";
+    public static final String TARGET_PACKAGE_INTERNAL_L = "Ltestproject/";
+
+    public static final String ENTITY_INTERNAL = "Ltestproject/TargetEntity";
 
     /** Internal name of the seed field — the only thing we slice backward from. */
-    public static final String SEED_FIELD_NAME = "pos";
+    public static final String SEED_FIELD_NAME = "targetVar";
 
     /** Entry point method (class, method, descriptor) for the call graph. */
     public static final EntryMethod ENTRY_METHOD = new EntryMethod(
-        "Lnet/minecraft/client/network/ClientPlayerEntity",
-        "tickMovement",
+        "Ltestproject/MainEntry",
+        "entry",
         "()V"
     );
 
@@ -30,4 +34,30 @@ public final class AnalysisConfig {
             return name + descriptor;
         }
     }
+
+    public static final String[] WALA_EXCLUSIONS = {
+        "java\\/awt\\/.*",
+        "javax\\/swing\\/.*",
+        "sun\\/awt\\/.*",
+        "sun\\/swing\\/.*",
+        "com\\/sun\\/.*",
+        "sun\\/.*",
+        "org\\/lwjgl\\/.*",
+        "java\\/nio\\/.*",
+        "java\\/net\\/.*",
+        "java\\/text\\/.*",
+        "java\\/sql\\/.*",
+        "java\\/rmi\\/.*",
+        "java\\/security\\/.*",
+        "java\\/io\\/.*",
+        "javax\\/.*"
+    };
+
+    public static final String[] SLICER_HEAP_EXCLUSIONS = {
+        "java\\/.*",
+        "javax\\/.*",
+        "sun\\/.*",
+        "com\\/sun\\/.*",
+        "org\\/lwjgl\\/.*"
+    };
 }

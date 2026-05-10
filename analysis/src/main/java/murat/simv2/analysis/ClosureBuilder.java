@@ -98,7 +98,7 @@ final class ClosureBuilder {
 
     private static void addIfNew(Set<String> closure, Deque<String> work, String name) {
         if (name == null || name.isBlank()) return;
-        if (!name.startsWith("net.minecraft.")) return;
+        if (!name.startsWith(AnalysisConfig.TARGET_PACKAGE_DOT)) return;
         if (closure.add(name)) {
             work.add(name);
         }
@@ -113,7 +113,7 @@ final class ClosureBuilder {
 
     private static String classNameOf(IClass klass) {
         String internal = klass.getName().toString();
-        if (!internal.startsWith("Lnet/minecraft/")) return null;
+        if (!internal.startsWith(AnalysisConfig.TARGET_PACKAGE_INTERNAL_L)) return null;
         return internal.substring(1).replace('/', '.');
     }
 
@@ -131,7 +131,7 @@ final class ClosureBuilder {
                 int end = descriptor.indexOf(';', i);
                 if (end < 0) break;
                 String internal = descriptor.substring(i + 1, end);
-                if (internal.startsWith("net/minecraft/")) {
+                if (internal.startsWith(AnalysisConfig.TARGET_PACKAGE_INTERNAL)) {
                     out.add(internal.replace('/', '.'));
                 }
                 i = end + 1;
@@ -158,7 +158,7 @@ final class ClosureBuilder {
         String internal = end < 0
             ? descriptor.substring(i + 1)
             : descriptor.substring(i + 1, end);
-        return internal.startsWith("net/minecraft/")
+        return internal.startsWith(AnalysisConfig.TARGET_PACKAGE_INTERNAL)
             ? internal.replace('/', '.')
             : null;
     }
@@ -174,13 +174,13 @@ final class ClosureBuilder {
             String name = end < 0
                 ? internal.substring(i + 1)
                 : internal.substring(i + 1, end);
-            return name.startsWith("net/minecraft/") ? name.replace('/', '.') : null;
+            return name.startsWith(AnalysisConfig.TARGET_PACKAGE_INTERNAL) ? name.replace('/', '.') : null;
         }
         // Bare internal name (rare, but WALA emits these for non-array refs).
-        if (internal.startsWith("net/minecraft/")) {
+        if (internal.startsWith(AnalysisConfig.TARGET_PACKAGE_INTERNAL)) {
             return internal.replace('/', '.');
         }
-        if (internal.startsWith("Lnet/minecraft/")) {
+        if (internal.startsWith(AnalysisConfig.TARGET_PACKAGE_INTERNAL_L)) {
             return internal.substring(1).replace('/', '.');
         }
         return null;

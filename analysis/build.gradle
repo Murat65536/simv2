@@ -44,13 +44,11 @@ def analysisDisableBytecodeVerify = (project.findProperty('analysisDisableByteco
 
 def cores = Runtime.runtime.availableProcessors()
 def analysisJvmArgs = [
-        '-Xms150G',
-        '-Xmx150G',
-        '-XX:+UseParallelGC',
+//        '-Xms150G',
+        '-Xmx16G',
         '-XX:+UseZGC',
         '-XX:+ZGenerational',
         "-XX:ParallelGCThreads=${Runtime.runtime.availableProcessors()}",
-        "-XX:ConcGCThreads=${Math.max(1, cores / 2)}",
         "-Djava.util.concurrent.ForkJoinPool.common.parallelism=${cores}",
         '-XX:-UseGCOverheadLimit',
         '-XX:MetaspaceSize=512m',
@@ -177,5 +175,12 @@ tasks.register('runWala', JavaExec) { JavaExec walaTask ->
     classpath = sourceSets.main.runtimeClasspath
     mainClass = application.mainClass
     configureAnalysisExec(walaTask)
+}
+
+tasks.register('runWalaTest', JavaExec) {
+    group = 'application'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'testproject.WalaTest'
+    args = [project.findProperty('mcJar') ?: '']
 }
 
