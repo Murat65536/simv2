@@ -15,7 +15,6 @@ import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.modref.ModRef;
-import com.ibm.wala.ipa.slicer.HeapExclusions;
 import com.ibm.wala.ipa.slicer.NormalStatement;
 import com.ibm.wala.ipa.slicer.PDG;
 import com.ibm.wala.ipa.slicer.SDG;
@@ -33,21 +32,16 @@ import com.ibm.wala.types.FieldReference;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.CancelException;
 import com.ibm.wala.util.MonitorUtil.IProgressMonitor;
-import com.ibm.wala.util.config.FileOfClasses;
 
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -205,6 +199,7 @@ final class WalaSlicer {
     private SliceResult analyzeStatements(
         Collection<Statement> statements, Set<TypeReference> entitySubtypes, int seedCount) {
         Map<String, Map<String, Set<Integer>>> lineByMethod = new java.util.concurrent.ConcurrentSkipListMap<>();
+        Map<String, Map<String, Set<Integer>>> bcIndexByMethod = new java.util.concurrent.ConcurrentSkipListMap<>();
         Map<String, FieldResult.Category> categoryByField = new java.util.concurrent.ConcurrentHashMap<>();
         Map<String, FieldRecord> fieldsByKey = new java.util.concurrent.ConcurrentHashMap<>();
 
@@ -214,10 +209,19 @@ final class WalaSlicer {
             CGNode node = ns.getNode();
             IMethod method = node.getMethod();
             String declClassInternal = method.getDeclaringClass().getName().toString();
-            if (!isMinecraftClass(declClassInternal)) return;
+            if (isNotTargetClass(declClassInternal)) return;
 
             String dotClass = toDotClass(declClassInternal);
             String selector = method.getName().toString() + method.getDescriptor().toString();
+
+            int bcIndex = bytecodeIndex(method, ns.getInstructionIndex());
+            if (bcIndex >= 0) {
+                bcIndexByMethod
+                    .computeIfAbsent(dotClass, k -> new java.util.concurrent.ConcurrentSkipListMap<>())
+                    .computeIfAbsent(selector, k -> new java.util.concurrent.ConcurrentSkipListSet<>())
+                    .add(bcIndex);
+            }
+
             int line = sourceLine(method, ns.getInstructionIndex());
             if (line > 0) {
                 lineByMethod
@@ -247,7 +251,7 @@ final class WalaSlicer {
             fields.add(new FieldResult(r.declaringClass, r.fieldName, r.descriptor, cat));
         }
 
-        return new SliceResult(statements.size(), seedCount, Map.copyOf(lineByMethod), List.copyOf(fields));
+        return new SliceResult(statements.size(), seedCount, Map.copyOf(lineByMethod), Map.copyOf(bcIndexByMethod), List.copyOf(fields));
     }
 
     private void recordField(SSAFieldAccessInstruction insn,
@@ -255,7 +259,7 @@ final class WalaSlicer {
                              Map<String, FieldResult.Category> categories) {
         FieldReference ref = insn.getDeclaredField();
         String declInternal = ref.getDeclaringClass().getName().toString();
-        if (!isMinecraftClass(declInternal)) return;
+        if (isNotTargetClass(declInternal)) return;
         String declClass = toDotClass(declInternal);
         String name = ref.getName().toString();
         String descriptor = ref.getFieldType().getName().toString();
@@ -293,6 +297,15 @@ final class WalaSlicer {
         }
     }
 
+    private int bytecodeIndex(IMethod method, int instructionIndex) {
+        if (!(method instanceof IBytecodeMethod<?> bc)) return -1;
+        try {
+            return bc.getBytecodeIndex(instructionIndex);
+        } catch (Exception ignored) {
+            return -1;
+        }
+    }
+
     private Collection<Statement> computeBackwardSliceWithTelemetry(
         SDG<InstanceKey> sdg, Collection<Statement> roots) throws CancelException {
         PartiallyBalancedTabulationProblem<Statement, PDG<?>, Object> problem =
@@ -303,8 +316,8 @@ final class WalaSlicer {
         return result.getSupergraphNodesReached();
     }
 
-    private static boolean isMinecraftClass(String internal) {
-        return internal != null && internal.startsWith(AnalysisConfig.TARGET_PACKAGE_INTERNAL_L);
+    private static boolean isNotTargetClass(String internal) {
+        return internal == null || !internal.startsWith(AnalysisConfig.TARGET_PACKAGE_INTERNAL_L);
     }
 
     private static String toDotClass(String internal) {
@@ -417,9 +430,9 @@ final class WalaSlicer {
             double elapsedSeconds = Math.max(0L, nowNanos - startNanos) / 1_000_000_000.0;
             double rate = elapsedSeconds > 0.0 ? processed / elapsedSeconds : 0.0;
             if (done) {
-                System.out.println(String.format(Locale.ROOT,
-                    "  [slice-progress] done %.1fs processed=%d frontier=%d peak=%d queued=%d rate=%.1f/s",
-                    elapsedSeconds, processed, frontier, maxFrontier, enqueued, rate));
+                System.out.printf(Locale.ROOT,
+                        "  [slice-progress] done %.1fs processed=%d frontier=%d peak=%d queued=%d rate=%.1f/s%n",
+                    elapsedSeconds, processed, frontier, maxFrontier, enqueued, rate);
             } else {
                 System.out.println(String.format(Locale.ROOT,
                     "  [slice-progress] %.1fs processed=%d frontier=%d rate=%.1f/s",
@@ -430,10 +443,11 @@ final class WalaSlicer {
     }
 
     /** Result of one full slice. */
-    record SliceResult(
+    public record SliceResult(
         int statementsConsidered,
         int seedCount,
         Map<String, Map<String, Set<Integer>>> lineByMethod,
+        Map<String, Map<String, Set<Integer>>> bcIndexByMethod,
         List<FieldResult> fields
     ) {
     }

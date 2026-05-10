@@ -177,10 +177,3 @@ tasks.register('runWala', JavaExec) { JavaExec walaTask ->
     configureAnalysisExec(walaTask)
 }
 
-tasks.register('runWalaTest', JavaExec) {
-    group = 'application'
-    classpath = sourceSets.test.runtimeClasspath
-    mainClass = 'testproject.WalaTest'
-    args = [project.findProperty('mcJar') ?: '']
-}
-
