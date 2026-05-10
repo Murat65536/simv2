@@ -111,7 +111,7 @@ final class WalaPipelineRunner {
 
             Path outputJar = outputDir.resolve("test-sliced.jar");
             System.out.println("\nGenerating sliced JAR: " + outputJar);
-            BytecodeSlicer.sliceJar(config.minecraftJar(), outputJar, outputDir, slice);
+            BytecodeSlicer.sliceJar(config.minecraftJar(), outputJar, slice);
 
             System.out.println("\nWALA artifacts written to " + outputDir);
         } finally {
