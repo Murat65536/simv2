@@ -15,6 +15,7 @@ import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.modref.ModRef;
+import com.ibm.wala.ipa.slicer.HeapExclusions;
 import com.ibm.wala.ipa.slicer.NormalStatement;
 import com.ibm.wala.ipa.slicer.PDG;
 import com.ibm.wala.ipa.slicer.SDG;
@@ -22,6 +23,7 @@ import com.ibm.wala.ipa.slicer.Slicer;
 import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
 import com.ibm.wala.ipa.slicer.Slicer.DataDependenceOptions;
 import com.ibm.wala.ipa.slicer.Statement;
+import com.ibm.wala.util.config.FileOfClasses;
 import com.ibm.wala.ssa.IR;
 import com.ibm.wala.ssa.SSAFieldAccessInstruction;
 import com.ibm.wala.ssa.SSAGetInstruction;
@@ -33,6 +35,8 @@ import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.CancelException;
 import com.ibm.wala.util.MonitorUtil.IProgressMonitor;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -66,11 +70,21 @@ final class WalaSlicer {
 
     SliceResult slice() {
         Set<TypeReference> entitySubtypes = collectEntitySubtypes();
+        FieldRecord seedField = lookupSeedField(entitySubtypes);
+        if (seedField == null) {
+            throw new IllegalStateException(
+                "Seed field '" + AnalysisConfig.SEED_FIELD_NAME
+                    + "' not declared on " + AnalysisConfig.ENTITY_INTERNAL
+                    + " or any of its superclasses. Check SEED_FIELD_NAME for the correct mapping (Yarn vs intermediary vs MojMap).");
+        }
         List<Statement> seeds = findSeedStatements(entitySubtypes);
         if (seeds.isEmpty()) {
             throw new IllegalStateException(
-                "No Entity.pos writes were reached by the call graph. "
-                    + "Either the entry method is unreachable, or the exclusions are too aggressive.");
+                "Seed field '" + seedField.declaringClass + "." + seedField.fieldName
+                    + "' exists in CHA but no putfield to it was reached by the call graph. "
+                    + "Check entry point (" + AnalysisConfig.ENTRY_METHOD.classInternal()
+                    + "." + AnalysisConfig.ENTRY_METHOD.selector()
+                    + ") and exclusions.");
         }
         System.out.println("Seeds: " + seeds.size() + " putfield Entity.pos statements");
         Set<CGNode> sdgNodes = collectBackwardReachableSeedAncestors(seeds);
@@ -86,13 +100,23 @@ final class WalaSlicer {
         // SDGs sequentially (and re-running the IFDS solver) is the heaviest
         // step in the pipeline; the combined edge set produces the same
         // closure in one pass.
+        String heapExclusionPattern = String.join("|", AnalysisConfig.SLICER_HEAP_EXCLUSIONS);
+        HeapExclusions heapExclusions;
+        try {
+            heapExclusions = new HeapExclusions(
+                new FileOfClasses(new ByteArrayInputStream(
+                    heapExclusionPattern.getBytes(StandardCharsets.UTF_8))));
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to build heap exclusions", e);
+        }
+
         long t0 = System.currentTimeMillis();
         SDG<InstanceKey> sdg;
         try (PhaseHeartbeat ignored = PhaseHeartbeat.start()) {
             sdg = new SDG<>(sdgCg, pa, ModRef.make(),
                 DataDependenceOptions.FULL,
                 ControlDependenceOptions.FULL,
-                null);
+                heapExclusions);
         }
         System.out.printf("SDG built in %.1fs (%d nodes)%n",
             (System.currentTimeMillis() - t0) / 1000.0, sdg.getNumberOfNodes());
@@ -131,20 +155,13 @@ final class WalaSlicer {
      * Seeds: every {@code putfield} of a field named {@code pos} declared on
      * {@code Entity} or a subclass, reached anywhere in the call graph.
      *
-     * <p>Pre-filters CG nodes by declaring class — {@code putfield} of an
-     * instance field can only be emitted by code on the declaring class or a
-     * subclass, so iterating the full CG (and forcing {@link CGNode#getIR()})
-     * for non-entity methods is wasted work.
+     * <p>Scans all CG nodes — any class with access to the seed field (public,
+     * protected, or package-private) can emit {@code putfield}, not only entity
+     * subtypes.
      */
     private List<Statement> findSeedStatements(Set<TypeReference> entitySubtypes) {
-        Set<String> entityInternalNames = new HashSet<>(entitySubtypes.size() * 2);
-        for (TypeReference t : entitySubtypes) {
-            entityInternalNames.add(t.getName().toString());
-        }
         return java.util.stream.StreamSupport.stream(cg.spliterator(), true)
             .flatMap(node -> {
-                String declInternal = node.getMethod().getDeclaringClass().getName().toString();
-                if (!entityInternalNames.contains(declInternal)) return java.util.stream.Stream.empty();
                 IR ir = node.getIR();
                 if (ir == null) return java.util.stream.Stream.empty();
                 SSAInstruction[] insns = ir.getInstructions();
@@ -274,15 +291,17 @@ final class WalaSlicer {
     private FieldRecord lookupSeedField(Set<TypeReference> entitySubtypes) {
         TypeReference entityRef = TypeReference.findOrCreate(
             ClassLoaderReference.Application, AnalysisConfig.ENTITY_INTERNAL);
-        IClass entity = cha.lookupClass(entityRef);
-        if (entity == null) return null;
-        for (IField field : entity.getDeclaredInstanceFields()) {
-            if (AnalysisConfig.SEED_FIELD_NAME.equals(field.getName().toString())) {
-                return new FieldRecord(
-                    toDotClass(AnalysisConfig.ENTITY_INTERNAL),
-                    field.getName().toString(),
-                    field.getFieldTypeReference().getName().toString());
+        IClass cls = cha.lookupClass(entityRef);
+        while (cls != null) {
+            for (IField field : cls.getDeclaredInstanceFields()) {
+                if (AnalysisConfig.SEED_FIELD_NAME.equals(field.getName().toString())) {
+                    return new FieldRecord(
+                        toDotClass(cls.getName().toString()),
+                        field.getName().toString(),
+                        field.getFieldTypeReference().getName().toString());
+                }
             }
+            cls = cls.getSuperclass();
         }
         return null;
     }
@@ -364,6 +383,11 @@ final class WalaSlicer {
         @Override
         public void close() {
             scheduler.shutdownNow();
+            try {
+                scheduler.awaitTermination(1, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -372,6 +396,8 @@ final class WalaSlicer {
         private final long heartbeatNanos;
         private final long startNanos;
         private long lastReportNanos = -1L;
+        // WALA's tabulation solver calls addToWorkList/popFromWorkList from a
+        // single thread, so plain longs are safe here.
         private long enqueued = 0L;
         private long processed = 0L;
         private long frontier = 0L;

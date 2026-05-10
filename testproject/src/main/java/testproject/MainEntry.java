@@ -5,7 +5,7 @@ public class MainEntry {
         TargetEntity entity = new TargetEntity();
         
         Changer1 c1 = new Changer1();
-        c1.doChange(entity);
+        c1.doChange(entity, 5);
         
         Changer2 c2 = new Changer2();
         c2.doChange(entity);

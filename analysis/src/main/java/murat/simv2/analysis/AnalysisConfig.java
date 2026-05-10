@@ -13,19 +13,19 @@ public final class AnalysisConfig {
     private AnalysisConfig() {
     }
 
-    public static final String TARGET_PACKAGE_INTERNAL = "testproject/";
-    public static final String TARGET_PACKAGE_DOT = "testproject.";
-    public static final String TARGET_PACKAGE_INTERNAL_L = "Ltestproject/";
+    public static final String TARGET_PACKAGE_INTERNAL = "net/minecraft/";
+    public static final String TARGET_PACKAGE_DOT = "net.minecraft.";
+    public static final String TARGET_PACKAGE_INTERNAL_L = "Lnet/minecraft/";
 
-    public static final String ENTITY_INTERNAL = "Ltestproject/TargetEntity";
+    public static final String ENTITY_INTERNAL = "Lnet/minecraft/entity/Entity";
 
     /** Internal name of the seed field — the only thing we slice backward from. */
-    public static final String SEED_FIELD_NAME = "targetVar";
+    public static final String SEED_FIELD_NAME = "pos";
 
     /** Entry point method (class, method, descriptor) for the call graph. */
     public static final EntryMethod ENTRY_METHOD = new EntryMethod(
-        "Ltestproject/MainEntry",
-        "entry",
+        "Lnet/minecraft/client/network/ClientPlayerEntity",
+        "tick",
         "()V"
     );
 
@@ -50,7 +50,14 @@ public final class AnalysisConfig {
         "java\\/rmi\\/.*",
         "java\\/security\\/.*",
         "java\\/io\\/.*",
-        "javax\\/.*"
+        "java\\/util\\/.*",
+        "java\\/util\\/concurrent\\/.*",
+        "javax\\/.*",
+        "it\\/unimi\\/dsi\\/fastutil\\/.*",
+        "com\\/mojang\\/datafixers\\/.*",
+        "com\\/mojang\\/serialization\\/.*",
+        "com\\/mojang\\/brigadier\\/.*",
+        "com\\/mojang\\/blaze3d\\/.*"
     };
 
     public static final String[] SLICER_HEAP_EXCLUSIONS = {
