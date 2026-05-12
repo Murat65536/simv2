@@ -22,10 +22,16 @@ public final class AnalysisConfig {
     /** Internal name of the seed field — the only thing we slice backward from. */
     public static final String SEED_FIELD_NAME = "pos";
 
-    /** Entry point method (class, method, descriptor) for the call graph. */
+    /**
+     * Entry point method (class, method, descriptor) for the call graph.
+     * <p>{@code tickMovement} (not {@code tick}) keeps the call graph scoped to
+     * the movement subsystem — input sampling, physics, collision, the
+     * {@code Entity.move} chain — without dragging rendering, sound, GUI, and
+     * network-send into the slice.
+     */
     public static final EntryMethod ENTRY_METHOD = new EntryMethod(
         "Lnet/minecraft/client/network/ClientPlayerEntity",
-        "tick",
+        "tickMovement",
         "()V"
     );
 

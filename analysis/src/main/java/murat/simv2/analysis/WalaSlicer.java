@@ -10,7 +10,6 @@ import com.ibm.wala.classLoader.IField;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
-import com.ibm.wala.ipa.callgraph.pruned.PrunedCallGraph;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
@@ -37,7 +36,6 @@ import com.ibm.wala.util.MonitorUtil.IProgressMonitor;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -87,19 +85,16 @@ final class WalaSlicer {
                     + ") and exclusions.");
         }
         System.out.println("Seeds: " + seeds.size() + " putfield Entity.pos statements");
-        Set<CGNode> sdgNodes = collectBackwardReachableSeedAncestors(seeds);
-        CallGraph sdgCg = new PrunedCallGraph(cg, sdgNodes);
-        double keptPct = cg.getNumberOfNodes() == 0
-            ? 0.0
-            : (100.0 * sdgCg.getNumberOfNodes() / cg.getNumberOfNodes());
-        System.out.printf(Locale.ROOT,
-            "SDG prune: %d -> %d CG nodes (%.1f%% kept)%n",
-            cg.getNumberOfNodes(), sdgCg.getNumberOfNodes(), keptPct);
 
-        // Single SDG with combined data + control dependence. Building two
-        // SDGs sequentially (and re-running the IFDS solver) is the heaviest
-        // step in the pipeline; the combined edge set produces the same
-        // closure in one pass.
+        // Build the SDG over the whole call graph. A backward slice from
+        // putfield-pos sites needs both callers of the seed methods (actual
+        // params flowing in) and callees (return values flowing back); for a
+        // call graph with a single entry, that closure is the entire CG, so
+        // there is no sound non-trivial prune. Scoping happens at the entry
+        // point (AnalysisConfig.ENTRY_METHOD) instead.
+        //
+        // Single SDG with combined data + control dependence; the combined
+        // edge set produces the same closure in one IFDS pass.
         String heapExclusionPattern = String.join("|", AnalysisConfig.SLICER_HEAP_EXCLUSIONS);
         HeapExclusions heapExclusions;
         try {
@@ -113,13 +108,16 @@ final class WalaSlicer {
         long t0 = System.currentTimeMillis();
         SDG<InstanceKey> sdg;
         try (PhaseHeartbeat ignored = PhaseHeartbeat.start()) {
-            sdg = new SDG<>(sdgCg, pa, ModRef.make(),
+            sdg = new SDG<>(cg, pa, ModRef.make(),
                 DataDependenceOptions.FULL,
                 ControlDependenceOptions.FULL,
                 heapExclusions);
         }
-        System.out.printf("SDG built in %.1fs (%d nodes)%n",
-            (System.currentTimeMillis() - t0) / 1000.0, sdg.getNumberOfNodes());
+        // Deliberately not calling sdg.getNumberOfNodes() — it would eagerly
+        // materialize every PDG in the CG. The IFDS solver builds PDGs lazily
+        // as it reaches them.
+        System.out.printf("SDG ready (lazy) in %.1fs%n",
+            (System.currentTimeMillis() - t0) / 1000.0);
 
         long sliceStart = System.currentTimeMillis();
         Collection<Statement> all;
@@ -178,34 +176,6 @@ final class WalaSlicer {
                 return localSeeds.stream();
             })
             .collect(java.util.stream.Collectors.toList());
-    }
-
-    /**
-     * Keep only methods that can reach a seed-containing method along call edges.
-     * This bounds SDG/PDG construction to methods that may contribute to the
-     * backward slice from {@code Entity.pos} writes.
-     */
-    private Set<CGNode> collectBackwardReachableSeedAncestors(Collection<Statement> seeds) {
-        Set<CGNode> keep = new HashSet<>();
-        ArrayDeque<CGNode> worklist = new ArrayDeque<>();
-        for (Statement seed : seeds) {
-            if (!(seed instanceof NormalStatement ns)) continue;
-            CGNode node = ns.getNode();
-            if (keep.add(node)) {
-                worklist.addLast(node);
-            }
-        }
-        while (!worklist.isEmpty()) {
-            CGNode node = worklist.removeFirst();
-            var preds = cg.getPredNodes(node);
-            while (preds.hasNext()) {
-                CGNode pred = preds.next();
-                if (keep.add(pred)) {
-                    worklist.addLast(pred);
-                }
-            }
-        }
-        return Set.copyOf(keep);
     }
 
     /**
