@@ -109,8 +109,17 @@ final class WalaSlicer {
         SDG<InstanceKey> sdg;
         try (PhaseHeartbeat ignored = PhaseHeartbeat.start()) {
             sdg = new SDG<>(cg, pa, ModRef.make(),
-                DataDependenceOptions.FULL,
-                ControlDependenceOptions.FULL,
+                // Thin slice: explicit SSA def-use only, no heap/base-pointer
+                // dependence. FULL heap dependence makes the IFDS supergraph
+                // diverge on Minecraft (frontier never drains). The slice is
+                // now under-approximate w.r.t. flows through fields — the
+                // pruned JAR MUST be re-validated (verifyOutputJar + runtime).
+                DataDependenceOptions.NO_BASE_NO_HEAP,
+                // Exceptional control edges (every potentially-throwing insn)
+                // massively inflate each PDG. Dropping exception-path control
+                // dependence is a minor precision loss, acceptable for a
+                // movement slice, and a large IFDS win.
+                ControlDependenceOptions.NO_EXCEPTIONAL_EDGES,
                 heapExclusions);
         }
         // Deliberately not calling sdg.getNumberOfNodes() — it would eagerly

@@ -3,9 +3,13 @@ package murat.simv2.analysis;
 import com.ibm.wala.shrike.shrikeBT.shrikeCT.ClassInstrumenter;
 import com.ibm.wala.shrike.shrikeBT.shrikeCT.OfflineInstrumenter;
 import com.ibm.wala.shrike.shrikeBT.DupInstruction;
+import com.ibm.wala.shrike.shrikeBT.ExceptionHandler;
 import com.ibm.wala.shrike.shrikeBT.GotoInstruction;
+import com.ibm.wala.shrike.shrikeBT.Instruction;
 import com.ibm.wala.shrike.shrikeBT.IConditionalBranchInstruction;
 import com.ibm.wala.shrike.shrikeBT.IInstruction;
+import com.ibm.wala.shrike.shrikeBT.ILoadInstruction;
+import com.ibm.wala.shrike.shrikeBT.IStoreInstruction;
 import com.ibm.wala.shrike.shrikeBT.MethodData;
 import com.ibm.wala.shrike.shrikeBT.MethodEditor;
 import com.ibm.wala.shrike.shrikeBT.MonitorInstruction;
@@ -22,6 +26,7 @@ import org.objectweb.asm.util.CheckClassAdapter;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -31,6 +36,8 @@ import java.util.Map;
 import java.util.Set;
 
 public final class BytecodeSlicer {
+    private static final ExceptionHandler[] EMPTY_HANDLERS = new ExceptionHandler[0];
+
     public static void sliceJar(Path inputJar, Path outputJar, WalaSlicer.SliceResult slice) throws Exception {
         OfflineInstrumenter instrumenter = new OfflineInstrumenter();
         // Add only class files and non-.java resources to avoid duplicating source files in the output JAR.
@@ -53,14 +60,17 @@ public final class BytecodeSlicer {
         long t0 = System.currentTimeMillis();
         int classCount = 0;
         int failed = 0;
+        int keptWholeUnsafe = 0;
         ClassInstrumenter classInstrumenter;
         while ((classInstrumenter = instrumenter.nextClass()) != null) {
             String className = "<unknown>";
             try {
                 className = classInstrumenter.getReader().getName();
-                pruneClass(classInstrumenter, slice);
-                instrumenter.outputModifiedClass(classInstrumenter);
-            } catch (Exception e) {
+                keptWholeUnsafe += pruneClass(classInstrumenter, slice);
+                keptWholeUnsafe += emitWithUnsafeMethodFallback(
+                    instrumenter, classInstrumenter, className);
+            } catch (Throwable e) {
+                if (e instanceof VirtualMachineError) throw e;
                 failed++;
                 System.err.printf("  [bytecode-slicer] FAILED %s: %s%n", className, e.getMessage());
             }
@@ -72,29 +82,127 @@ public final class BytecodeSlicer {
             }
         }
         double elapsed = (System.currentTimeMillis() - t0) / 1000.0;
-        System.out.printf("  [bytecode-slicer] done: %d classes in %.1fs (%d failed)%n",
-            classCount, elapsed, failed);
+        System.out.printf(
+            "  [bytecode-slicer] done: %d classes in %.1fs (%d failed, "
+                + "%d methods kept whole: unsafe to prune)%n",
+            classCount, elapsed, failed, keptWholeUnsafe);
 
         instrumenter.close();
 
-        verifyOutputJar(outputJar);
+        Set<String> bad = verifyOutputJar(outputJar);
+        if (!bad.isEmpty()) {
+            System.out.printf(
+                "  [verify] restoring %d class(es) to original bytes "
+                    + "(residual pruning defects): %s%n",
+                bad.size(), bad);
+            restoreOriginalClasses(inputJar, outputJar, bad);
+            Set<String> stillBad = verifyOutputJar(outputJar);
+            if (!stillBad.isEmpty()) {
+                throw new IllegalStateException(
+                    "Classes still invalid after restoring originals: " + stillBad);
+            }
+        }
     }
 
     /**
-     * Walks the output JAR and runs ASM's bytecode verifier on every class.
-     * Logs the first 10 failures with class+method context; does not abort on
-     * failure (so we still see telemetry about the rest of the JAR).
+     * Emits the (pruned) class. If Shrike rejects a method because our SSA→
+     * bytecode keep-set under-kept and produced stack-unbalanced code
+     * ({@code java.lang.Error: Error compiling method <m>: ...}), revert that
+     * one method to its original bytecode via {@link ClassInstrumenter#resetMethod}
+     * and retry. A reset method is emitted verbatim from the original class —
+     * always valid, and a superset of the slice is still sound (the
+     * never-under-keep rule). Bounded by the method count.
+     *
+     * @return number of methods reverted (kept whole) for this class.
      */
-    private static void verifyOutputJar(Path outputJar) throws Exception {
+    private static int emitWithUnsafeMethodFallback(
+        OfflineInstrumenter instrumenter, ClassInstrumenter ci, String className)
+        throws Exception {
+        int reverted = 0;
+        int methodCount = ci.getReader().getMethodCount();
+        for (int attempt = 0; attempt <= methodCount; attempt++) {
+            try {
+                instrumenter.outputModifiedClass(ci);
+                return reverted;
+            } catch (Throwable e) {
+                if (e instanceof VirtualMachineError) throw e;
+                String msg = e.getMessage();
+                int badIdx = (msg != null && msg.startsWith("Error compiling method "))
+                    ? findMethodIndex(ci, msg) : -1;
+                if (badIdx < 0) {
+                    // Not a recoverable per-method compile failure — let the
+                    // caller log it as a class-level failure.
+                    if (e instanceof Exception ex) throw ex;
+                    throw new RuntimeException(e);
+                }
+                ci.resetMethod(badIdx);
+                reverted++;
+                System.err.printf(
+                    "  [bytecode-slicer] kept whole (unsafe to prune): %s.%s%s%n",
+                    className,
+                    ci.getReader().getMethodName(badIdx),
+                    ci.getReader().getMethodType(badIdx));
+            }
+        }
+        throw new IllegalStateException(
+            "Class " + className + " still fails to emit after reverting all methods");
+    }
+
+    /**
+     * Maps the {@code md} in Shrike's "Error compiling method &lt;md&gt;: ..."
+     * to its method index. {@code md.toString()} is
+     * {@code L<class>;.<name><descriptor>}.
+     */
+    private static int findMethodIndex(ClassInstrumenter ci, String message) throws Exception {
+        var reader = ci.getReader();
+        String classPrefix = "L" + reader.getName() + ";.";
+        int methodCount = reader.getMethodCount();
+        for (int i = 0; i < methodCount; i++) {
+            String token = "Error compiling method " + classPrefix
+                + reader.getMethodName(i) + reader.getMethodType(i) + ":";
+            if (message.startsWith(token)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Walks the output JAR and runs ASM's bytecode verifier on the classes we
+     * actually modified.
+     *
+     * <p>Only {@code net.minecraft.*} classes are pruned ({@link #pruneClass}
+     * early-returns for everything else), so pass-through classes are
+     * byte-identical to the input — verifying them tells us nothing about the
+     * slice and only produces noise: ASM's {@code SimpleVerifier} resolves the
+     * full type closure via {@code Class.forName}, so any class referencing
+     * {@code org.joml}/{@code org.lwjgl}/{@code fastutil}/{@code blaze3d} (not
+     * on this process's classpath) "fails" with {@code ClassNotFoundException}
+     * regardless of slicing. Those are reported separately as
+     * <em>unverifiable</em>, not failures.
+     *
+     * <p>Logs the first 10 genuine failures; does not abort.
+     *
+     * @return entry names of genuinely-invalid (pruning-broken) classes.
+     */
+    private static Set<String> verifyOutputJar(Path outputJar) throws Exception {
         long t0 = System.currentTimeMillis();
         int verified = 0;
         int failed = 0;
+        int unverifiable = 0;
+        int skipped = 0;
         int maxLogged = 10;
+        Set<String> failedNames = new java.util.TreeSet<>();
         try (java.util.jar.JarFile jf = new java.util.jar.JarFile(outputJar.toFile())) {
             var entries = jf.entries();
             while (entries.hasMoreElements()) {
                 java.util.jar.JarEntry je = entries.nextElement();
                 if (!je.getName().endsWith(".class")) continue;
+                // pruneClass only modifies net.minecraft.* — skip the rest.
+                if (!je.getName().startsWith(AnalysisConfig.TARGET_PACKAGE_INTERNAL)) {
+                    skipped++;
+                    continue;
+                }
                 byte[] bytes;
                 try (var in = jf.getInputStream(je)) {
                     bytes = in.readAllBytes();
@@ -103,30 +211,101 @@ public final class BytecodeSlicer {
                 try {
                     CheckClassAdapter.verify(new ClassReader(bytes), false, new PrintWriter(sw));
                     String report = sw.toString();
-                    if (!report.isEmpty()) {
+                    if (report.isEmpty()) {
+                        verified++;
+                    } else if (isMissingDependency(report)) {
+                        unverifiable++;
+                    } else {
                         failed++;
+                        failedNames.add(je.getName());
                         if (failed <= maxLogged) {
                             System.err.printf("  [verify] FAILED %s%n%s%n", je.getName(), report);
                         }
-                    } else {
-                        verified++;
                     }
                 } catch (Throwable t) {
-                    failed++;
-                    if (failed <= maxLogged) {
-                        System.err.printf("  [verify] FAILED %s: %s%n", je.getName(), t.getMessage());
+                    if (isMissingDependency(t)) {
+                        unverifiable++;
+                    } else {
+                        failed++;
+                        failedNames.add(je.getName());
+                        if (failed <= maxLogged) {
+                            System.err.printf("  [verify] FAILED %s: %s%n", je.getName(), t.getMessage());
+                        }
                     }
                 }
             }
         }
         double elapsed = (System.currentTimeMillis() - t0) / 1000.0;
-        System.out.printf("  [verify] %d ok, %d failed in %.1fs%n", verified, failed, elapsed);
+        System.out.printf(
+            "  [verify] %d ok, %d failed, %d unverifiable (missing classpath dep), "
+                + "%d skipped (pass-through) in %.1fs%n",
+            verified, failed, unverifiable, skipped, elapsed);
+        return failedNames;
     }
 
-    private static void pruneClass(ClassInstrumenter classInstrumenter, WalaSlicer.SliceResult slice) throws Exception {
+    /**
+     * Backstop for residual pruning defects: any pruned class that still fails
+     * real bytecode verification is rewritten with its original (unpruned)
+     * bytes from the input JAR. The SSA→bytecode keep-set is inherently
+     * approximate (branch-sensitive stack heights, complex CFG); a handful of
+     * classes per run trip it. Restoring the original class is always
+     * JVM-valid and a sound over-approximation of the slice (the
+     * never-under-keep rule applied at class granularity).
+     */
+    private static void restoreOriginalClasses(
+        Path inputJar, Path outputJar, Set<String> classes) throws Exception {
+        Path tmp = Files.createTempFile("sliced-restore", ".jar");
+        try (java.util.jar.JarFile in = new java.util.jar.JarFile(inputJar.toFile());
+             java.util.jar.JarFile out = new java.util.jar.JarFile(outputJar.toFile());
+             var zos = new java.util.zip.ZipOutputStream(Files.newOutputStream(tmp))) {
+            var entries = out.entries();
+            while (entries.hasMoreElements()) {
+                java.util.jar.JarEntry je = entries.nextElement();
+                zos.putNextEntry(new java.util.zip.ZipEntry(je.getName()));
+                if (!je.isDirectory()) {
+                    byte[] bytes;
+                    if (classes.contains(je.getName())) {
+                        java.util.jar.JarEntry orig = in.getJarEntry(je.getName());
+                        try (var is = in.getInputStream(orig)) {
+                            bytes = is.readAllBytes();
+                        }
+                    } else {
+                        try (var is = out.getInputStream(je)) {
+                            bytes = is.readAllBytes();
+                        }
+                    }
+                    zos.write(bytes);
+                }
+                zos.closeEntry();
+            }
+        }
+        Files.move(tmp, outputJar, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    /** A verifier complaint caused only by a type absent from this classpath. */
+    private static boolean isMissingDependency(Throwable t) {
+        for (Throwable c = t; c != null; c = c.getCause()) {
+            if (c instanceof ClassNotFoundException
+                || c instanceof NoClassDefFoundError
+                || c instanceof TypeNotPresentException) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isMissingDependency(String report) {
+        return report.contains("ClassNotFoundException")
+            || report.contains("NoClassDefFoundError")
+            || report.contains("TypeNotPresentException");
+    }
+
+    /** @return number of methods left unmodified because pruning was unsafe. */
+    private static int pruneClass(ClassInstrumenter classInstrumenter, WalaSlicer.SliceResult slice) throws Exception {
+        int keptWholeUnsafe = 0;
         String dotClass = classInstrumenter.getReader().getName().replace('/', '.');
         if (!dotClass.startsWith(AnalysisConfig.TARGET_PACKAGE_DOT)) {
-            return;
+            return keptWholeUnsafe;
         }
 
         Map<String, Set<Integer>> methodToBcIndices = slice.bcIndexByMethod().get(dotClass);
@@ -155,16 +334,28 @@ public final class BytecodeSlicer {
                     continue;
                 }
 
+                String returnType = Util.getReturnType(methodData.getSignature());
                 MethodEditor editor = new MethodEditor(methodData);
                 editor.beginPass();
                 editor.insertAtStart(new MethodEditor.Patch() {
                     @Override
                     public void emitTo(MethodEditor.Output w) {
-                        emitDefaultReturn(w, Util.getReturnType(methodData.getSignature()));
+                        w.emit(defaultReturnBody(returnType));
                     }
                 });
                 editor.applyPatches();
                 editor.endPass();
+
+                // The stub body is just "return"; the original try/catch
+                // table now covers dead, unreachable code and collapses to
+                // start == end ("Empty try catch block handler range",
+                // rejected by the JVM verifier). A stub has no exception
+                // handlers — blank the post-edit handler array in place so
+                // CTCompiler emits an empty exception table. oldCode is
+                // preserved (we edited in place, not replaceMethod), so this
+                // avoids Shrike's "No old code provided" error.
+                ExceptionHandler[][] h = methodData.getHandlers();
+                java.util.Arrays.fill(h, EMPTY_HANDLERS);
             } else {
                 MethodData methodData = classInstrumenter.visitMethod(i);
                 if (methodData == null) {
@@ -175,7 +366,15 @@ public final class BytecodeSlicer {
                 // instructionsToBytecodes[j] is the original bytecode offset for
                 // sequential instruction j. keepIndices stores bytecode offsets.
                 int[] i2bc = methodData.getInstructionsToBytecodes();
-                Set<Integer> keepSeq = expandKeepSet(instructions, i2bc, keepIndices);
+                Set<Integer> keepSeq = expandKeepSet(
+                    instructions, i2bc, keepIndices, methodData.getHandlers());
+                if (keepSeq == null) {
+                    // Unsafe to prune (linear stack model broke). Emit the
+                    // method unchanged: original bytecode is always valid and
+                    // a superset of the slice is still sound.
+                    keptWholeUnsafe++;
+                    continue;
+                }
 
                 MethodEditor editor = new MethodEditor(methodData);
                 editor.beginPass();
@@ -190,6 +389,7 @@ public final class BytecodeSlicer {
                 editor.endPass();
             }
         }
+        return keptWholeUnsafe;
     }
 
     /**
@@ -216,11 +416,25 @@ public final class BytecodeSlicer {
      * exception-handler entries may be approximate. Conservatively keeps all
      * control flow so any over-approximation results in over-keeping, never
      * under-keeping.
+     *
+     * <p>Returns {@code null} when the linear model cannot account for a
+     * consumed value (the simulated stack underflows). That is precisely the
+     * case where a derived keep set would under-keep and emit
+     * stack-unbalanced bytecode; callers must then keep the whole method
+     * unmodified (sound over-approximation — the never-under-keep rule).
+     *
+     * <p>Also seeds the keep set with every instruction inside an exception
+     * handler's protected range and every handler (catch) entry. Deleting all
+     * instructions a handler covers collapses its range to {@code start ==
+     * end}, which the JVM classfile verifier rejects ("Empty try catch block
+     * handler range"). Keeping covered instructions makes that impossible.
      */
     private static Set<Integer> expandKeepSet(
-        IInstruction[] instructions, int[] i2bc, Set<Integer> keepIndices) {
+        IInstruction[] instructions, int[] i2bc, Set<Integer> keepIndices,
+        ExceptionHandler[][] handlers) {
         List<List<Integer>> consumedBy = new ArrayList<>(instructions.length);
         ArrayDeque<Integer> stack = new ArrayDeque<>();
+        boolean stackModelBroke = false;
         for (int j = 0; j < instructions.length; j++) {
             IInstruction instr = instructions[j];
             int pops;
@@ -237,13 +451,23 @@ public final class BytecodeSlicer {
             }
             List<Integer> consumed = new ArrayList<>(pops);
             for (int p = 0; p < pops; p++) {
-                if (stack.isEmpty()) break;
+                if (stack.isEmpty()) {
+                    // Linear model lost track (branch join / handler entry):
+                    // a consumed value has no recorded pusher. Pruning from
+                    // here would under-keep -> bail to whole-method keep.
+                    stackModelBroke = true;
+                    break;
+                }
                 consumed.add(stack.pop());
             }
             for (int p = 0; p < pushes; p++) {
                 stack.push(j);
             }
             consumedBy.add(consumed);
+        }
+
+        if (stackModelBroke) {
+            return null;
         }
 
         Set<Integer> keep = new HashSet<>();
@@ -260,6 +484,33 @@ public final class BytecodeSlicer {
             }
         }
 
+        // Keep every instruction a handler protects, plus each catch entry, so
+        // no exception-table range can collapse to empty after deletion.
+        if (handlers != null) {
+            for (int j = 0; j < handlers.length && j < instructions.length; j++) {
+                ExceptionHandler[] hs = handlers[j];
+                if (hs == null || hs.length == 0) continue;
+                keep.add(j);
+                for (ExceptionHandler h : hs) {
+                    int target = h.getHandler();
+                    if (target >= 0 && target < instructions.length) {
+                        keep.add(target);
+                    }
+                }
+            }
+        }
+
+        // Local-variable def-use. The stack model above does not track
+        // locals: a kept `xload v` needs the `xstore v` that defined it, or
+        // the verifier rejects "inexistant local variable v". Keep ALL stores
+        // to a loaded local (sound over-approximation of reaching defs).
+        Map<Integer, List<Integer>> storesByVar = new java.util.HashMap<>();
+        for (int j = 0; j < instructions.length; j++) {
+            if (instructions[j] instanceof IStoreInstruction st) {
+                storesByVar.computeIfAbsent(st.getVarIndex(), k -> new ArrayList<>()).add(j);
+            }
+        }
+
         ArrayDeque<Integer> worklist = new ArrayDeque<>(keep);
         while (!worklist.isEmpty()) {
             int j = worklist.pop();
@@ -268,28 +519,43 @@ public final class BytecodeSlicer {
                     worklist.push(pusher);
                 }
             }
+            if (instructions[j] instanceof ILoadInstruction ld) {
+                List<Integer> stores = storesByVar.get(ld.getVarIndex());
+                if (stores != null) {
+                    for (int s : stores) {
+                        if (keep.add(s)) {
+                            worklist.push(s);
+                        }
+                    }
+                }
+            }
         }
         return keep;
     }
 
-    private static void emitDefaultReturn(MethodEditor.Output w, String returnType) {
+    /** Instruction sequence "push default value; return" for a stub method. */
+    private static Instruction[] defaultReturnBody(String returnType) {
         if ("V".equals(returnType)) {
-            w.emit(ReturnInstruction.make(returnType));
+            return new Instruction[] { ReturnInstruction.make(returnType) };
         } else if ("J".equals(returnType)) {
-            w.emit(ConstantInstruction.make(0L));
-            w.emit(ReturnInstruction.make(returnType));
+            return new Instruction[] {
+                ConstantInstruction.make(0L), ReturnInstruction.make(returnType) };
         } else if ("D".equals(returnType)) {
-            w.emit(ConstantInstruction.make(0.0d));
-            w.emit(ReturnInstruction.make(returnType));
+            return new Instruction[] {
+                ConstantInstruction.make(0.0d), ReturnInstruction.make(returnType) };
         } else if ("F".equals(returnType)) {
-            w.emit(ConstantInstruction.make(0.0f));
-            w.emit(ReturnInstruction.make(returnType));
+            return new Instruction[] {
+                ConstantInstruction.make(0.0f), ReturnInstruction.make(returnType) };
         } else if (returnType.startsWith("L") || returnType.startsWith("[")) {
-            w.emit(ConstantInstruction.make(returnType, null));
-            w.emit(ReturnInstruction.make(returnType));
+            return new Instruction[] {
+                ConstantInstruction.make(returnType, null), ReturnInstruction.make(returnType) };
         } else {
-            w.emit(ConstantInstruction.make(0));
-            w.emit(ReturnInstruction.make(returnType));
+            // int-family: boolean/byte/char/short/int all return via ireturn.
+            // Shrike's ReturnInstruction.make rejects "Z"/"B"/"C"/"S"
+            // ("Cannot return type Z") — the JVM has no breturn/sreturn; the
+            // operand is just an int. Widen to "I".
+            return new Instruction[] {
+                ConstantInstruction.make(0), ReturnInstruction.make("I") };
         }
     }
 }

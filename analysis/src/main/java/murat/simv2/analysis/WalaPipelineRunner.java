@@ -62,6 +62,9 @@ final class WalaPipelineRunner {
 
             System.out.println("\nBuilding 0-1-Container-CFA call graph...");
             AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
+            // Movement physics is not reflectively dispatched; resolving
+            // reflection balloons the CG (hence the SDG/IFDS supergraph).
+            options.setReflectionOptions(AnalysisOptions.ReflectionOptions.NONE);
             CallGraphBuilder<InstanceKey> builder = Util.makeZeroOneContainerCFABuilder(
                 options, new AnalysisCacheImpl(), cha);
             PrintingProgressMonitor progressMonitor = new PrintingProgressMonitor();

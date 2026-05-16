@@ -63,7 +63,19 @@ public final class AnalysisConfig {
         "com\\/mojang\\/datafixers\\/.*",
         "com\\/mojang\\/serialization\\/.*",
         "com\\/mojang\\/brigadier\\/.*",
-        "com\\/mojang\\/blaze3d\\/.*"
+        "com\\/mojang\\/blaze3d\\/.*",
+        // tickMovement cannot reach rendering/sound/GUI/data. Excluding
+        // these drops their CG nodes (and heap) from the SDG.
+        "net\\/minecraft\\/client\\/render\\/.*",
+        "net\\/minecraft\\/client\\/gui\\/.*",
+        "net\\/minecraft\\/client\\/sound\\/.*",
+        "net\\/minecraft\\/client\\/particle\\/.*",
+        "net\\/minecraft\\/client\\/texture\\/.*",
+        "net\\/minecraft\\/client\\/font\\/.*",
+        "net\\/minecraft\\/client\\/model\\/.*",
+        "net\\/minecraft\\/data\\/.*",
+        "net\\/minecraft\\/datafixer\\/.*",
+        "net\\/minecraft\\/server\\/.*"
     };
 
     public static final String[] SLICER_HEAP_EXCLUSIONS = {
@@ -71,6 +83,18 @@ public final class AnalysisConfig {
         "javax\\/.*",
         "sun\\/.*",
         "com\\/sun\\/.*",
-        "org\\/lwjgl\\/.*"
+        "org\\/lwjgl\\/.*",
+        // Highest-leverage Tier-1 lever: cut heap-dependence edges for
+        // movement-irrelevant subsystems without changing DataDependenceOptions.
+        "com\\/mojang\\/.*",
+        "io\\/netty\\/.*",
+        "net\\/minecraft\\/client\\/render\\/.*",
+        "net\\/minecraft\\/client\\/gui\\/.*",
+        "net\\/minecraft\\/client\\/sound\\/.*",
+        "net\\/minecraft\\/client\\/particle\\/.*",
+        "net\\/minecraft\\/client\\/texture\\/.*",
+        "net\\/minecraft\\/client\\/font\\/.*",
+        "net\\/minecraft\\/client\\/model\\/.*",
+        "net\\/minecraft\\/datafixer\\/.*"
     };
 }
