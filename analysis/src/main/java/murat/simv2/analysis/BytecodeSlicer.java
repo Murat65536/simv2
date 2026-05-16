@@ -5,7 +5,6 @@ import com.ibm.wala.shrike.shrikeBT.shrikeCT.OfflineInstrumenter;
 import com.ibm.wala.shrike.shrikeBT.DupInstruction;
 import com.ibm.wala.shrike.shrikeBT.ExceptionHandler;
 import com.ibm.wala.shrike.shrikeBT.GotoInstruction;
-import com.ibm.wala.shrike.shrikeBT.Instruction;
 import com.ibm.wala.shrike.shrikeBT.IConditionalBranchInstruction;
 import com.ibm.wala.shrike.shrikeBT.IInstruction;
 import com.ibm.wala.shrike.shrikeBT.ILoadInstruction;
@@ -13,17 +12,21 @@ import com.ibm.wala.shrike.shrikeBT.IStoreInstruction;
 import com.ibm.wala.shrike.shrikeBT.MethodData;
 import com.ibm.wala.shrike.shrikeBT.MethodEditor;
 import com.ibm.wala.shrike.shrikeBT.MonitorInstruction;
-import com.ibm.wala.shrike.shrikeBT.ConstantInstruction;
 import com.ibm.wala.shrike.shrikeBT.ReturnInstruction;
 import com.ibm.wala.shrike.shrikeBT.SwapInstruction;
 import com.ibm.wala.shrike.shrikeBT.SwitchInstruction;
 import com.ibm.wala.shrike.shrikeBT.ThrowInstruction;
-import com.ibm.wala.shrike.shrikeBT.Util;
 
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.analysis.Analyzer;
+import org.objectweb.asm.tree.analysis.BasicValue;
+import org.objectweb.asm.tree.analysis.BasicVerifier;
 import org.objectweb.asm.util.CheckClassAdapter;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
@@ -36,7 +39,6 @@ import java.util.Map;
 import java.util.Set;
 
 public final class BytecodeSlicer {
-    private static final ExceptionHandler[] EMPTY_HANDLERS = new ExceptionHandler[0];
 
     public static void sliceJar(Path inputJar, Path outputJar, WalaSlicer.SliceResult slice) throws Exception {
         OfflineInstrumenter instrumenter = new OfflineInstrumenter();
@@ -89,6 +91,12 @@ public final class BytecodeSlicer {
 
         instrumenter.close();
 
+        // WALA can emit structurally-valid bodies with stale StackMapTables
+        // (silently swallowed FailureException). Recompute every pruned class's
+        // frames and revert any still-broken method, per-method. The same pass
+        // drops classes the slice never touches.
+        repairModifiedClasses(inputJar, outputJar, slice);
+
         Set<String> bad = verifyOutputJar(outputJar);
         if (!bad.isEmpty()) {
             System.out.printf(
@@ -104,25 +112,54 @@ public final class BytecodeSlicer {
         }
     }
 
+    /** Discards WALA's hard-coded internal {@code printStackTrace} spew. */
+    private static final PrintStream NULL_ERR =
+        new PrintStream(OutputStream.nullOutputStream());
+
     /**
-     * Emits the (pruned) class. If Shrike rejects a method because our SSA→
-     * bytecode keep-set under-kept and produced stack-unbalanced code
-     * ({@code java.lang.Error: Error compiling method <m>: ...}), revert that
-     * one method to its original bytecode via {@link ClassInstrumenter#resetMethod}
-     * and retry. A reset method is emitted verbatim from the original class —
-     * always valid, and a superset of the slice is still sound (the
-     * never-under-keep rule). Bounded by the method count.
+     * Emits the (pruned) class to the output jar.
+     *
+     * <p>Unmodified classes ({@link ClassInstrumenter#isChanged()} false) are
+     * passed through raw — no method changed, so WALA can't reject anything.
+     *
+     * <p>For a pruned class, if WALA throws {@code Error: Error compiling
+     * method <m>: ...} (Shrike's CTCompiler hard-failed on stack-unbalanced
+     * intermediate code), that one method is reverted to its original bytecode
+     * via {@link ClassInstrumenter#resetMethod} and the emit retried. A reset
+     * method is emitted verbatim from the original class — always valid, and a
+     * superset of the slice is still sound (the never-under-keep rule), at
+     * <em>method</em> granularity. Bounded by the method count.
+     *
+     * <p>WALA also has a second, silent failure mode: when our prune leaves a
+     * structurally-valid body but the offset remap produces a stale
+     * StackMapTable, {@code ClassInstrumenter} swallows the
+     * {@code FailureException} (hard-coded {@code printStackTrace}, no rethrow)
+     * and writes the method with a wrong table — the JVM later rejects it.
+     * That can't be caught here, so it is repaired in a post-pass over the
+     * finished jar ({@link #repairModifiedClasses}) which recomputes every
+     * StackMapTable and reverts any still-broken method.
+     *
+     * <p>The emit runs under a suppressed {@code System.err}: WALA prints both
+     * failure modes with a hard-coded {@code e.printStackTrace()}; we detect
+     * and handle them ourselves, so the traces are pure noise.
      *
      * @return number of methods reverted (kept whole) for this class.
      */
     private static int emitWithUnsafeMethodFallback(
         OfflineInstrumenter instrumenter, ClassInstrumenter ci, String className)
         throws Exception {
+        if (!ci.isChanged()) {
+            instrumenter.outputModifiedClass(ci);
+            return 0;
+        }
         int reverted = 0;
         int methodCount = ci.getReader().getMethodCount();
         for (int attempt = 0; attempt <= methodCount; attempt++) {
             try {
-                instrumenter.outputModifiedClass(ci);
+                silently(() -> {
+                    instrumenter.outputModifiedClass(ci);
+                    return null;
+                });
                 return reverted;
             } catch (Throwable e) {
                 if (e instanceof VirtualMachineError) throw e;
@@ -137,15 +174,254 @@ public final class BytecodeSlicer {
                 }
                 ci.resetMethod(badIdx);
                 reverted++;
-                System.err.printf(
-                    "  [bytecode-slicer] kept whole (unsafe to prune): %s.%s%s%n",
-                    className,
-                    ci.getReader().getMethodName(badIdx),
-                    ci.getReader().getMethodType(badIdx));
+                logKeptWhole(ci, className, badIdx);
             }
         }
         throw new IllegalStateException(
             "Class " + className + " still fails to emit after reverting all methods");
+    }
+
+    /**
+     * Runs {@code action} with {@code System.err} suppressed. WALA's
+     * ClassInstrumenter swallows StackMapTable {@code FailureException}s with a
+     * hard-coded {@code printStackTrace} and also prints before throwing
+     * {@code "Error compiling method ..."}; neither is suppressible any other
+     * way. We detect and handle both failures ourselves, so the traces are
+     * pure noise. The slice loop is single-threaded, so swapping the global
+     * stream here is safe.
+     */
+    private static <T> T silently(java.util.concurrent.Callable<T> action) throws Exception {
+        PrintStream original = System.err;
+        System.setErr(NULL_ERR);
+        try {
+            return action.call();
+        } finally {
+            System.setErr(original);
+        }
+    }
+
+    private static void logKeptWhole(ClassInstrumenter ci, String className, int idx)
+        throws Exception {
+        System.err.printf(
+            "  [bytecode-slicer] kept whole (unsafe to prune): %s.%s%s%n",
+            className,
+            ci.getReader().getMethodName(idx),
+            ci.getReader().getMethodType(idx));
+    }
+
+    /**
+     * Post-pass that makes every pruned {@code net.minecraft.*} class
+     * JVM-valid, repairing the two defects WALA's emit cannot:
+     * <ol>
+     *   <li><b>Stale StackMapTables.</b> WALA remaps frame offsets through the
+     *       prune; for stubbed/heavily-pruned methods the result is a table
+     *       that no longer matches the code (JVM {@code VerifyError}). Every
+     *       class is re-read with frames skipped and rewritten with ASM
+     *       {@code COMPUTE_FRAMES}, regenerating correct tables. The custom
+     *       {@link FrameClassWriter#getCommonSuperClass} never loads classes
+     *       (the Minecraft type closure isn't on this classpath), so this adds
+     *       no missing-dependency noise.</li>
+     *   <li><b>Under-kept methods.</b> A method whose pruned body is
+     *       structurally invalid (stack height/size) is detected with ASM's
+     *       type-free {@link BasicVerifier} and its body replaced by the
+     *       original class's — per-method revert (sound over-approximation, the
+     *       never-under-keep rule), instead of restoring the whole class.</li>
+     * </ol>
+     * Additionally drops every {@code net.minecraft.*} class the slice never
+     * touches ({@link #classNeverUsed}) — {@code pruneClass} leaves those as
+     * constructor-only shells; the emitted slice keeps nothing in them, so the
+     * whole entry is omitted for a smaller, faithful mirror. Safe because the
+     * sliced jar is a write-only analysis artifact (loaded/executed by nothing).
+     * Non-{@code net.minecraft} entries are copied through byte-for-byte.
+     *
+     * @return number of methods reverted to original across all classes.
+     */
+    private static int repairModifiedClasses(
+        Path inputJar, Path outputJar, WalaSlicer.SliceResult slice) throws Exception {
+        long t0 = System.currentTimeMillis();
+        int classesRepaired = 0;
+        int methodsReverted = 0;
+        int classesRemoved = 0;
+        Path tmp = Files.createTempFile("sliced-repair", ".jar");
+        try (java.util.jar.JarFile in = new java.util.jar.JarFile(inputJar.toFile());
+             java.util.jar.JarFile out = new java.util.jar.JarFile(outputJar.toFile());
+             var zos = new java.util.zip.ZipOutputStream(Files.newOutputStream(tmp))) {
+            var entries = out.entries();
+            while (entries.hasMoreElements()) {
+                java.util.jar.JarEntry je = entries.nextElement();
+                String name = je.getName();
+                boolean prunable = !je.isDirectory()
+                    && name.endsWith(".class")
+                    && name.startsWith(AnalysisConfig.TARGET_PACKAGE_INTERNAL);
+                if (prunable && classNeverUsed(name, slice)) {
+                    // Slice keeps nothing in this class — drop the whole entry.
+                    classesRemoved++;
+                    continue;
+                }
+                zos.putNextEntry(new java.util.zip.ZipEntry(name));
+                if (!je.isDirectory()) {
+                    byte[] bytes;
+                    try (var is = out.getInputStream(je)) {
+                        bytes = is.readAllBytes();
+                    }
+                    if (prunable) {
+                        int[] revertedOut = new int[1];
+                        bytes = repairClass(bytes, in, name, revertedOut);
+                        if (revertedOut[0] > 0) {
+                            classesRepaired++;
+                            methodsReverted += revertedOut[0];
+                        }
+                    }
+                    zos.write(bytes);
+                }
+                zos.closeEntry();
+            }
+        }
+        Files.move(tmp, outputJar, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        double elapsed = (System.currentTimeMillis() - t0) / 1000.0;
+        System.out.printf(
+            "  [repair] recomputed stack maps; reverted %d method(s) in %d class(es); "
+                + "removed %d never-used class(es) in %.1fs%n",
+            methodsReverted, classesRepaired, classesRemoved, elapsed);
+        return methodsReverted;
+    }
+
+    /**
+     * A {@code net.minecraft.*} class is <em>never used</em> when the slice
+     * keeps no bytecode anywhere in it — its dotted name has no non-empty
+     * keep-set in {@link WalaSlicer.SliceResult#bcIndexByMethod()} (absent,
+     * empty, or every selector maps to an empty set). This is exactly the set
+     * {@code pruneClass} reduces to constructor-only shells, so dropping the
+     * whole entry removes nothing the emitted slice depends on. Entry names and
+     * WALA's recorded class names both use {@code $} for nested classes, so
+     * inner classes line up.
+     */
+    private static boolean classNeverUsed(String entryName, WalaSlicer.SliceResult slice) {
+        String dotClass = entryName
+            .substring(0, entryName.length() - ".class".length())
+            .replace('/', '.');
+        Map<String, Set<Integer>> methods = slice.bcIndexByMethod().get(dotClass);
+        if (methods == null || methods.isEmpty()) {
+            return true;
+        }
+        for (Set<Integer> kept : methods.values()) {
+            if (kept != null && !kept.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Recomputes {@code classBytes}'s stack maps, reverting (to the original
+     * class in {@code inputJar}) any method whose pruned body fails ASM's
+     * structural verifier. Returns the repaired bytes; on any unexpected
+     * failure returns the original class bytes (sound whole-class fallback —
+     * {@link #verifyOutputJar} is the final backstop).
+     */
+    private static byte[] repairClass(
+        byte[] classBytes, java.util.jar.JarFile inputJar, String entryName, int[] revertedOut)
+        throws Exception {
+        ClassNode cn = new ClassNode();
+        new ClassReader(classBytes).accept(cn, ClassReader.SKIP_FRAMES);
+        ClassNode original = null;
+        for (int m = 0; m < cn.methods.size(); m++) {
+            MethodNode mn = cn.methods.get(m);
+            if ((mn.access & (java.lang.reflect.Modifier.ABSTRACT
+                | java.lang.reflect.Modifier.NATIVE)) != 0) {
+                continue;
+            }
+            if (methodStructurallyValid(cn.name, mn)) {
+                continue;
+            }
+            if (original == null) {
+                original = readOriginalClass(inputJar, entryName);
+                if (original == null) {
+                    return originalBytes(inputJar, entryName, classBytes);
+                }
+            }
+            MethodNode orig = findMethod(original, mn.name, mn.desc);
+            if (orig == null) {
+                return originalBytes(inputJar, entryName, classBytes);
+            }
+            cn.methods.set(m, orig);
+            revertedOut[0]++;
+            System.err.printf(
+                "  [repair] kept whole (unsafe to prune): %s.%s%s%n",
+                cn.name, mn.name, mn.desc);
+        }
+        try {
+            var cw = new FrameClassWriter(org.objectweb.asm.ClassWriter.COMPUTE_FRAMES);
+            cn.accept(cw);
+            return cw.toByteArray();
+        } catch (Throwable t) {
+            if (t instanceof VirtualMachineError vme) throw vme;
+            // COMPUTE_FRAMES still couldn't frame the class — fall back to the
+            // original (whole-class). Rare; verifyOutputJar is the backstop.
+            byte[] orig = originalBytes(inputJar, entryName, classBytes);
+            if (orig != classBytes) {
+                revertedOut[0] = Math.max(revertedOut[0], 1);
+            }
+            return orig;
+        }
+    }
+
+    private static boolean methodStructurallyValid(String owner, MethodNode mn) {
+        try {
+            new Analyzer<BasicValue>(new BasicVerifier()).analyze(owner, mn);
+            return true;
+        } catch (Throwable t) {
+            if (t instanceof VirtualMachineError vme) throw vme;
+            return false;
+        }
+    }
+
+    private static ClassNode readOriginalClass(java.util.jar.JarFile inputJar, String entryName)
+        throws Exception {
+        java.util.jar.JarEntry e = inputJar.getJarEntry(entryName);
+        if (e == null) return null;
+        byte[] b;
+        try (var is = inputJar.getInputStream(e)) {
+            b = is.readAllBytes();
+        }
+        ClassNode cn = new ClassNode();
+        new ClassReader(b).accept(cn, ClassReader.SKIP_FRAMES);
+        return cn;
+    }
+
+    private static byte[] originalBytes(
+        java.util.jar.JarFile inputJar, String entryName, byte[] fallback) throws Exception {
+        java.util.jar.JarEntry e = inputJar.getJarEntry(entryName);
+        if (e == null) return fallback;
+        try (var is = inputJar.getInputStream(e)) {
+            return is.readAllBytes();
+        }
+    }
+
+    private static MethodNode findMethod(ClassNode cn, String name, String desc) {
+        for (MethodNode mn : cn.methods) {
+            if (mn.name.equals(name) && mn.desc.equals(desc)) return mn;
+        }
+        return null;
+    }
+
+    /**
+     * ASM {@link org.objectweb.asm.ClassWriter} whose frame merge never loads a
+     * class. The Minecraft type closure is not on this process's classpath, so
+     * the default {@code getCommonSuperClass} (which calls {@code
+     * Class.forName}) would throw {@code TypeNotPresentException} for nearly
+     * every merge. Falling back to {@code java/lang/Object} yields verifiable
+     * (if conservative) frames with zero classpath dependency.
+     */
+    private static final class FrameClassWriter extends org.objectweb.asm.ClassWriter {
+        FrameClassWriter(int flags) {
+            super(flags);
+        }
+
+        @Override
+        protected String getCommonSuperClass(String type1, String type2) {
+            return type1.equals(type2) ? type1 : "java/lang/Object";
+        }
     }
 
     /**
@@ -321,41 +597,20 @@ public final class BytecodeSlicer {
                 + classInstrumenter.getReader().getMethodType(i);
             Set<Integer> keepIndices = methodToBcIndices == null ? null : methodToBcIndices.get(selector);
             boolean isInitOrClinit = "<init>".equals(methodName) || "<clinit>".equals(methodName);
-            // Constructors that aren't in the slice stay untouched — stubbing
-            // them out with a default return would break object construction
-            // (superclass call, final field init). Constructors in the slice
+            // Constructors that aren't in the slice stay untouched — deleting
+            // <init> would leave the class non-instantiable and <clinit>
+            // removal would drop static-field init. Constructors in the slice
             // get pruned like any other method.
             if (isInitOrClinit && (keepIndices == null || keepIndices.isEmpty())) {
                 continue;
             }
             if (keepIndices == null || keepIndices.isEmpty()) {
-                MethodData methodData = classInstrumenter.visitMethod(i);
-                if (methodData == null) {
-                    continue;
-                }
-
-                String returnType = Util.getReturnType(methodData.getSignature());
-                MethodEditor editor = new MethodEditor(methodData);
-                editor.beginPass();
-                editor.insertAtStart(new MethodEditor.Patch() {
-                    @Override
-                    public void emitTo(MethodEditor.Output w) {
-                        w.emit(defaultReturnBody(returnType));
-                    }
-                });
-                editor.applyPatches();
-                editor.endPass();
-
-                // The stub body is just "return"; the original try/catch
-                // table now covers dead, unreachable code and collapses to
-                // start == end ("Empty try catch block handler range",
-                // rejected by the JVM verifier). A stub has no exception
-                // handlers — blank the post-edit handler array in place so
-                // CTCompiler emits an empty exception table. oldCode is
-                // preserved (we edited in place, not replaceMethod), so this
-                // avoids Shrike's "No old code provided" error.
-                ExceptionHandler[][] h = methodData.getHandlers();
-                java.util.Arrays.fill(h, EMPTY_HANDLERS);
+                // Nothing of this method is in the slice — remove it entirely
+                // rather than stubbing it with a default-return body.
+                // Constructors are handled above; the sliced jar is an
+                // analysis artifact (never executed), so dropping
+                // never-sliced methods is sound and yields a smaller mirror.
+                classInstrumenter.deleteMethod(i);
             } else {
                 MethodData methodData = classInstrumenter.visitMethod(i);
                 if (methodData == null) {
@@ -531,31 +786,5 @@ public final class BytecodeSlicer {
             }
         }
         return keep;
-    }
-
-    /** Instruction sequence "push default value; return" for a stub method. */
-    private static Instruction[] defaultReturnBody(String returnType) {
-        if ("V".equals(returnType)) {
-            return new Instruction[] { ReturnInstruction.make(returnType) };
-        } else if ("J".equals(returnType)) {
-            return new Instruction[] {
-                ConstantInstruction.make(0L), ReturnInstruction.make(returnType) };
-        } else if ("D".equals(returnType)) {
-            return new Instruction[] {
-                ConstantInstruction.make(0.0d), ReturnInstruction.make(returnType) };
-        } else if ("F".equals(returnType)) {
-            return new Instruction[] {
-                ConstantInstruction.make(0.0f), ReturnInstruction.make(returnType) };
-        } else if (returnType.startsWith("L") || returnType.startsWith("[")) {
-            return new Instruction[] {
-                ConstantInstruction.make(returnType, null), ReturnInstruction.make(returnType) };
-        } else {
-            // int-family: boolean/byte/char/short/int all return via ireturn.
-            // Shrike's ReturnInstruction.make rejects "Z"/"B"/"C"/"S"
-            // ("Cannot return type Z") — the JVM has no breturn/sreturn; the
-            // operand is just an int. Widen to "I".
-            return new Instruction[] {
-                ConstantInstruction.make(0), ReturnInstruction.make("I") };
-        }
     }
 }
