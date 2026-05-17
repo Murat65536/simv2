@@ -227,12 +227,13 @@ public final class BytecodeSlicer {
      *       original class's — per-method revert (sound over-approximation, the
      *       never-under-keep rule), instead of restoring the whole class.</li>
      * </ol>
-     * Additionally drops every {@code net.minecraft.*} class the slice never
-     * touches ({@link #classNeverUsed}) — {@code pruneClass} leaves those as
-     * constructor-only shells; the emitted slice keeps nothing in them, so the
-     * whole entry is omitted for a smaller, faithful mirror. Safe because the
-     * sliced jar is a write-only analysis artifact (loaded/executed by nothing).
-     * Non-{@code net.minecraft} entries are copied through byte-for-byte.
+     * The output is a pure <b>overlay</b>: an entry is emitted only when it is a
+     * {@code net.minecraft.*} {@code .class} the slicer actually modified
+     * ({@code !}{@link #classNeverUsed}). Pass-through library classes,
+     * never-used {@code net.minecraft} classes, and every non-class resource /
+     * directory are dropped; the consumer resolves them from the original
+     * Minecraft jar on the classpath. Safe because the sliced jar is a
+     * write-only analysis artifact (loaded/executed by nothing in the repo).
      *
      * @return number of methods reverted to original across all classes.
      */
@@ -241,7 +242,8 @@ public final class BytecodeSlicer {
         long t0 = System.currentTimeMillis();
         int classesRepaired = 0;
         int methodsReverted = 0;
-        int classesRemoved = 0;
+        int kept = 0;
+        int dropped = 0;
         Path tmp = Files.createTempFile("sliced-repair", ".jar");
         try (java.util.jar.JarFile in = new java.util.jar.JarFile(inputJar.toFile());
              java.util.jar.JarFile out = new java.util.jar.JarFile(outputJar.toFile());
@@ -250,39 +252,42 @@ public final class BytecodeSlicer {
             while (entries.hasMoreElements()) {
                 java.util.jar.JarEntry je = entries.nextElement();
                 String name = je.getName();
-                boolean prunable = !je.isDirectory()
+                boolean changed = !je.isDirectory()
                     && name.endsWith(".class")
-                    && name.startsWith(AnalysisConfig.TARGET_PACKAGE_INTERNAL);
-                if (prunable && classNeverUsed(name, slice)) {
-                    // Slice keeps nothing in this class — drop the whole entry.
-                    classesRemoved++;
+                    && name.startsWith(AnalysisConfig.TARGET_PACKAGE_INTERNAL)
+                    && !classNeverUsed(name, slice);
+                if (!changed) {
+                    // Pure overlay: emit only the net.minecraft classes the
+                    // slicer actually modified. Everything else — pass-through
+                    // library classes, never-used net.minecraft classes, all
+                    // non-class resources and directory entries — is dropped;
+                    // the consumer resolves them from the original Minecraft
+                    // jar on the classpath.
+                    dropped++;
                     continue;
                 }
-                zos.putNextEntry(new java.util.zip.ZipEntry(name));
-                if (!je.isDirectory()) {
-                    byte[] bytes;
-                    try (var is = out.getInputStream(je)) {
-                        bytes = is.readAllBytes();
-                    }
-                    if (prunable) {
-                        int[] revertedOut = new int[1];
-                        bytes = repairClass(bytes, in, name, revertedOut);
-                        if (revertedOut[0] > 0) {
-                            classesRepaired++;
-                            methodsReverted += revertedOut[0];
-                        }
-                    }
-                    zos.write(bytes);
+                byte[] bytes;
+                try (var is = out.getInputStream(je)) {
+                    bytes = is.readAllBytes();
                 }
+                int[] revertedOut = new int[1];
+                bytes = repairClass(bytes, in, name, revertedOut);
+                if (revertedOut[0] > 0) {
+                    classesRepaired++;
+                    methodsReverted += revertedOut[0];
+                }
+                zos.putNextEntry(new java.util.zip.ZipEntry(name));
+                zos.write(bytes);
                 zos.closeEntry();
+                kept++;
             }
         }
         Files.move(tmp, outputJar, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         double elapsed = (System.currentTimeMillis() - t0) / 1000.0;
         System.out.printf(
             "  [repair] recomputed stack maps; reverted %d method(s) in %d class(es); "
-                + "removed %d never-used class(es) in %.1fs%n",
-            methodsReverted, classesRepaired, classesRemoved, elapsed);
+                + "overlay: kept %d changed class(es), dropped %d entr(ies) in %.1fs%n",
+            methodsReverted, classesRepaired, kept, dropped, elapsed);
         return methodsReverted;
     }
 

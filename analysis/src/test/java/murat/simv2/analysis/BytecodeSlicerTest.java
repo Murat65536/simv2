@@ -40,14 +40,16 @@ class BytecodeSlicerTest {
         Path inputJar = tempDir.resolve("input.jar");
         Path outputJar = tempDir.resolve("output.jar");
 
-        Path sourceFile = sourceDir.resolve(Path.of("testproject", "Sample.java"));
+        Path sourceFile = sourceDir.resolve(
+            Path.of("net", "minecraft", "testpkg", "Sample.java"));
         Files.createDirectories(sourceFile.getParent());
         Files.writeString(sourceFile, """
-            package testproject;
+            package net.minecraft.testpkg;
 
             public class Sample {
                 public int answer() {
-                    return 42;
+                    int a = 21;
+                    return a * 2;
                 }
             }
             """);
@@ -61,17 +63,20 @@ class BytecodeSlicerTest {
             sourceFile.toString());
         assertEquals(0, compileResult);
 
-        Path classFile = classesDir.resolve(Path.of("testproject", "Sample.class"));
+        Path classFile = classesDir.resolve(
+            Path.of("net", "minecraft", "testpkg", "Sample.class"));
         try (JarOutputStream jos = new JarOutputStream(Files.newOutputStream(inputJar))) {
-            addEntry(jos, "testproject/Sample.class", Files.readAllBytes(classFile));
-            addEntry(jos, "assets/data.txt", "hello".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            addEntry(jos, "net/minecraft/testpkg/Sample.class",
+                Files.readAllBytes(classFile));
+            addEntry(jos, "assets/data.txt",
+                "hello".getBytes(java.nio.charset.StandardCharsets.UTF_8));
         }
 
         WalaSlicer.SliceResult slice = new WalaSlicer.SliceResult(
-            0,
+            1,
             0,
             Map.of(),
-            Map.of(),
+            Map.of("net.minecraft.testpkg.Sample", Map.of("answer()I", Set.of(0))),
             List.of());
 
         BytecodeSlicer.sliceJar(inputJar, outputJar, slice);
@@ -79,13 +84,14 @@ class BytecodeSlicerTest {
         assertTrue(Files.exists(outputJar));
         assertFalse(Files.exists(tempDir.resolve("generated")));
 
+        // Pure overlay: only the modified net.minecraft class is written; the
+        // resource and any source are dropped (resolved from the original jar).
         try (JarFile jarFile = new JarFile(outputJar.toFile())) {
-            assertTrue(jarFile.getEntry("testproject/Sample.class") != null);
-            assertTrue(jarFile.getEntry("assets/data.txt") != null);
-            assertEquals(0, jarFile.stream().filter(entry -> entry.getName().endsWith(".java")).count());
-            try (InputStream data = jarFile.getInputStream(jarFile.getEntry("assets/data.txt"))) {
-                assertEquals("hello", new String(data.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
-            }
+            assertTrue(jarFile.getEntry("net/minecraft/testpkg/Sample.class") != null);
+            assertEquals(null, jarFile.getEntry("assets/data.txt"),
+                "non-class resources are dropped by the overlay");
+            assertEquals(0, jarFile.stream()
+                .filter(entry -> entry.getName().endsWith(".java")).count());
         }
     }
 
@@ -164,7 +170,8 @@ class BytecodeSlicerTest {
         // Every emitted net.minecraft class must pass ASM's structural verifier
         // (the exact check BytecodeSlicer uses to revert under-kept methods).
         try (JarFile jarFile = new JarFile(outputJar.toFile())) {
-            assertTrue(jarFile.getEntry("assets/data.txt") != null);
+            assertEquals(null, jarFile.getEntry("assets/data.txt"),
+                "non-class resources are dropped by the overlay");
             var entries = jarFile.entries();
             while (entries.hasMoreElements()) {
                 JarEntry je = entries.nextElement();
@@ -297,8 +304,8 @@ class BytecodeSlicerTest {
                 "sliced class is kept");
             assertEquals(null, jarFile.getEntry("net/minecraft/testpkg/Unused.class"),
                 "never-used class must be removed entirely");
-            assertTrue(jarFile.getEntry("assets/data.txt") != null,
-                "non-class resources are untouched");
+            assertEquals(null, jarFile.getEntry("assets/data.txt"),
+                "non-class resources are dropped by the overlay");
 
             var entries = jarFile.entries();
             while (entries.hasMoreElements()) {
