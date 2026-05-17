@@ -23,7 +23,7 @@ public class SimV2Client implements ClientModInitializer {
                 PathRenderer.clearPath();
                 return;
             }
-            List<Vec3d> predicted = MovementPredictor.INSTANCE.predict(client.player);
+            List<Vec3d> predicted = MovementPredictor.INSTANCE.predict(client, client.player);
             if (predicted.isEmpty()) {
                 PathRenderer.clearPath();
             } else {
