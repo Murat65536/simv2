@@ -40,6 +40,79 @@ import java.util.Set;
 
 public final class BytecodeSlicer {
 
+    /**
+     * Closure-whole emit: copies every class in {@code closure.classes()} from
+     * {@code inputJar} into {@code outputJar} <em>verbatim</em> (original,
+     * unmodified bytecode); drops every other entry (non-class, resources, and
+     * out-of-closure classes).
+     *
+     * <p>Unlike {@link #sliceJar} (instruction-level slicing, an
+     * analysis-only artifact whose pruned bodies do not execute correctly),
+     * this produces a self-consistent, JVM-linkable subset: every included
+     * class keeps all its methods and {@code <init>}, so intra-closure
+     * references resolve. Out-of-closure {@code net.minecraft} references are
+     * expected to resolve at runtime from the real Minecraft (the consumer
+     * runs in-process). The slice's role here is purely scoping — bounding
+     * <em>which</em> classes the mirror must contain via {@link ClosureBuilder}.
+     */
+    public static void emitClosureJar(Path inputJar, Path outputJar, MirrorClosure closure)
+        throws Exception {
+        Set<String> keep = closure.classes();
+        long t0 = System.currentTimeMillis();
+        int kept = 0;
+        int dropped = 0;
+        try (java.util.jar.JarFile in = new java.util.jar.JarFile(inputJar.toFile());
+             var zos = new java.util.zip.ZipOutputStream(Files.newOutputStream(outputJar))) {
+            var entries = in.entries();
+            while (entries.hasMoreElements()) {
+                java.util.jar.JarEntry je = entries.nextElement();
+                if (je.isDirectory()) {
+                    continue;
+                }
+                String name = je.getName();
+                if (!name.endsWith(".class")) {
+                    dropped++;
+                    continue;
+                }
+                String dotClass = name
+                    .substring(0, name.length() - ".class".length())
+                    .replace('/', '.');
+                if (!keep.contains(dotClass)) {
+                    dropped++;
+                    continue;
+                }
+                byte[] bytes;
+                try (var is = in.getInputStream(je)) {
+                    bytes = is.readAllBytes();
+                }
+                zos.putNextEntry(new java.util.zip.ZipEntry(name));
+                zos.write(bytes);
+                zos.closeEntry();
+                kept++;
+            }
+        }
+        double elapsed = (System.currentTimeMillis() - t0) / 1000.0;
+        System.out.printf(
+            "  [closure-jar] verbatim copy: kept %d closure class(es) "
+                + "(of %d in closure), dropped %d entr(ies) in %.1fs%n",
+            kept, keep.size(), dropped, elapsed);
+        if (kept < keep.size()) {
+            System.out.printf(
+                "  [closure-jar] WARNING: %d closure class(es) not found in "
+                    + "input jar — mirror may diverge at runtime%n",
+                keep.size() - kept);
+        }
+        // Verbatim originals are as valid as the source jar; this is a cheap
+        // sanity backstop only (no restore — nothing was modified to break).
+        Set<String> bad = verifyOutputJar(outputJar);
+        if (!bad.isEmpty()) {
+            System.out.printf(
+                "  [closure-jar] WARNING: %d class(es) failed verification "
+                    + "despite being verbatim copies: %s%n",
+                bad.size(), bad);
+        }
+    }
+
     public static void sliceJar(Path inputJar, Path outputJar, WalaSlicer.SliceResult slice) throws Exception {
         OfflineInstrumenter instrumenter = new OfflineInstrumenter();
         // Add only class files and non-.java resources to avoid duplicating source files in the output JAR.

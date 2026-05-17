@@ -109,8 +109,17 @@ final class WalaPipelineRunner {
             Path outputDir = config.outputDir();
             Files.createDirectories(outputDir);
             Path outputJar = outputDir.resolve("test-sliced.jar");
-            System.out.println("\nGenerating sliced JAR: " + outputJar);
-            BytecodeSlicer.sliceJar(config.minecraftJar(), outputJar, slice);
+            // Closure-whole (default): a JVM-linkable subset for running the
+            // movement calculations in-process. The legacy instruction-level
+            // slice (analysis-only artifact; pruned bodies do not execute) is
+            // available behind -Dsimv2.instructionSlice=true.
+            if (Boolean.getBoolean("simv2.instructionSlice")) {
+                System.out.println("\nGenerating instruction-sliced JAR: " + outputJar);
+                BytecodeSlicer.sliceJar(config.minecraftJar(), outputJar, slice);
+            } else {
+                System.out.println("\nGenerating closure-whole JAR: " + outputJar);
+                BytecodeSlicer.emitClosureJar(config.minecraftJar(), outputJar, closure);
+            }
 
             System.out.println("\nWALA artifacts written to " + outputDir);
         } finally {

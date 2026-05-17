@@ -23,6 +23,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -343,6 +344,102 @@ class BytecodeSlicerTest {
             assertEquals(42, sample.getMethod("answer").invoke(instance));
             assertThrows(ClassNotFoundException.class,
                 () -> Class.forName("net.minecraft.testpkg.Unused", true, cl));
+        }
+    }
+
+    /**
+     * Closure-whole emit: classes in the closure are copied <b>verbatim</b>
+     * (byte-identical, all methods intact so they execute correctly); every
+     * other entry (out-of-closure classes, resources) is dropped.
+     */
+    @Test
+    void closureWholeEmitsVerbatimSubset() throws Exception {
+        Path sourceDir = Files.createDirectories(tempDir.resolve("sources"));
+        Path classesDir = Files.createDirectories(tempDir.resolve("classes"));
+        Path inputJar = tempDir.resolve("input.jar");
+        Path outputJar = tempDir.resolve("output.jar");
+
+        Path pkgDir = sourceDir.resolve(Path.of("net", "minecraft", "testpkg"));
+        Files.createDirectories(pkgDir);
+        Path keepSrc = pkgDir.resolve("Keep.java");
+        Files.writeString(keepSrc, """
+            package net.minecraft.testpkg;
+
+            public class Keep {
+                // Two methods that call each other: proves bodies are WHOLE
+                // (instruction slicing would have deleted the non-pos helper).
+                public int answer() {
+                    return helper() * 2;
+                }
+
+                int helper() {
+                    int a = 21;
+                    return a;
+                }
+            }
+            """);
+        Path dropSrc = pkgDir.resolve("Drop.java");
+        Files.writeString(dropSrc, """
+            package net.minecraft.testpkg;
+
+            public class Drop {
+                int gone() {
+                    return 7;
+                }
+            }
+            """);
+
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) {
+            fail("JDK compiler not available");
+        }
+        assertEquals(0, compiler.run(null, null, null,
+            "-d", classesDir.toString(),
+            keepSrc.toString(), dropSrc.toString()));
+
+        Path baseDir = classesDir.resolve(Path.of("net", "minecraft", "testpkg"));
+        byte[] keepOriginal = Files.readAllBytes(baseDir.resolve("Keep.class"));
+        try (JarOutputStream jos = new JarOutputStream(Files.newOutputStream(inputJar))) {
+            addEntry(jos, "net/minecraft/testpkg/Keep.class", keepOriginal);
+            addEntry(jos, "net/minecraft/testpkg/Drop.class",
+                Files.readAllBytes(baseDir.resolve("Drop.class")));
+            addEntry(jos, "assets/data.txt",
+                "hello".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+
+        // Closure contains only Keep — Drop and the resource are dropped.
+        MirrorClosure closure = new MirrorClosure(
+            Set.of("net.minecraft.testpkg.Keep"));
+
+        BytecodeSlicer.emitClosureJar(inputJar, outputJar, closure);
+
+        assertTrue(Files.exists(outputJar));
+        try (JarFile jarFile = new JarFile(outputJar.toFile())) {
+            assertTrue(jarFile.getEntry("net/minecraft/testpkg/Keep.class") != null,
+                "closure class is kept");
+            assertEquals(null, jarFile.getEntry("net/minecraft/testpkg/Drop.class"),
+                "out-of-closure class is dropped");
+            assertEquals(null, jarFile.getEntry("assets/data.txt"),
+                "non-class entries are dropped");
+
+            byte[] emitted;
+            try (InputStream in = jarFile.getInputStream(
+                jarFile.getEntry("net/minecraft/testpkg/Keep.class"))) {
+                emitted = in.readAllBytes();
+            }
+            assertArrayEquals(keepOriginal, emitted,
+                "closure class must be byte-identical (verbatim, not pruned)");
+        }
+
+        // Whole bodies execute correctly: answer() calls helper() — instruction
+        // slicing would have removed helper() and broken this.
+        try (URLClassLoader cl = new URLClassLoader(
+            new URL[] { outputJar.toUri().toURL() },
+            getClass().getClassLoader())) {
+            Class<?> keep = Class.forName(
+                "net.minecraft.testpkg.Keep", true, cl);
+            Object instance = keep.getDeclaredConstructor().newInstance();
+            assertEquals(42, keep.getMethod("answer").invoke(instance));
         }
     }
 
