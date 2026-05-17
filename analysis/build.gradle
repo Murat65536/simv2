@@ -33,13 +33,10 @@ tasks.named('test', Test) {
 }
 
 application {
-    mainClass = 'murat.simv2.analysis.MovementFieldAnalyzer'
+    mainClass = 'murat.simv2.analysis.SinkGateAnalyzer'
 }
 
 def analysisVerboseFixedPoint = (project.findProperty('analysisVerboseFixedPoint') ?: 'false')
-    .toString()
-    .toBoolean()
-def analysisDisableBytecodeVerify = (project.findProperty('analysisDisableBytecodeVerify') ?: 'false')
     .toString()
     .toBoolean()
 
@@ -55,9 +52,6 @@ def analysisJvmArgs = [
         '-XX:MetaspaceSize=512m',
         '-XX:MaxMetaspaceSize=1g',
 ]
-if (analysisDisableBytecodeVerify) {
-    analysisJvmArgs.add('-noverify')
-}
 if (analysisVerboseFixedPoint) {
     analysisJvmArgs.add('-Dcom.ibm.wala.fixedpoint.impl.verbose=true')
 }
@@ -74,70 +68,28 @@ def analysisCacheSearchRoots = [
  .toList()
 
 def resolveAnalysisArgs = { ->
-    // Find merged jars across possible Loom cache layouts.
-    def mergedCandidates = new LinkedHashSet<File>()
+    // Newest Minecraft merged jar across the possible Loom cache layouts
+    // (sources / backup jars excluded).
+    def mergedJars = []
     analysisCacheSearchRoots.findAll { it.exists() }.each { cacheRoot ->
         fileTree(cacheRoot) {
             include '**/minecraft-merged-*/**/*.jar'
         }.files.each { candidate ->
-            if (candidate.name.endsWith('.jar') && !candidate.name.contains('backup')) {
-                mergedCandidates << candidate
+            if (candidate.name.endsWith('.jar')
+                    && !candidate.name.endsWith('-sources.jar')
+                    && !candidate.name.contains('backup')) {
+                mergedJars << candidate
             }
         }
     }
 
-    def mergedJars = []
-    def mergedSources = []
-    def jarsByParent = [:].withDefault { [] }
-    mergedCandidates.each { candidate ->
-        jarsByParent[candidate.parentFile] << candidate
-        if (candidate.name.endsWith('-sources.jar')) {
-            mergedSources << candidate
-        } else {
-            mergedJars << candidate
-        }
-    }
-
-    def newestByModified = { List<File> files ->
-        files.isEmpty() ? null : files.max { it.lastModified() }
-    }
-
-    def pairedSelection = jarsByParent.values()
-        .collect { siblings ->
-            def mainJar = newestByModified(siblings.findAll { !it.name.endsWith('-sources.jar') })
-            def sourcesJar = newestByModified(siblings.findAll { it.name.endsWith('-sources.jar') })
-            if (mainJar != null && sourcesJar != null) {
-                return [
-                    jar: mainJar,
-                    sources: sourcesJar,
-                    modified: Math.max(mainJar.lastModified(), sourcesJar.lastModified())
-                ]
-            }
-            return null
-        }
-        .findAll { it != null }
-        .max { it.modified }
-
-    def selectedJar = pairedSelection?.jar ?: newestByModified(mergedJars)
-    def selectedSources = pairedSelection?.sources
-    if (selectedJar != null) {
-        def expectedName = selectedJar.name.replaceFirst(/\.jar$/, '-sources.jar')
-        selectedSources = selectedJar.parentFile
-            .listFiles()
-            ?.find { it.isFile() && it.name == expectedName }
-    }
-    if (selectedSources == null) {
-        selectedSources = newestByModified(mergedSources)
-    }
-
+    def selectedJar = mergedJars.isEmpty() ? null : mergedJars.max { it.lastModified() }
     def defaultMcJar = selectedJar?.absolutePath ?: ""
     def defaultOutputDir = file("${rootProject.projectDir}/src/main/generated").absolutePath
-    def defaultSourcesJar = selectedSources?.absolutePath ?: "-"
 
     return [
         project.findProperty('mcJar') ?: defaultMcJar,
-        project.findProperty('outputDir') ?: defaultOutputDir,
-        project.findProperty('sourcesJar') ?: defaultSourcesJar
+        project.findProperty('outputDir') ?: defaultOutputDir
     ]
 }
 

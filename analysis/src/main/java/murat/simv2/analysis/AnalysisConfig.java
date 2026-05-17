@@ -1,33 +1,28 @@
 package murat.simv2.analysis;
 
 /**
- * Static configuration for the movement-field analysis.
- * <p>
- * The analysis answers a single question: <em>what code on the client player
- * affects {@code Entity.pos} during a single tick?</em> Everything else — the
- * field manifest, the mirror closure, the generated sync code — is derived
- * mechanically from the WALA backward slice of that question.
+ * Static configuration for the sink-gate analysis.
+ *
+ * <p>The analysis builds a call graph rooted at {@link #ENTRY_METHOD} and, from
+ * it, enumerates every reachable side-effecting call-site (the
+ * {@link #MIRROR_SINKS} denylist). {@link SinkMixinEmitter} turns that set into
+ * the Mixins that suppress those effects while a movement prediction runs, so
+ * the gate set re-derives mechanically for whatever Minecraft jar the analysis
+ * is pointed at.
  */
 public final class AnalysisConfig {
 
     private AnalysisConfig() {
     }
 
-    public static final String TARGET_PACKAGE_INTERNAL = "net/minecraft/";
-    public static final String TARGET_PACKAGE_DOT = "net.minecraft.";
     public static final String TARGET_PACKAGE_INTERNAL_L = "Lnet/minecraft/";
-
-    public static final String ENTITY_INTERNAL = "Lnet/minecraft/entity/Entity";
-
-    /** Internal name of the seed field — the only thing we slice backward from. */
-    public static final String SEED_FIELD_NAME = "pos";
 
     /**
      * Entry point method (class, method, descriptor) for the call graph.
      * <p>{@code tickMovement} (not {@code tick}) keeps the call graph scoped to
      * the movement subsystem — input sampling, physics, collision, the
      * {@code Entity.move} chain — without dragging rendering, sound, GUI, and
-     * network-send into the slice.
+     * network-send into it.
      */
     public static final EntryMethod ENTRY_METHOD = new EntryMethod(
         "Lnet/minecraft/client/network/ClientPlayerEntity",
@@ -41,6 +36,11 @@ public final class AnalysisConfig {
         }
     }
 
+    /**
+     * WALA analysis-scope exclusions. {@code tickMovement} cannot reach
+     * rendering/sound/GUI/data, so excluding those packages keeps the call
+     * graph scoped to movement and tractable.
+     */
     public static final String[] WALA_EXCLUSIONS = {
         "java\\/awt\\/.*",
         "javax\\/swing\\/.*",
@@ -64,8 +64,6 @@ public final class AnalysisConfig {
         "com\\/mojang\\/serialization\\/.*",
         "com\\/mojang\\/brigadier\\/.*",
         "com\\/mojang\\/blaze3d\\/.*",
-        // tickMovement cannot reach rendering/sound/GUI/data. Excluding
-        // these drops their CG nodes (and heap) from the SDG.
         "net\\/minecraft\\/client\\/render\\/.*",
         "net\\/minecraft\\/client\\/gui\\/.*",
         "net\\/minecraft\\/client\\/sound\\/.*",
@@ -78,50 +76,24 @@ public final class AnalysisConfig {
         "net\\/minecraft\\/server\\/.*"
     };
 
-    public static final String[] SLICER_HEAP_EXCLUSIONS = {
-        "java\\/.*",
-        "javax\\/.*",
-        "sun\\/.*",
-        "com\\/sun\\/.*",
-        "org\\/lwjgl\\/.*",
-        // Highest-leverage Tier-1 lever: cut heap-dependence edges for
-        // movement-irrelevant subsystems without changing DataDependenceOptions.
-        "com\\/mojang\\/.*",
-        "io\\/netty\\/.*",
-        "net\\/minecraft\\/client\\/render\\/.*",
-        "net\\/minecraft\\/client\\/gui\\/.*",
-        "net\\/minecraft\\/client\\/sound\\/.*",
-        "net\\/minecraft\\/client\\/particle\\/.*",
-        "net\\/minecraft\\/client\\/texture\\/.*",
-        "net\\/minecraft\\/client\\/font\\/.*",
-        "net\\/minecraft\\/client\\/model\\/.*",
-        "net\\/minecraft\\/datafixer\\/.*"
-    };
-
     /**
-     * Sink call-sites neutralized in the mirror's child-first class copies
-     * (and <em>only</em> those copies — the real game's classes are emitted
-     * verbatim, so this can never affect live gameplay). A movement tick run
-     * on the mirror must not leave the mirror's object graph: no packets, no
-     * sounds, no particles, no game events, no block-collision callbacks, no
-     * client-singleton mutation. Each matched {@code invoke*} is rewritten to
-     * "pop args/receiver, push type-default" — net stack effect preserved, so
-     * existing StackMapTables stay valid.
+     * Side-effecting callees that must be suppressed while a movement
+     * prediction runs. {@link WalaPipelineRunner} reports every reachable
+     * call-site whose callee matches one of these rules; the generated gate
+     * Mixins skip those calls when {@code Prediction.ACTIVE}.
      *
      * <p>Each rule is {@code {ownerRegex, nameRegex}} ({@code ownerRegex} may
      * be {@code null} = any owner), matched against the callee's internal
-     * owner name and method name. Chosen to be unambiguous *effects* that
-     * never feed {@code Entity.pos} (collision/blockstate <em>reads</em> —
-     * {@code getBlockState}, {@code getCollisions}, {@code raycast}, … — match
-     * none of these and pass through). Tuned via the in-client loop; every
-     * neutralized site is audited in {@code simv2-mirror/neutralized.txt}.
+     * owner name and method name. They are unambiguous <em>effects</em>;
+     * movement <em>reads</em> ({@code getBlockState}, {@code getCollisions},
+     * {@code raycast}, …) match none of these and pass through.
      */
     public static final String[][] MIRROR_SINKS = {
         // Network: ClientPlay/Common network handler sends.
         {".*[Nn]etworkHandler", "send.*"},
         {null, "sendAbilitiesUpdate"},
-        // Sound (leaf sinks; higher-level playStepSound/playSwimSound funnel
-        // here and are themselves child-first bodies, so the leaf is caught).
+        // Sound (leaf sinks; the higher-level playStepSound/playSwimSound
+        // funnel here, so catching the leaf catches them too).
         {null, "playSound.*"},
         {null, "playSoundFromEntity"},
         // Particles.

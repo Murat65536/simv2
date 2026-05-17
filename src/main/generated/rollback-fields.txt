@@ -1,1 +1,0 @@
-net.minecraft.entity.Entity|pos|Lnet/minecraft/util/math/Vec3d

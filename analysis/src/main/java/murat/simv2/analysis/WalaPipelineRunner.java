@@ -14,7 +14,6 @@ import com.ibm.wala.ipa.callgraph.Entrypoint;
 import com.ibm.wala.ipa.callgraph.impl.DefaultEntrypoint;
 import com.ibm.wala.ipa.callgraph.impl.Util;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
-import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ssa.IR;
@@ -28,37 +27,33 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * Runs the WALA pipeline and emits the two artifacts the runtime
- * (Mixin sink-gate + snapshot/rollback) consumes:
+ * Builds a call graph rooted at {@code ClientPlayerEntity#tickMovement()} and
+ * emits everything the runtime sink-gate needs:
  *
  * <ol>
- *   <li>Build the call graph + pointer analysis from
- *       {@code ClientPlayerEntity#tickMovement()}.</li>
- *   <li>Backward-slice from every {@code putfield Entity.pos} in the CG.</li>
- *   <li>{@code rollback-fields.txt} — every field the slice classifies as
- *       written ({@code MOD}/{@code MOD_REF}). This is the set the predictor
- *       snapshots before, and restores after, the look-ahead ticks so the
- *       real player is never perturbed.</li>
- *   <li>{@code sink-callsites.txt} — every reachable call-site whose callee
- *       matches the {@link AnalysisConfig#MIRROR_SINKS} denylist. This is the
- *       completeness oracle for the gating Mixin set: every distinct callee
- *       here must be gated by a Mixin behind {@code Prediction.ACTIVE}.</li>
+ *   <li>{@code chain.txt} — the entry entity's supertype chain (the only
+ *       classes a movement tick runs through), used to restrict generated
+ *       gates to concrete, client-tickable callers.</li>
+ *   <li>{@code sink-callsites.txt} — every reachable call-site (caller on the
+ *       chain) whose callee matches the {@link AnalysisConfig#MIRROR_SINKS}
+ *       denylist: network sends, sounds, particles, game events, block
+ *       callbacks, client-singleton mutators, and cross-entity state writes.</li>
+ *   <li>The generated gate Mixins ({@link SinkMixinEmitter}) that suppress
+ *       exactly those call-sites while {@code Prediction.ACTIVE}.</li>
  * </ol>
  *
- * <p>No bytecode is emitted: the previous child-classloaded mirror jar forked
- * the {@code Entity} type and could not be verified (identity boundary). The
- * runtime now runs the <em>real</em> movement code with side effects gated by
- * Mixins and the mutated state rolled back.
+ * <p>No bytecode and no backward slice: the runtime ticks a constructor-built
+ * clone of the real player; the only thing the analysis must derive per MC
+ * version is the reachable sink set, which comes straight from the call graph.
  */
 final class WalaPipelineRunner {
 
     void run(AnalysisRunConfig config) throws Exception {
-        System.out.println("=== WALA Movement Slice ===");
+        System.out.println("=== WALA Sink-Gate Analysis ===");
         System.out.println("Minecraft jar:  " + config.minecraftJar());
         System.out.println("Output dir:     " + config.outputDir());
 
@@ -81,7 +76,7 @@ final class WalaPipelineRunner {
             System.out.println("\nBuilding 0-1-Container-CFA call graph...");
             AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
             // Movement physics is not reflectively dispatched; resolving
-            // reflection balloons the CG (hence the SDG/IFDS supergraph).
+            // reflection balloons the call graph.
             options.setReflectionOptions(AnalysisOptions.ReflectionOptions.NONE);
             CallGraphBuilder<InstanceKey> builder = Util.makeZeroOneContainerCFABuilder(
                 options, new AnalysisCacheImpl(), cha);
@@ -89,7 +84,6 @@ final class WalaPipelineRunner {
             long cgStart = System.currentTimeMillis();
             CallGraph cg = builder.makeCallGraph(options, progressMonitor);
             progressMonitor.done();
-            PointerAnalysis<InstanceKey> pa = builder.getPointerAnalysis();
             long cgMs = System.currentTimeMillis() - cgStart;
             System.out.printf("Call graph: %d nodes in %.1fs%n",
                 cg.getNumberOfNodes(), cgMs / 1000.0);
@@ -99,57 +93,32 @@ final class WalaPipelineRunner {
                         + " nodes). Check exclusions and entrypoints.");
             }
 
-            System.out.println("\nRunning backward slice from Entity.pos writes...");
-            WalaSlicer.SliceResult slice = new WalaSlicer(cg, pa, cha).slice();
-            int slicedMethods = slice.lineByMethod().values().stream().mapToInt(Map::size).sum();
-            System.out.printf(
-                "Slice: %d statements -> %d classes, %d methods, %d fields%n",
-                slice.statementsConsidered(),
-                slice.lineByMethod().size(),
-                slicedMethods,
-                slice.fields().size());
-            if (slice.lineByMethod().isEmpty()
-                || slice.statementsConsidered() <= slice.seedCount()
-                || slice.fields().isEmpty()) {
-                throw new IllegalStateException(
-                    "Slice is suspiciously small (statements=" + slice.statementsConsidered()
-                        + ", seeds=" + slice.seedCount()
-                        + ", classes=" + slice.lineByMethod().size()
-                        + ", fields=" + slice.fields().size()
-                        + "). Exclusions may be too aggressive.");
-            }
-
             Path outputDir = config.outputDir();
             Files.createDirectories(outputDir);
 
-            // 1. Rollback set: every field the slice says movement writes.
-            TreeSet<String> rollbackFields = new TreeSet<>();
-            for (FieldResult f : slice.fields()) {
-                if (f.category() == FieldResult.Category.REF) {
-                    continue; // read-only — never written, nothing to roll back
-                }
-                rollbackFields.add(f.declaringClass() + "|" + f.fieldName()
-                    + "|" + f.typeDescriptor());
-            }
-            Path rollbackFile = outputDir.resolve("rollback-fields.txt");
-            writeLines(rollbackFile, rollbackFields);
-            System.out.printf("Rollback fields: %d written to %s%n",
-                rollbackFields.size(), rollbackFile);
-
-            // 2. The entry's supertype chain (the only classes we tick
+            // 1. The entry's supertype chain (the only classes we tick
             // through): restricts generated gates to concrete, client-tickable
             // callers and is emitted for inspection.
             Set<String> chain = entrySupertypeChain(cha);
+            if (chain.isEmpty()) {
+                throw new IllegalStateException(
+                    "Entry supertype chain is empty — entry class or exclusions wrong.");
+            }
             Path chainFile = outputDir.resolve("chain.txt");
             writeLines(chainFile, new TreeSet<>(chain));
             System.out.printf("Chain: %d class(es) written to %s%n",
                 chain.size(), chainFile);
 
-            // 3. Sink call-sites: every reachable call (whose caller is on the
-            // chain) whose callee is a denylisted side effect. The whole CG is
-            // rooted at the movement entry, so every node is reachable from
+            // 2. Sink call-sites: every reachable call (caller on the chain)
+            // whose callee is a denylisted side effect. The whole CG is rooted
+            // at the movement entry, so every node is reachable from
             // tickMovement by construction.
             TreeSet<String> sinkCallsites = collectSinkCallsites(cg, chain);
+            if (sinkCallsites.isEmpty()) {
+                throw new IllegalStateException(
+                    "No sink call-sites reachable — exclusions too aggressive or "
+                        + "MIRROR_SINKS does not match this mapping.");
+            }
             Path sinkFile = outputDir.resolve("sink-callsites.txt");
             writeLines(sinkFile, sinkCallsites);
             long distinctCallees = sinkCallsites.stream()
@@ -161,7 +130,7 @@ final class WalaPipelineRunner {
                 "Sink call-sites: %d (%d distinct callee(s)) written to %s%n",
                 sinkCallsites.size(), distinctCallees, sinkFile);
 
-            // 4. Code-generate the gating Mixins from the sink call-sites so
+            // 3. Code-generate the gating Mixins from the sink call-sites so
             // they re-derive per MC version (no hand-listed gates).
             SinkMixinEmitter.emit(outputDir, sinkCallsites);
 
