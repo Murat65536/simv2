@@ -1,0 +1,5 @@
+net/minecraft/client/network/AbstractClientPlayerEntity
+net/minecraft/client/network/ClientPlayerEntity
+net/minecraft/entity/Entity
+net/minecraft/entity/LivingEntity
+net/minecraft/entity/player/PlayerEntity

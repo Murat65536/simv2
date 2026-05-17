@@ -1,0 +1,14 @@
+{
+	"required": true,
+	"package": "murat.simv2.mixin.gen",
+	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"GenClientPlayerEntitySinkMixin",
+		"GenEntitySinkMixin",
+		"GenLivingEntitySinkMixin",
+		"GenPlayerEntitySinkMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

@@ -97,4 +97,58 @@ public final class AnalysisConfig {
         "net\\/minecraft\\/client\\/model\\/.*",
         "net\\/minecraft\\/datafixer\\/.*"
     };
+
+    /**
+     * Sink call-sites neutralized in the mirror's child-first class copies
+     * (and <em>only</em> those copies — the real game's classes are emitted
+     * verbatim, so this can never affect live gameplay). A movement tick run
+     * on the mirror must not leave the mirror's object graph: no packets, no
+     * sounds, no particles, no game events, no block-collision callbacks, no
+     * client-singleton mutation. Each matched {@code invoke*} is rewritten to
+     * "pop args/receiver, push type-default" — net stack effect preserved, so
+     * existing StackMapTables stay valid.
+     *
+     * <p>Each rule is {@code {ownerRegex, nameRegex}} ({@code ownerRegex} may
+     * be {@code null} = any owner), matched against the callee's internal
+     * owner name and method name. Chosen to be unambiguous *effects* that
+     * never feed {@code Entity.pos} (collision/blockstate <em>reads</em> —
+     * {@code getBlockState}, {@code getCollisions}, {@code raycast}, … — match
+     * none of these and pass through). Tuned via the in-client loop; every
+     * neutralized site is audited in {@code simv2-mirror/neutralized.txt}.
+     */
+    public static final String[][] MIRROR_SINKS = {
+        // Network: ClientPlay/Common network handler sends.
+        {".*[Nn]etworkHandler", "send.*"},
+        {null, "sendAbilitiesUpdate"},
+        // Sound (leaf sinks; higher-level playStepSound/playSwimSound funnel
+        // here and are themselves child-first bodies, so the leaf is caught).
+        {null, "playSound.*"},
+        {null, "playSoundFromEntity"},
+        // Particles.
+        {null, "addParticle.*"},
+        {null, "addEmitter"},
+        {null, "addBlockBreakParticles"},
+        {null, "spawnSprintingParticles"},
+        // Game / world events.
+        {null, "emitGameEvent"},
+        {null, "syncWorldEvent"},
+        {null, "playLevelEvent"},
+        // Block-collision callbacks reached from Entity.tickBlockCollisions /
+        // move / fall — these mutate the real world (trample, tripwire, sculk).
+        {null, "onEntityCollision"},
+        {null, "onSteppedOn"},
+        {null, "onLandedUpon"},
+        {null, "onEntityLand"},
+        // Client singleton mutators reached via the shared MinecraftClient.
+        {".*TutorialManager", "onMovement"},
+        {".*MinecraftClient", "setScreen"},
+        // Cross-entity state writes. The prediction clone is seeded to the
+        // real player's position, so it is co-located with the real player,
+        // which is in the shared world's entity list. tickCramming() queries
+        // those entities and pushAwayFrom() calls addVelocity() on the *other*
+        // entity — i.e. the clone would shove the real player every predicted
+        // tick. Gating these stops the clone perturbing anything but itself.
+        {null, "tickCramming"},
+        {null, "pushAwayFrom"},
+    };
 }

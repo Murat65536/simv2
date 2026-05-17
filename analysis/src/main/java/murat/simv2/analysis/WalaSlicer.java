@@ -195,7 +195,6 @@ final class WalaSlicer {
     private SliceResult analyzeStatements(
         Collection<Statement> statements, Set<TypeReference> entitySubtypes, int seedCount) {
         Map<String, Map<String, Set<Integer>>> lineByMethod = new java.util.concurrent.ConcurrentSkipListMap<>();
-        Map<String, Map<String, Set<Integer>>> bcIndexByMethod = new java.util.concurrent.ConcurrentSkipListMap<>();
         Map<String, FieldResult.Category> categoryByField = new java.util.concurrent.ConcurrentHashMap<>();
         Map<String, FieldRecord> fieldsByKey = new java.util.concurrent.ConcurrentHashMap<>();
 
@@ -209,14 +208,6 @@ final class WalaSlicer {
 
             String dotClass = toDotClass(declClassInternal);
             String selector = method.getName().toString() + method.getDescriptor().toString();
-
-            int bcIndex = bytecodeIndex(method, ns.getInstructionIndex());
-            if (bcIndex >= 0) {
-                bcIndexByMethod
-                    .computeIfAbsent(dotClass, k -> new java.util.concurrent.ConcurrentSkipListMap<>())
-                    .computeIfAbsent(selector, k -> new java.util.concurrent.ConcurrentSkipListSet<>())
-                    .add(bcIndex);
-            }
 
             int line = sourceLine(method, ns.getInstructionIndex());
             if (line > 0) {
@@ -247,7 +238,7 @@ final class WalaSlicer {
             fields.add(new FieldResult(r.declaringClass, r.fieldName, r.descriptor, cat));
         }
 
-        return new SliceResult(statements.size(), seedCount, Map.copyOf(lineByMethod), Map.copyOf(bcIndexByMethod), List.copyOf(fields));
+        return new SliceResult(statements.size(), seedCount, Map.copyOf(lineByMethod), List.copyOf(fields));
     }
 
     private void recordField(SSAFieldAccessInstruction insn,
@@ -290,15 +281,6 @@ final class WalaSlicer {
         try {
             int bcIndex = bc.getBytecodeIndex(instructionIndex);
             return bc.getLineNumber(bcIndex);
-        } catch (Exception ignored) {
-            return -1;
-        }
-    }
-
-    private int bytecodeIndex(IMethod method, int instructionIndex) {
-        if (!(method instanceof IBytecodeMethod<?> bc)) return -1;
-        try {
-            return bc.getBytecodeIndex(instructionIndex);
         } catch (Exception ignored) {
             return -1;
         }
@@ -452,7 +434,6 @@ final class WalaSlicer {
         int statementsConsidered,
         int seedCount,
         Map<String, Map<String, Set<Integer>>> lineByMethod,
-        Map<String, Map<String, Set<Integer>>> bcIndexByMethod,
         List<FieldResult> fields
     ) {
     }
