@@ -19,14 +19,18 @@ public final class AnalysisConfig {
 
     /**
      * Entry point method (class, method, descriptor) for the call graph.
-     * <p>{@code tickMovement} (not {@code tick}) keeps the call graph scoped to
-     * the movement subsystem — input sampling, physics, collision, the
-     * {@code Entity.move} chain — without dragging rendering, sound, GUI, and
-     * network-send into it.
+     * <p>{@code tick()} (the full entity tick), not {@code tickMovement()}:
+     * elytra ({@code LivingEntity.tickFallFlying}), water/swim state
+     * ({@code Entity.baseTick}/{@code updateSwimming}) and other movement
+     * modes live in {@code tick()} and its callees, not in
+     * {@code tickMovement()} alone. The broader reachable set means more
+     * side-effecting call-sites — that is the point of generating the gates
+     * from the analysis: the suppression set scales with the entry.
+     * Rendering/sound/GUI are still pruned by {@link #WALA_EXCLUSIONS}.
      */
     public static final EntryMethod ENTRY_METHOD = new EntryMethod(
         "Lnet/minecraft/client/network/ClientPlayerEntity",
-        "tickMovement",
+        "tick",
         "()V"
     );
 
@@ -122,5 +126,18 @@ public final class AnalysisConfig {
         // tick. Gating these stops the clone perturbing anything but itself.
         {null, "tickCramming"},
         {null, "pushAwayFrom"},
+        // World / entity creation, drops and block writes. With the full
+        // tick() entry the clone can reach death / void / fire paths; since it
+        // shares the real ClientWorld, a clone that "died" mid-prediction
+        // would otherwise spawn item entities / write blocks into the *real*
+        // world. None of these have any role in projecting held-key movement,
+        // so gating every reachable one keeps zero-impact intact.
+        {null, "spawnEntity"},
+        {null, "dropStack"},
+        {null, "dropItem"},
+        {null, "dropInventory"},
+        {null, "setBlockState"},
+        {null, "breakBlock"},
+        {null, "removeBlock"},
     };
 }

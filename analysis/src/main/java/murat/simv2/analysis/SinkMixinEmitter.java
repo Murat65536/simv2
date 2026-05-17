@@ -105,7 +105,8 @@ final class SinkMixinEmitter {
             String calleeOwnerSlash = s[1];
             String calleeName = s[2];
             String calleeDesc = s[3];
-            boolean isStatic = "STATIC".equals(s[4]);
+            String kind = s[4];
+            boolean isStatic = "STATIC".equals(kind);
 
             List<String> argTypes = new ArrayList<>();
             String retType = parseDescriptor(calleeDesc, argTypes);
@@ -113,10 +114,15 @@ final class SinkMixinEmitter {
             String target = "L" + calleeOwnerSlash + ";" + calleeName + calleeDesc;
             String handler = "simv2$g" + (idx++);
 
+            // Receiver type Mixin expects on the stack: for an INVOKESPECIAL
+            // (super.x() / private) it is `this` typed as the calling class;
+            // otherwise it is the bytecode invoke owner.
+            String recvType = "SPECIAL".equals(kind) ? callerDot : ownerJava;
+
             StringBuilder params = new StringBuilder();
             StringBuilder callArgs = new StringBuilder();
             if (!isStatic) {
-                params.append(ownerJava).append(" recv");
+                params.append(recvType).append(" recv");
                 callArgs.append("recv");
             }
             for (int i = 0; i < argTypes.size(); i++) {

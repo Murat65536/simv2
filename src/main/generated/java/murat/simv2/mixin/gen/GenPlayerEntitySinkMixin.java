@@ -33,8 +33,20 @@ public abstract class GenPlayerEntitySinkMixin {
         original.call(recv, a0, a1, a2, a3, a4, a5, a6, a7);
     }
 
+    @WrapOperation(method = "dropInventory(Lnet/minecraft/server/world/ServerWorld;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;dropInventory(Lnet/minecraft/server/world/ServerWorld;)V"))
+    private void simv2$g4(net.minecraft.entity.player.PlayerEntity recv, net.minecraft.server.world.ServerWorld a0, Operation<Void> original) {
+        if (murat.simv2.predict.Prediction.ACTIVE) { return; }
+        original.call(recv, a0);
+    }
+
+    @WrapOperation(method = "dropItem(Lnet/minecraft/item/ItemStack;Z)Lnet/minecraft/entity/ItemEntity;", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;dropItem(Lnet/minecraft/item/ItemStack;ZZ)Lnet/minecraft/entity/ItemEntity;"))
+    private net.minecraft.entity.ItemEntity simv2$g5(net.minecraft.entity.player.PlayerEntity recv, net.minecraft.item.ItemStack a0, boolean a1, boolean a2, Operation<net.minecraft.entity.ItemEntity> original) {
+        if (murat.simv2.predict.Prediction.ACTIVE) { return null; }
+        return original.call(recv, a0, a1, a2);
+    }
+
     @WrapOperation(method = "updateShoulderEntity(Lnet/minecraft/nbt/NbtCompound;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;playSound(Lnet/minecraft/entity/Entity;DDDLnet/minecraft/sound/SoundEvent;Lnet/minecraft/sound/SoundCategory;FF)V"))
-    private void simv2$g4(net.minecraft.world.World recv, net.minecraft.entity.Entity a0, double a1, double a2, double a3, net.minecraft.sound.SoundEvent a4, net.minecraft.sound.SoundCategory a5, float a6, float a7, Operation<Void> original) {
+    private void simv2$g6(net.minecraft.world.World recv, net.minecraft.entity.Entity a0, double a1, double a2, double a3, net.minecraft.sound.SoundEvent a4, net.minecraft.sound.SoundCategory a5, float a6, float a7, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv, a0, a1, a2, a3, a4, a5, a6, a7);
     }

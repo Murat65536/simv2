@@ -56,9 +56,9 @@ public final class MovementPredictor {
     private List<Field> playerFields;     // net.minecraft-declared, for ctor-arg scan
     private Field inputField;
 
-    private Method mCopyFrom;     // Entity.copyFrom(Entity) — the game's own transfer
-    private Method mTickMovement; // the entry we run forward
-    private Method mGetPos;       // the result we read
+    private Method mCopyFrom;  // Entity.copyFrom(Entity) — the game's own transfer
+    private Method mTick;      // the entry we run forward (full entity tick)
+    private Method mGetPos;    // the result we read
 
     private MovementPredictor() {
     }
@@ -107,7 +107,7 @@ public final class MovementPredictor {
             Prediction.ACTIVE = true;
             try {
                 for (int i = 0; i < HORIZON; i++) {
-                    mTickMovement.invoke(clone);
+                    mTick.invoke(clone);
                     Object p = mGetPos.invoke(clone);
                     if (p instanceof Vec3d v) {
                         path.add(v);
@@ -173,7 +173,7 @@ public final class MovementPredictor {
             disable("Entity.copyFrom(Entity) not found");
             return;
         }
-        mTickMovement = playerClass.getMethod("tickMovement");
+        mTick = playerClass.getMethod("tick");
         mGetPos = playerClass.getMethod("getPos");
 
         inputField = null;

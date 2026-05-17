@@ -15,68 +15,116 @@ public abstract class GenLivingEntitySinkMixin {
         original.call(recv, a0, a1, a2);
     }
 
-    @WrapOperation(method = "damage(Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/damage/DamageSource;F)Z", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;playSound(Lnet/minecraft/sound/SoundEvent;)V"))
-    private void simv2$g1(net.minecraft.entity.LivingEntity recv, net.minecraft.sound.SoundEvent a0, Operation<Void> original) {
+    @WrapOperation(method = "clearActiveItem()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;emitGameEvent(Lnet/minecraft/registry/entry/RegistryEntry;)V"))
+    private void simv2$g1(net.minecraft.entity.LivingEntity recv, net.minecraft.registry.entry.RegistryEntry a0, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv, a0);
     }
 
+    @WrapOperation(method = "damage(Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/damage/DamageSource;F)Z", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;playSound(Lnet/minecraft/sound/SoundEvent;)V"))
+    private void simv2$g2(net.minecraft.entity.LivingEntity recv, net.minecraft.sound.SoundEvent a0, Operation<Void> original) {
+        if (murat.simv2.predict.Prediction.ACTIVE) { return; }
+        original.call(recv, a0);
+    }
+
+    @WrapOperation(method = "drop(Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/damage/DamageSource;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;dropInventory(Lnet/minecraft/server/world/ServerWorld;)V"))
+    private void simv2$g3(net.minecraft.entity.LivingEntity recv, net.minecraft.server.world.ServerWorld a0, Operation<Void> original) {
+        if (murat.simv2.predict.Prediction.ACTIVE) { return; }
+        original.call(recv, a0);
+    }
+
+    @WrapOperation(method = "dropItem(Lnet/minecraft/item/ItemStack;ZZ)Lnet/minecraft/entity/ItemEntity;", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;spawnEntity(Lnet/minecraft/entity/Entity;)Z"))
+    private boolean simv2$g4(net.minecraft.world.World recv, net.minecraft.entity.Entity a0, Operation<Boolean> original) {
+        if (murat.simv2.predict.Prediction.ACTIVE) { return false; }
+        return original.call(recv, a0);
+    }
+
     @WrapOperation(method = "onDeath(Lnet/minecraft/entity/damage/DamageSource;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;emitGameEvent(Lnet/minecraft/registry/entry/RegistryEntry;)V"))
-    private void simv2$g2(net.minecraft.entity.LivingEntity recv, net.minecraft.registry.entry.RegistryEntry a0, Operation<Void> original) {
+    private void simv2$g5(net.minecraft.entity.LivingEntity recv, net.minecraft.registry.entry.RegistryEntry a0, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv, a0);
     }
 
     @WrapOperation(method = "onEquipStack(Lnet/minecraft/entity/EquipmentSlot;Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemStack;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;emitGameEvent(Lnet/minecraft/registry/entry/RegistryEntry;)V"))
-    private void simv2$g3(net.minecraft.entity.LivingEntity recv, net.minecraft.registry.entry.RegistryEntry a0, Operation<Void> original) {
+    private void simv2$g6(net.minecraft.entity.LivingEntity recv, net.minecraft.registry.entry.RegistryEntry a0, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv, a0);
     }
 
     @WrapOperation(method = "onEquipStack(Lnet/minecraft/entity/EquipmentSlot;Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemStack;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;playSound(Lnet/minecraft/entity/Entity;DDDLnet/minecraft/registry/entry/RegistryEntry;Lnet/minecraft/sound/SoundCategory;FFJ)V"))
-    private void simv2$g4(net.minecraft.world.World recv, net.minecraft.entity.Entity a0, double a1, double a2, double a3, net.minecraft.registry.entry.RegistryEntry a4, net.minecraft.sound.SoundCategory a5, float a6, float a7, long a8, Operation<Void> original) {
+    private void simv2$g7(net.minecraft.world.World recv, net.minecraft.entity.Entity a0, double a1, double a2, double a3, net.minecraft.registry.entry.RegistryEntry a4, net.minecraft.sound.SoundCategory a5, float a6, float a7, long a8, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv, a0, a1, a2, a3, a4, a5, a6, a7, a8);
     }
 
+    @WrapOperation(method = "onKilledBy(Lnet/minecraft/entity/LivingEntity;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;I)Z"))
+    private boolean simv2$g8(net.minecraft.world.World recv, net.minecraft.util.math.BlockPos a0, net.minecraft.block.BlockState a1, int a2, Operation<Boolean> original) {
+        if (murat.simv2.predict.Prediction.ACTIVE) { return false; }
+        return original.call(recv, a0, a1, a2);
+    }
+
+    @WrapOperation(method = "onKilledBy(Lnet/minecraft/entity/LivingEntity;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;spawnEntity(Lnet/minecraft/entity/Entity;)Z"))
+    private boolean simv2$g9(net.minecraft.world.World recv, net.minecraft.entity.Entity a0, Operation<Boolean> original) {
+        if (murat.simv2.predict.Prediction.ACTIVE) { return false; }
+        return original.call(recv, a0);
+    }
+
+    @WrapOperation(method = "onStatusEffectsRemoved(Ljava/util/Collection;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
+    private void simv2$g10(net.minecraft.server.network.ServerPlayNetworkHandler recv, net.minecraft.network.packet.Packet a0, Operation<Void> original) {
+        if (murat.simv2.predict.Prediction.ACTIVE) { return; }
+        original.call(recv, a0);
+    }
+
     @WrapOperation(method = "playHurtSound(Lnet/minecraft/entity/damage/DamageSource;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;playSound(Lnet/minecraft/sound/SoundEvent;)V"))
-    private void simv2$g5(net.minecraft.entity.LivingEntity recv, net.minecraft.sound.SoundEvent a0, Operation<Void> original) {
+    private void simv2$g11(net.minecraft.entity.LivingEntity recv, net.minecraft.sound.SoundEvent a0, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv, a0);
     }
 
     @WrapOperation(method = "playSound(Lnet/minecraft/sound/SoundEvent;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;playSound(Lnet/minecraft/sound/SoundEvent;FF)V"))
-    private void simv2$g6(net.minecraft.entity.LivingEntity recv, net.minecraft.sound.SoundEvent a0, float a1, float a2, Operation<Void> original) {
+    private void simv2$g12(net.minecraft.entity.LivingEntity recv, net.minecraft.sound.SoundEvent a0, float a1, float a2, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv, a0, a1, a2);
     }
 
     @WrapOperation(method = "playThornsSound(Lnet/minecraft/entity/damage/DamageSource;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;playSound(Lnet/minecraft/entity/Entity;DDDLnet/minecraft/sound/SoundEvent;Lnet/minecraft/sound/SoundCategory;)V"))
-    private void simv2$g7(net.minecraft.world.World recv, net.minecraft.entity.Entity a0, double a1, double a2, double a3, net.minecraft.sound.SoundEvent a4, net.minecraft.sound.SoundCategory a5, Operation<Void> original) {
+    private void simv2$g13(net.minecraft.world.World recv, net.minecraft.entity.Entity a0, double a1, double a2, double a3, net.minecraft.sound.SoundEvent a4, net.minecraft.sound.SoundCategory a5, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv, a0, a1, a2, a3, a4, a5);
     }
 
     @WrapOperation(method = "pushAway(Lnet/minecraft/entity/Entity;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;pushAwayFrom(Lnet/minecraft/entity/Entity;)V"))
-    private void simv2$g8(net.minecraft.entity.Entity recv, net.minecraft.entity.Entity a0, Operation<Void> original) {
+    private void simv2$g14(net.minecraft.entity.Entity recv, net.minecraft.entity.Entity a0, Operation<Void> original) {
+        if (murat.simv2.predict.Prediction.ACTIVE) { return; }
+        original.call(recv, a0);
+    }
+
+    @WrapOperation(method = "sendEffectToControllingPlayer(Lnet/minecraft/entity/effect/StatusEffectInstance;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
+    private void simv2$g15(net.minecraft.server.network.ServerPlayNetworkHandler recv, net.minecraft.network.packet.Packet a0, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv, a0);
     }
 
     @WrapOperation(method = "tickGliding()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;emitGameEvent(Lnet/minecraft/registry/entry/RegistryEntry;)V"))
-    private void simv2$g9(net.minecraft.entity.LivingEntity recv, net.minecraft.registry.entry.RegistryEntry a0, Operation<Void> original) {
+    private void simv2$g16(net.minecraft.entity.LivingEntity recv, net.minecraft.registry.entry.RegistryEntry a0, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv, a0);
     }
 
     @WrapOperation(method = "tickMovement()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;tickCramming()V"))
-    private void simv2$g10(net.minecraft.entity.LivingEntity recv, Operation<Void> original) {
+    private void simv2$g17(net.minecraft.entity.LivingEntity recv, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv);
     }
 
+    @WrapOperation(method = "tickStatusEffects()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;addParticleClient(Lnet/minecraft/particle/ParticleEffect;DDDDDD)V"))
+    private void simv2$g18(net.minecraft.world.World recv, net.minecraft.particle.ParticleEffect a0, double a1, double a2, double a3, double a4, double a5, double a6, Operation<Void> original) {
+        if (murat.simv2.predict.Prediction.ACTIVE) { return; }
+        original.call(recv, a0, a1, a2, a3, a4, a5, a6);
+    }
+
     @WrapOperation(method = "tryUseDeathProtector(Lnet/minecraft/entity/damage/DamageSource;)Z", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;emitGameEvent(Lnet/minecraft/registry/entry/RegistryEntry;)V"))
-    private void simv2$g11(net.minecraft.entity.LivingEntity recv, net.minecraft.registry.entry.RegistryEntry a0, Operation<Void> original) {
+    private void simv2$g19(net.minecraft.entity.LivingEntity recv, net.minecraft.registry.entry.RegistryEntry a0, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv, a0);
     }

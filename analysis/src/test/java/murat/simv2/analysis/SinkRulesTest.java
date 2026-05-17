@@ -64,6 +64,18 @@ class SinkRulesTest {
     }
 
     @Test
+    void worldAndEntityWritesAreSinks() {
+        // With the tick() entry the clone must never litter the real world.
+        assertTrue(SinkRules.isSink("net/minecraft/world/World", "spawnEntity"));
+        assertTrue(SinkRules.isSink("net/minecraft/entity/Entity", "dropStack"));
+        assertTrue(SinkRules.isSink("net/minecraft/entity/player/PlayerEntity", "dropItem"));
+        assertTrue(SinkRules.isSink("net/minecraft/entity/LivingEntity", "dropInventory"));
+        assertTrue(SinkRules.isSink("net/minecraft/world/World", "setBlockState"));
+        assertTrue(SinkRules.isSink("net/minecraft/world/World", "breakBlock"));
+        assertTrue(SinkRules.isSink("net/minecraft/world/World", "removeBlock"));
+    }
+
+    @Test
     void movementReadsPassThrough() {
         assertFalse(SinkRules.isSink("net/minecraft/world/World", "getBlockState"));
         assertFalse(SinkRules.isSink("net/minecraft/entity/Entity", "getPos"));

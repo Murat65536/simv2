@@ -45,33 +45,69 @@ public abstract class GenClientPlayerEntitySinkMixin {
         original.call(recv, a0);
     }
 
-    @WrapOperation(method = "startRidingJump()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
+    @WrapOperation(method = "sendMovementPackets()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
     private void simv2$g6(net.minecraft.client.network.ClientPlayNetworkHandler recv, net.minecraft.network.packet.Packet a0, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv, a0);
     }
 
-    @WrapOperation(method = "tickMovement()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
+    @WrapOperation(method = "sendSneakingPacket()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
     private void simv2$g7(net.minecraft.client.network.ClientPlayNetworkHandler recv, net.minecraft.network.packet.Packet a0, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv, a0);
     }
 
+    @WrapOperation(method = "sendSprintingPacket()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
+    private void simv2$g8(net.minecraft.client.network.ClientPlayNetworkHandler recv, net.minecraft.network.packet.Packet a0, Operation<Void> original) {
+        if (murat.simv2.predict.Prediction.ACTIVE) { return; }
+        original.call(recv, a0);
+    }
+
+    @WrapOperation(method = "startRidingJump()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
+    private void simv2$g9(net.minecraft.client.network.ClientPlayNetworkHandler recv, net.minecraft.network.packet.Packet a0, Operation<Void> original) {
+        if (murat.simv2.predict.Prediction.ACTIVE) { return; }
+        original.call(recv, a0);
+    }
+
+    @WrapOperation(method = "swingHand(Lnet/minecraft/util/Hand;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
+    private void simv2$g10(net.minecraft.client.network.ClientPlayNetworkHandler recv, net.minecraft.network.packet.Packet a0, Operation<Void> original) {
+        if (murat.simv2.predict.Prediction.ACTIVE) { return; }
+        original.call(recv, a0);
+    }
+
+    @WrapOperation(method = "tick()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
+    private void simv2$g11(net.minecraft.client.network.ClientPlayNetworkHandler recv, net.minecraft.network.packet.Packet a0, Operation<Void> original) {
+        if (murat.simv2.predict.Prediction.ACTIVE) { return; }
+        original.call(recv, a0);
+    }
+
+    @WrapOperation(method = "tickMovement()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
+    private void simv2$g12(net.minecraft.client.network.ClientPlayNetworkHandler recv, net.minecraft.network.packet.Packet a0, Operation<Void> original) {
+        if (murat.simv2.predict.Prediction.ACTIVE) { return; }
+        original.call(recv, a0);
+    }
+
     @WrapOperation(method = "tickMovement()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;sendAbilitiesUpdate()V"))
-    private void simv2$g8(net.minecraft.client.network.ClientPlayerEntity recv, Operation<Void> original) {
+    private void simv2$g13(net.minecraft.client.network.ClientPlayerEntity recv, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv);
     }
 
     @WrapOperation(method = "tickMovement()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/tutorial/TutorialManager;onMovement(Lnet/minecraft/client/input/Input;)V"))
-    private void simv2$g9(net.minecraft.client.tutorial.TutorialManager recv, net.minecraft.client.input.Input a0, Operation<Void> original) {
+    private void simv2$g14(net.minecraft.client.tutorial.TutorialManager recv, net.minecraft.client.input.Input a0, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv, a0);
     }
 
     @WrapOperation(method = "tickNausea(Z)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;setScreen(Lnet/minecraft/client/gui/screen/Screen;)V"))
-    private void simv2$g10(net.minecraft.client.MinecraftClient recv, net.minecraft.client.gui.screen.Screen a0, Operation<Void> original) {
+    private void simv2$g15(net.minecraft.client.MinecraftClient recv, net.minecraft.client.gui.screen.Screen a0, Operation<Void> original) {
         if (murat.simv2.predict.Prediction.ACTIVE) { return; }
         original.call(recv, a0);
+    }
+
+    @WrapOperation(method = "updateWaterSubmersionState()Z", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;playSoundClient(DDDLnet/minecraft/sound/SoundEvent;Lnet/minecraft/sound/SoundCategory;FFZ)V"))
+    private void simv2$g16(net.minecraft.world.World recv, double a0, double a1, double a2, net.minecraft.sound.SoundEvent a3, net.minecraft.sound.SoundCategory a4, float a5, float a6, boolean a7, Operation<Void> original) {
+        if (murat.simv2.predict.Prediction.ACTIVE) { return; }
+        original.call(recv, a0, a1, a2, a3, a4, a5, a6, a7);
     }
 }

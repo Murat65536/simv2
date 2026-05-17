@@ -1,6 +1,6 @@
 package murat.simv2.analysis;
 
-import com.ibm.wala.classLoader.CallSiteReference;
+import com.ibm.wala.classLoader.IBytecodeMethod;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.core.util.config.AnalysisScopeReader;
@@ -16,7 +16,7 @@ import com.ibm.wala.ipa.callgraph.impl.Util;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
-import com.ibm.wala.ssa.IR;
+import com.ibm.wala.shrike.shrikeBT.IInvokeInstruction;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
@@ -26,7 +26,7 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -145,14 +145,27 @@ final class WalaPipelineRunner {
      * Every reachable call-site whose caller is on the entry supertype
      * {@code chain} and whose callee matches {@link SinkRules}. Line form:
      * {@code callerClassDot|callerSelector|calleeOwnerSlash|calleeName
-     * |calleeDesc|invokeKind} where {@code invokeKind} is {@code STATIC} or
-     * {@code INSTANCE} (the only distinction the generated handler needs).
+     * |calleeDesc|invokeKind} where {@code invokeKind} is {@code STATIC},
+     * {@code SPECIAL}, {@code INTERFACE} or {@code VIRTUAL} — the generated
+     * handler's receiver type depends on it ({@code SPECIAL}/super-call →
+     * the caller class; otherwise the bytecode invoke owner).
+     *
+     * <p>The callee owner is read from the <em>raw Shrike bytecode</em>
+     * invoke instruction ({@code getClassType()}), <b>not</b> WALA's resolved
+     * {@code MethodReference.getDeclaringClass()}. WALA normalizes an inherited
+     * {@code this.foo()} call to the declaring superclass, but the Mixin
+     * {@code @WrapOperation} handler receiver must be the exact bytecode
+     * invoke owner (the static receiver type, i.e. the caller subclass) or
+     * Mixin rejects the signature. Reading the constant-pool owner gives
+     * exactly what Mixin expects, version-robustly.
      */
     private TreeSet<String> collectSinkCallsites(CallGraph cg, Set<String> chain) {
         TreeSet<String> out = new TreeSet<>();
+        Set<IMethod> scanned = new HashSet<>();
         for (CGNode node : cg) {
             IMethod caller = node.getMethod();
-            if (caller == null || caller.isSynthetic()) {
+            if (caller == null || caller.isSynthetic()
+                || !(caller instanceof IBytecodeMethod)) {
                 continue;
             }
             String callerType = caller.getDeclaringClass().getName().toString();
@@ -163,25 +176,41 @@ final class WalaPipelineRunner {
             if (!chain.contains(callerInternal)) {
                 continue; // only gate concrete, client-tickable movement classes
             }
-            IR ir = node.getIR();
-            if (ir == null) {
+            if (!scanned.add(caller)) {
+                continue; // a method may have many context-sensitive CG nodes
+            }
+            Object[] insns;
+            try {
+                @SuppressWarnings("rawtypes")
+                IBytecodeMethod bm = (IBytecodeMethod) caller;
+                insns = bm.getInstructions();
+            } catch (Exception e) {
+                continue;
+            }
+            if (insns == null) {
                 continue;
             }
             String callerClassDot = callerInternal.replace('/', '.');
             String callerSelector = caller.getName().toString()
                 + caller.getDescriptor().toString();
-            for (Iterator<CallSiteReference> it = ir.iterateCallSites(); it.hasNext(); ) {
-                CallSiteReference csr = it.next();
-                MethodReference mr = csr.getDeclaredTarget();
-                String calleeOwner = stripL(mr.getDeclaringClass().getName().toString());
-                String calleeName = mr.getName().toString();
+            for (Object insn : insns) {
+                if (!(insn instanceof IInvokeInstruction ii)) {
+                    continue;
+                }
+                String calleeOwner = stripL(ii.getClassType()); // true bytecode owner
+                String calleeName = ii.getMethodName();
                 if (!SinkRules.isSink(calleeOwner, calleeName)) {
                     continue;
                 }
+                IInvokeInstruction.IDispatch code = ii.getInvocationCode();
+                String kind =
+                    code == IInvokeInstruction.Dispatch.STATIC ? "STATIC"
+                  : code == IInvokeInstruction.Dispatch.SPECIAL ? "SPECIAL"
+                  : code == IInvokeInstruction.Dispatch.INTERFACE ? "INTERFACE"
+                  : "VIRTUAL";
                 out.add(callerClassDot + "|" + callerSelector + "|"
                     + calleeOwner + "|" + calleeName + "|"
-                    + mr.getDescriptor().toString() + "|"
-                    + (csr.isStatic() ? "STATIC" : "INSTANCE"));
+                    + ii.getMethodSignature() + "|" + kind);
             }
         }
         return out;
