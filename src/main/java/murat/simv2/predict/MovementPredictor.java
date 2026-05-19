@@ -164,12 +164,15 @@ public final class MovementPredictor {
     // translating a frozen shape). The fidelity probe validates the ring
     // front against reality every tick; a >FIDELITY_EPS miss (input the
     // guards didn't catch, accumulated drift, terrain change) forces a
-    // re-anchoring recompute. Steady = grounded + ~0 vertical velocity +
-    // unchanged input signature + unchanged look angle + no external
-    // position jump + same world; anything else recomputes.
+    // re-anchoring recompute. Because the clone is ticked forward through
+    // real physics (not a translated frozen shape) the extend is
+    // phase-correct airborne and through turns too: the look angle is
+    // synced onto the clone each extend, so jumping / falling / looking
+    // around while moving all keep extending. Recompute only on a held-
+    // input change, an external position jump, a probe miss, a world
+    // swap, or a skipped frame.
     private static final double JUMP_SQ = 1.0;       // >1 block = external
-    private static final float ANG_EPS = 0.5F;       // degrees
-    private static final double VEL_Y_EPS = 0.01;    // grounded == steady
+    private static final float ANG_EPS = 0.5F;       // degrees (degrade path)
     private Vec3d[] ring;              // HORIZON absolute predictions, FIFO
     private int ringStart;            // index of the front (oldest) entry
     private boolean ringValid;        // clone+ring usable for an extend
@@ -181,8 +184,9 @@ public final class MovementPredictor {
     private int advances;             // extends since last recompute (diag)
     private Method mGetYaw;             // best-effort look-angle accessors
     private Method mGetPitch;
-    private Method mIsOnGround;         // steady-regime gate
-    private Method mGetVelocity;
+    private Method mSetYaw;             // sync clone look onto each extend
+    private Method mSetPitch;
+    private boolean angleSyncable;      // both get+set look accessors found
 
     // --- B verification: deferred 1-tick fidelity probe (DEBUG) -------
     // The one B failure mode with no other automated check: a reused
@@ -305,18 +309,21 @@ public final class MovementPredictor {
                 ringValid = false;
             }
 
-            // Incremental extend: in the steady regime, advance the
-            // retained clone ONE tick and rotate the ring instead of a
-            // full HORIZON recompute. drift = (actual - predicted-for-now)
-            // is the probe-bounded 1-tick error; adding it re-glues the
-            // path origin to the real player without staleness. No clone
-            // is rebuilt or re-seeded — only ticked once.
+            // Incremental extend: advance the retained clone ONE tick and
+            // rotate the ring instead of a full HORIZON recompute. The
+            // clone is ticked through real physics so this is phase-
+            // correct airborne and the live look angle is synced onto it,
+            // so jumping / falling / turning while moving keep extending.
+            // drift = (actual - predicted-for-now) is the probe-bounded
+            // 1-tick error; adding it re-glues the path origin to the real
+            // player without staleness. No clone is rebuilt or re-seeded —
+            // only ticked once. Recompute only on a held-input change, an
+            // external position jump, a probe miss, a swap, or a gap.
             if (ringValid && reusableClone != null && curPos != null
                 && predictedNext != null
                 && predictTick == fidelityTick + 1
-                && verticallySteady(realPlayer)
                 && sigEquals(sig, lastInputSig)
-                && angleUnchanged(realPlayer)
+                && (angleSyncable || angleUnchanged(realPlayer))
                 && curPos.squaredDistanceTo(predictedNext) < JUMP_SQ) {
                 Vec3d drift = curPos.subtract(predictedNext);
                 LeakDetector.beginWindow();
@@ -330,6 +337,16 @@ public final class MovementPredictor {
                     if (autoJumpField != null) {
                         autoJumpField.setBoolean(reusableClone,
                             autoJumpField.getBoolean(realPlayer));
+                    }
+                    if (angleSyncable) {
+                        // Sync the live look onto the clone so the extend
+                        // walks the current direction (turn => path bends,
+                        // not a recompute). Movement reads entity yaw.
+                        mSetYaw.invoke(reusableClone,
+                            ((Float) mGetYaw.invoke(realPlayer)).floatValue());
+                        mSetPitch.invoke(reusableClone,
+                            ((Float) mGetPitch.invoke(realPlayer))
+                                .floatValue());
                     }
                     hTick.invoke(reusableClone);
                     Object p = hGetPos.invoke(reusableClone);
@@ -607,16 +624,25 @@ public final class MovementPredictor {
                     + " default (prediction may auto-jump)");
         }
 
-        // Stable Entity getters for the reuse / decimation fast paths
-        // (same stability class as getPos/copyFrom). Each best-effort:
-        // getWorld absent -> no clone reuse (rebuild per tick, still
-        // correct); getYaw/getPitch absent -> angle term skipped (cache
-        // bounded by the input signature + MAX_CACHE_TICKS instead).
+        // Stable Entity accessors for reuse / incremental extend (same
+        // stability class as getPos/copyFrom). Each best-effort: getWorld
+        // absent -> no clone reuse (rebuild per tick, still correct).
+        // get+setYaw/Pitch all present -> the look angle is synced onto
+        // the clone each extend so turning keeps extending; otherwise it
+        // degrades to recompute-on-look-change (still correct).
         mGetWorld = tryMethod(playerClass, "getWorld");
         mGetYaw = tryMethod(playerClass, "getYaw");
         mGetPitch = tryMethod(playerClass, "getPitch");
-        mIsOnGround = tryMethod(playerClass, "isOnGround");
-        mGetVelocity = tryMethod(playerClass, "getVelocity");
+        mSetYaw = tryMethod1(playerClass, "setYaw", float.class);
+        mSetPitch = tryMethod1(playerClass, "setPitch", float.class);
+        angleSyncable = mGetYaw != null && mGetPitch != null
+            && mSetYaw != null && mSetPitch != null;
+        SimV2.LOGGER.info(
+            "[simv2] incremental extend: {}",
+            angleSyncable
+                ? "look synced onto clone (turns/jumps/falls extend)"
+                : "look gated (recompute on look-change > " + ANG_EPS
+                    + "deg; airborne still extends)");
 
         // Targeted-seed wiring (best-effort, type-name based). Any gap =>
         // fastSeed disabled, copyFrom fallback used. Never fatal.
@@ -808,6 +834,14 @@ public final class MovementPredictor {
         }
     }
 
+    private static Method tryMethod1(Class<?> c, String name, Class<?> p) {
+        try {
+            return c.getMethod(name, p);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
     /** {@code entity.getPos()} as a {@link Vec3d}, or {@code null}. */
     private Vec3d posOf(Object entity) {
         try {
@@ -838,28 +872,6 @@ public final class MovementPredictor {
                 && Math.abs(pitch - lastPitch) <= ANG_EPS;
         } catch (Throwable t) {
             return false; // can't tell -> recompute (safe)
-        }
-    }
-
-    /**
-     * The translate-stale-path shortcut is only valid in the
-     * quasi-stationary regime: on the ground with negligible vertical
-     * velocity. Airborne / jumping / falling / step-up motion is ballistic
-     * and changes phase every tick, so a rigidly shifted arc would jerk —
-     * those always recompute. Unknown (accessor absent or throws) is
-     * treated as not-steady (recompute = always correct, just slower).
-     */
-    private boolean verticallySteady(Object realPlayer) {
-        try {
-            if (mIsOnGround == null
-                || !((Boolean) mIsOnGround.invoke(realPlayer))) {
-                return false;
-            }
-            return mGetVelocity == null
-                || !(mGetVelocity.invoke(realPlayer) instanceof Vec3d v)
-                || Math.abs(v.y) <= VEL_Y_EPS;
-        } catch (Throwable t) {
-            return false;
         }
     }
 
