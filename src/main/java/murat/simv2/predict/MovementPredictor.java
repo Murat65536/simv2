@@ -152,28 +152,36 @@ public final class MovementPredictor {
     private Object[] cloneSnapshot;     // pristine post-ctor field values
     private Method mGetWorld;           // Entity.getWorld() — swap guard
 
-    // --- A: recompute decimation --------------------------------------
-    // predict() runs every client tick; held input changes slowly. While
-    // the input signature + look angle are unchanged and the cache is
-    // young, the previous path is reused, translated to the player's
-    // current position (origin stays glued; shape is at most
-    // MAX_CACHE_TICKS stale). Recompute on any input/angle change, cache
-    // expiry, or a position jump (teleport/knockback). A cache hit does
-    // zero clone work, so it cannot leak by construction.
-    private static final int MAX_CACHE_TICKS = 3;
+    // --- incremental "extend" prediction ------------------------------
+    // predict() runs every client tick; held input changes slowly. A full
+    // recompute ticks the clone HORIZON times. Instead, in the steady
+    // regime, the clone is LEFT at its horizon-end state and the path is
+    // kept as a HORIZON-deep FIFO ring of absolute predictions: each tick
+    // we drop the now-past front, tick the retained clone ONCE more, and
+    // append that new endpoint — 1 tick of work instead of HORIZON, with
+    // no periodic forced recompute. The clone reads the real (shared)
+    // world, so terrain ahead is handled correctly (more accurate than
+    // translating a frozen shape). The fidelity probe validates the ring
+    // front against reality every tick; a >FIDELITY_EPS miss (input the
+    // guards didn't catch, accumulated drift, terrain change) forces a
+    // re-anchoring recompute. Steady = grounded + ~0 vertical velocity +
+    // unchanged input signature + unchanged look angle + no external
+    // position jump + same world; anything else recomputes.
     private static final double JUMP_SQ = 1.0;       // >1 block = external
     private static final float ANG_EPS = 0.5F;       // degrees
     private static final double VEL_Y_EPS = 0.01;    // grounded == steady
-    private List<Vec3d> cachedPath;
+    private Vec3d[] ring;              // HORIZON absolute predictions, FIFO
+    private int ringStart;            // index of the front (oldest) entry
+    private boolean ringValid;        // clone+ring usable for an extend
+    private boolean lastArmRecompute; // armed predictedNext: recompute vs extend
+    private boolean driftLogged;      // one-shot incremental-drift notice
     private double[] lastInputSig;
-    private Vec3d cacheBasePos;
     private float lastYaw;
     private float lastPitch;
-    private int cacheAge;
-    private int cacheHits;
+    private int advances;             // extends since last recompute (diag)
     private Method mGetYaw;             // best-effort look-angle accessors
     private Method mGetPitch;
-    private Method mIsOnGround;         // translation-invariance gate
+    private Method mIsOnGround;         // steady-regime gate
     private Method mGetVelocity;
 
     // --- B verification: deferred 1-tick fidelity probe (DEBUG) -------
@@ -240,71 +248,105 @@ public final class MovementPredictor {
                 return List.of(); // not ready — ticking would share real input
             }
 
-            // A: decimation. Reusing a path = rigidly translating it by
-            // (curPos - basePos); that is only correct in the
-            // translation-invariant regime: grounded, steady, same held
-            // input + look angle, young cache, no position jump. Airborne
-            // / jumping / falling motion is ballistic — phase changes
-            // every tick — so it always recomputes (else the shifted arc
-            // jerks). A cache hit does no clone work, so it cannot leak.
             Vec3d curPos = posOf(realPlayer);
             double[] sig = inputSignature(input);
 
-            // Deferred 1-tick fidelity probe. Runs whenever the fast seed
-            // is live (the production safety interlock — one Vec3d compare,
-            // negligible) and always under DEBUG (validates even the NBT
-            // path). Run before the cache-hit return so decimated ticks
-            // still validate the previous recompute. predictTick counts
-            // client ticks past the input gate; the previous recompute
-            // armed predictedNext (its clone after exactly one tick) at
-            // fidelityTick. If this is the very next client tick (no
-            // decimation gap) and the real player took no external jump in
-            // between, its actual position now must equal that prediction
-            // within float noise — otherwise the clone was seeded
-            // unfaithfully: log it (dedup) and, if the fast seed produced
-            // it, auto-revert to copyFrom for the rest of the session.
+            // Fidelity / drift probe — always runs (one Vec3d compare,
+            // negligible) because it guards three things at once: the fast
+            // seed (interlock), incremental extend (drift), and DEBUG
+            // validation. predictTick counts client ticks past the input
+            // gate; the previous frame armed predictedNext (the ring front
+            // = its prediction for *this* tick) at fidelityTick. If this
+            // is the very next client tick and the real player took no
+            // external jump, its actual position now must equal that
+            // prediction within FIDELITY_EPS. A miss forces a re-anchoring
+            // recompute; if the missed prediction came from a recompute it
+            // is a genuine seed-fidelity failure (revert seed to NBT for
+            // the session), if from an extend it is incremental drift
+            // (re-anchor only — not a seed bug).
             predictTick++;
-            boolean checkFidelity = DEBUG || (fastSeed && !fastSeedTripped);
-            if (checkFidelity && predictedNext != null && curPos != null
+            if (predictedNext != null && curPos != null
                 && fidelityBase != null
                 && predictTick == fidelityTick + 1
                 && curPos.squaredDistanceTo(fidelityBase) < JUMP_SQ) {
                 double d = curPos.distanceTo(predictedNext);
                 if (d > FIDELITY_EPS) {
-                    fastSeedTripped = true;
-                    if (!revertLogged) {
-                        revertLogged = true;
-                        SimV2.LOGGER.warn(
-                            "[simv2] fidelity probe tripped ({} blocks > {})"
-                                + " — reverting clone seed to NBT copyFrom"
-                                + " for this session",
+                    ringValid = false;          // re-anchor via recompute
+                    if (lastArmRecompute) {
+                        fastSeedTripped = true;
+                        if (!revertLogged) {
+                            revertLogged = true;
+                            SimV2.LOGGER.warn(
+                                "[simv2] fidelity probe tripped ({} blocks"
+                                    + " > {}) — reverting clone seed to NBT"
+                                    + " copyFrom for this session",
+                                String.format("%.6f", d), FIDELITY_EPS);
+                        }
+                        LeakDetector.recordFidelity(d,
+                            "actual " + fmt(curPos) + " vs predicted "
+                                + fmt(predictedNext) + ", 1 tick from seed "
+                                + fmt(fidelityBase));
+                    } else if (!driftLogged) {
+                        driftLogged = true;
+                        SimV2.LOGGER.info(
+                            "[simv2] incremental drift {} blocks > {} —"
+                                + " re-anchoring (recompute)",
                             String.format("%.6f", d), FIDELITY_EPS);
                     }
-                    LeakDetector.recordFidelity(d,
-                        "actual " + fmt(curPos) + " vs predicted "
-                            + fmt(predictedNext) + ", 1 tick from seed "
-                            + fmt(fidelityBase));
                 }
             }
 
-            if (cachedPath != null && curPos != null && cacheBasePos != null
-                && cacheAge < MAX_CACHE_TICKS
-                && verticallySteady(realPlayer)
-                && sigEquals(sig, lastInputSig)
-                && angleUnchanged(realPlayer)
-                && curPos.squaredDistanceTo(cacheBasePos) < JUMP_SQ) {
-                cacheAge++;
-                cacheHits++;
-                return shiftPath(cachedPath, curPos.subtract(cacheBasePos));
-            }
-
-            // Cache miss -> full predict. A world swap invalidates the
-            // reused clone (its collision world is ctor-bound): drop it so
-            // it is rebuilt against the current world below.
+            // A world swap invalidates the retained clone (its collision
+            // world is ctor-bound) and the ring: rebuild from scratch.
             if (reusableClone != null && mGetWorld != null
                 && worldOf(reusableClone) != worldOf(realPlayer)) {
                 reusableClone = null;
                 cloneSnapshot = null;
+                ringValid = false;
+            }
+
+            // Incremental extend: in the steady regime, advance the
+            // retained clone ONE tick and rotate the ring instead of a
+            // full HORIZON recompute. drift = (actual - predicted-for-now)
+            // is the probe-bounded 1-tick error; adding it re-glues the
+            // path origin to the real player without staleness. No clone
+            // is rebuilt or re-seeded — only ticked once.
+            if (ringValid && reusableClone != null && curPos != null
+                && predictedNext != null
+                && predictTick == fidelityTick + 1
+                && verticallySteady(realPlayer)
+                && sigEquals(sig, lastInputSig)
+                && angleUnchanged(realPlayer)
+                && curPos.squaredDistanceTo(predictedNext) < JUMP_SQ) {
+                Vec3d drift = curPos.subtract(predictedNext);
+                LeakDetector.beginWindow();
+                Prediction.begin();
+                try {
+                    markLoaded(reusableClone);
+                    Object ci = inputField.get(reusableClone);
+                    if (ci != null) {
+                        copyFields(input, ci); // replay current held input
+                    }
+                    if (autoJumpField != null) {
+                        autoJumpField.setBoolean(reusableClone,
+                            autoJumpField.getBoolean(realPlayer));
+                    }
+                    hTick.invoke(reusableClone);
+                    Object p = hGetPos.invoke(reusableClone);
+                    if (p instanceof Vec3d np) {
+                        ring[ringStart] = np;          // oldest -> newest
+                        ringStart = (ringStart + 1) % HORIZON;
+                        predictedNext = ring[ringStart];
+                        lastArmRecompute = false;
+                        fidelityBase = curPos;
+                        fidelityTick = predictTick;
+                        advances++;
+                        return ringList(drift);
+                    }
+                    ringValid = false; // bad tick -> recompute below
+                } finally {
+                    Prediction.end();
+                }
             }
 
             // Gate the ENTIRE clone lifecycle, not just the K-tick loop.
@@ -391,13 +433,13 @@ public final class MovementPredictor {
                     Vec3d end = path.get(path.size() - 1);
                     SimV2.LOGGER.info(
                         "[simv2] predict: {} ticks, disp {} blocks (start {} ->"
-                            + " end {}); input {}; cost ctor {}µs copyFrom {}µs"
-                            + " loop {}µs; {} cache-hits since last recompute",
+                            + " end {}); input {}; cost ctor {}µs seed {}µs"
+                            + " loop {}µs; {} extends since last recompute",
                         path.size(),
                         String.format("%.3f", end.distanceTo(start)),
                         fmt(start), fmt(end), dumpInput(privInput),
                         (tCtor - tA) / 1000, (tCopy - tCtor) / 1000,
-                        (tLoop1 - tLoop0) / 1000, cacheHits);
+                        (tLoop1 - tLoop0) / 1000, advances);
                 }
 
                 // Catch-all (DEBUG only): the real player must be
@@ -415,12 +457,23 @@ public final class MovementPredictor {
                     }
                 }
 
-                // Arm the decimation cache from this fresh compute. The
-                // path is anchored at the real player's current position;
-                // subsequent hits translate it by (curPos - cacheBasePos).
-                cachedPath = path;
+                // Arm incremental + the probe from this fresh recompute.
+                // The clone was seeded at the real player's current pos so
+                // path positions are real-anchored (returned as-is). The
+                // clone is LEFT at its horizon-end state: the next steady
+                // frame extends it by one tick instead of recomputing.
+                // Incremental is only enabled if a full horizon was
+                // produced (a short path => recompute next, safe).
+                int n = Math.min(path.size(), HORIZON);
+                if (ring == null) {
+                    ring = new Vec3d[HORIZON];
+                }
+                for (int i = 0; i < n; i++) {
+                    ring[i] = path.get(i);
+                }
+                ringStart = 0;
+                ringValid = (n == HORIZON);
                 lastInputSig = sig;
-                cacheBasePos = curPos;
                 if (mGetYaw != null && mGetPitch != null) {
                     try {
                         lastYaw = (Float) mGetYaw.invoke(realPlayer);
@@ -429,17 +482,17 @@ public final class MovementPredictor {
                         // angle term simply weakened until next recompute
                     }
                 }
-                cacheAge = 0;
-                cacheHits = 0;
+                advances = 0;
 
-                // Arm the fidelity probe: path.get(0) is the clone after
-                // exactly one tick = the prediction of the real player's
-                // position one client tick from this seed. The next
-                // predict() call (one END_CLIENT_TICK later) checks it.
-                if (checkFidelity && start != null && !path.isEmpty()) {
+                // path.get(0) is the clone after one tick = the prediction
+                // of the real player's position next client tick. The next
+                // predict() call (one END_CLIENT_TICK later) checks it; a
+                // recompute arm means a miss is a seed-fidelity failure.
+                if (start != null && !path.isEmpty()) {
                     predictedNext = path.get(0);
                     fidelityBase = start;
                     fidelityTick = predictTick;
+                    lastArmRecompute = true;
                 }
                 return path;
             } finally {
@@ -810,10 +863,18 @@ public final class MovementPredictor {
         }
     }
 
-    private static List<Vec3d> shiftPath(List<Vec3d> base, Vec3d d) {
-        List<Vec3d> out = new ArrayList<>(base.size());
-        for (Vec3d p : base) {
-            out.add(p.add(d));
+    /**
+     * The HORIZON-deep ring in FIFO order (front first), each translated
+     * by {@code drift} so the path origin stays glued to the real player.
+     */
+    private List<Vec3d> ringList(Vec3d drift) {
+        List<Vec3d> out = new ArrayList<>(HORIZON);
+        for (int i = 0; i < HORIZON; i++) {
+            Vec3d v = ring[(ringStart + i) % HORIZON];
+            if (v == null) {
+                break;
+            }
+            out.add(v.add(drift));
         }
         return out;
     }
