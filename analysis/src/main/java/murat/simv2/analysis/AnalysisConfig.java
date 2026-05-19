@@ -41,9 +41,11 @@ public final class AnalysisConfig {
     }
 
     /**
-     * WALA analysis-scope exclusions. {@code tickMovement} cannot reach
-     * rendering/sound/GUI/data, so excluding those packages keeps the call
-     * graph scoped to movement and tractable.
+     * WALA analysis-scope exclusions. Rendering/GUI/data/server cannot
+     * affect the real player and are excluded for tractability. Sound and
+     * particle are deliberately kept in scope (their effect leaves are
+     * callee-side gate targets); they bottom out quickly into still-excluded
+     * LWJGL/concurrency, so the call graph stays bounded.
      */
     public static final String[] WALA_EXCLUSIONS = {
         "java\\/awt\\/.*",
@@ -70,8 +72,10 @@ public final class AnalysisConfig {
         "com\\/mojang\\/blaze3d\\/.*",
         "net\\/minecraft\\/client\\/render\\/.*",
         "net\\/minecraft\\/client\\/gui\\/.*",
-        "net\\/minecraft\\/client\\/sound\\/.*",
-        "net\\/minecraft\\/client\\/particle\\/.*",
+        // sound + particle are intentionally NOT excluded: they must stay
+        // in scope so their effect leaves (SoundManager.play/playNextTick,
+        // ParticleManager.add*) resolve to concrete owners and become
+        // callee-side gate targets (closes the deferred-enqueue hole).
         "net\\/minecraft\\/client\\/texture\\/.*",
         "net\\/minecraft\\/client\\/font\\/.*",
         "net\\/minecraft\\/client\\/model\\/.*",
@@ -81,16 +85,52 @@ public final class AnalysisConfig {
     };
 
     /**
-     * Side-effecting callees that must be suppressed while a movement
-     * prediction runs. {@link WalaPipelineRunner} reports every reachable
-     * call-site whose callee matches one of these rules; the generated gate
-     * Mixins skip those calls when {@code Prediction.ACTIVE}.
+     * The prediction clone's <em>sharing boundary</em>: the only objects it
+     * does not exclusively own. {@link SinkEffectAnalysis} treats a value of
+     * one of these types as <em>escaping</em> and derives, from the call
+     * graph, every reachable call that mutates / performs I/O on such a value
+     * — that derived set is what the gate Mixins suppress. This ~5-type policy
+     * replaces the per-method judgment; it is intrinsic to how the clone is
+     * built and changes far less across versions than method names.
+     *
+     * <p>{@code WORLD}/{@code MINECRAFT_CLIENT}/{@code NET_HANDLER}/
+     * {@code CONNECTION} are <em>always</em> the shared real instances (even
+     * {@code this.getWorld()} is the shared world). {@code ENTITY} is escaping
+     * only when it is not the entry {@code this} (it may be the real player).
+     */
+    public static final String ESCAPE_ROOT_WORLD = "Lnet/minecraft/world/World";
+    public static final String ESCAPE_ROOT_MINECRAFT_CLIENT =
+        "Lnet/minecraft/client/MinecraftClient";
+    public static final String ESCAPE_ROOT_NET_HANDLER =
+        "Lnet/minecraft/client/network/ClientCommonNetworkHandler";
+    public static final String ESCAPE_ROOT_CONNECTION =
+        "Lnet/minecraft/network/ClientConnection";
+    public static final String ESCAPE_ROOT_ENTITY = "Lnet/minecraft/entity/Entity";
+
+    /**
+     * Terminal-effect packages: a call whose declared owner is here is an
+     * I/O sink we cannot (and need not) see into — they are excluded from the
+     * analysis scope, so the last in-scope frame calling into them is the
+     * effect boundary.
+     */
+    public static final String[] EFFECT_PACKAGES = {
+        "net/minecraft/client/sound/",
+        "net/minecraft/client/particle/",
+        "net/minecraft/client/render/",
+    };
+
+    /**
+     * <b>Optional manual supplement</b> to the {@link SinkEffectAnalysis}-
+     * derived sink set, unioned with it. The intraprocedural escape analysis
+     * cannot see effects that flow through several frames onto a non-{@code
+     * this} entity (e.g. {@code pushAwayFrom}→{@code addVelocity} on the real
+     * player); those stay listed here until the analysis (or a dynamic check)
+     * subsumes them. {@code WalaPipelineRunner} emits a {@code DERIVED}/
+     * {@code CURATED} diff so this residue is explicit and shrinkable.
      *
      * <p>Each rule is {@code {ownerRegex, nameRegex}} ({@code ownerRegex} may
      * be {@code null} = any owner), matched against the callee's internal
-     * owner name and method name. They are unambiguous <em>effects</em>;
-     * movement <em>reads</em> ({@code getBlockState}, {@code getCollisions},
-     * {@code raycast}, …) match none of these and pass through.
+     * owner and method name.
      */
     public static final String[][] MIRROR_SINKS = {
         // Network: ClientPlay/Common network handler sends.

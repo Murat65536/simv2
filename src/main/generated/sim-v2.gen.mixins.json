@@ -3,10 +3,26 @@
 	"package": "murat.simv2.mixin.gen",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
+		"GenBlockSinkMixin",
+		"GenClientCommonNetworkHandlerSinkMixin",
 		"GenClientPlayerEntitySinkMixin",
+		"GenClientWorldSinkMixin",
+		"GenDisplayEntity_BlockDisplayEntitySinkMixin",
+		"GenEntityConversionTypeSinkMixin",
+		"GenEntityConversionType_1SinkMixin",
 		"GenEntitySinkMixin",
+		"GenExperienceOrbEntitySinkMixin",
 		"GenLivingEntitySinkMixin",
-		"GenPlayerEntitySinkMixin"
+		"GenMinecraftClientSinkMixin",
+		"GenParticleManagerSinkMixin",
+		"GenPhaseTypeSinkMixin",
+		"GenPlayerEntitySinkMixin",
+		"GenPositionedSoundInstanceSinkMixin",
+		"GenSoundManagerSinkMixin",
+		"GenTntEntitySinkMixin",
+		"GenTridentItemSinkMixin",
+		"GenTutorialManagerSinkMixin",
+		"GenWorldSinkMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

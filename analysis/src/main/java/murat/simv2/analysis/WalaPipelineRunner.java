@@ -110,25 +110,44 @@ final class WalaPipelineRunner {
                 chain.size(), chainFile);
 
             // 2. Sink call-sites: every reachable call (caller on the chain)
-            // whose callee is a denylisted side effect. The whole CG is rooted
-            // at the movement entry, so every node is reachable from
-            // tickMovement by construction.
-            TreeSet<String> sinkCallsites = collectSinkCallsites(cg, chain);
+            // whose callee is an escaping effect — derived by
+            // SinkEffectAnalysis from the call graph, unioned with the
+            // optional curated MIRROR_SINKS supplement. The whole CG is rooted
+            // at the movement entry, so every node is reachable by construction.
+            System.out.println("\nDeriving escaping-effect sinks...");
+            SinkEffectAnalysis effects = new SinkEffectAnalysis(cha, cg);
+            java.util.TreeMap<String, String> derivation = new java.util.TreeMap<>();
+            TreeSet<String> sinkCallsites =
+                collectSinkCallsites(cg, chain, effects, derivation);
             if (sinkCallsites.isEmpty()) {
                 throw new IllegalStateException(
-                    "No sink call-sites reachable — exclusions too aggressive or "
-                        + "MIRROR_SINKS does not match this mapping.");
+                    "No sink call-sites — escape roots / exclusions wrong for "
+                        + "this mapping.");
             }
             Path sinkFile = outputDir.resolve("sink-callsites.txt");
             writeLines(sinkFile, sinkCallsites);
-            long distinctCallees = sinkCallsites.stream()
-                .map(l -> l.split("\\|"))
-                .map(p -> p[2] + "#" + p[3] + p[4])
-                .distinct()
-                .count();
+
+            // Diff report: DERIVED-ONLY / CURATED-ONLY / BOTH per distinct
+            // callee. CURATED-ONLY must trend to empty as the analysis
+            // subsumes the hand list.
+            TreeSet<String> report = new TreeSet<>();
+            long both = 0, derivedOnly = 0, curatedOnly = 0;
+            for (var e : derivation.entrySet()) {
+                report.add(e.getValue() + " " + e.getKey());
+                switch (e.getValue()) {
+                    case "BOTH" -> both++;
+                    case "DERIVED-ONLY" -> derivedOnly++;
+                    default -> curatedOnly++;
+                }
+            }
+            writeLines(outputDir.resolve("sink-derivation.txt"), report);
             System.out.printf(
                 "Sink call-sites: %d (%d distinct callee(s)) written to %s%n",
-                sinkCallsites.size(), distinctCallees, sinkFile);
+                sinkCallsites.size(), derivation.size(), sinkFile);
+            System.out.printf(
+                "Sink derivation: BOTH=%d DERIVED-ONLY=%d CURATED-ONLY=%d "
+                    + "(CURATED-ONLY should trend to 0)%n",
+                both, derivedOnly, curatedOnly);
 
             // 3. Code-generate the gating Mixins from the sink call-sites so
             // they re-derive per MC version (no hand-listed gates).
@@ -142,24 +161,25 @@ final class WalaPipelineRunner {
     }
 
     /**
-     * Every reachable call-site whose caller is on the entry supertype
-     * {@code chain} and whose callee matches {@link SinkRules}. Line form:
-     * {@code callerClassDot|callerSelector|calleeOwnerSlash|calleeName
-     * |calleeDesc|invokeKind} where {@code invokeKind} is {@code STATIC},
-     * {@code SPECIAL}, {@code INTERFACE} or {@code VIRTUAL} — the generated
-     * handler's receiver type depends on it ({@code SPECIAL}/super-call →
-     * the caller class; otherwise the bytecode invoke owner).
+     * The set of effect <em>methods</em> to gate callee-side. Line form:
+     * {@code concreteOwnerSlash|calleeName|calleeDesc} — one record per
+     * distinct effect method, de-duped across all callers.
+     *
+     * <p>Every reachable call (any net.minecraft caller — no chain
+     * restriction, because the generated guard sits inside the effect method
+     * so the caller is irrelevant) whose callee is an escaping effect
+     * ({@link SinkEffectAnalysis} ∪ curated {@link SinkRules}) is mapped via
+     * {@link SinkEffectAnalysis#gateOwners} to its concrete effect-leaf
+     * owner(s). Transitive-only escaping parents resolve to no owner and are
+     * not gated, so cancelling at HEAD never freezes clone-owned state.
      *
      * <p>The callee owner is read from the <em>raw Shrike bytecode</em>
-     * invoke instruction ({@code getClassType()}), <b>not</b> WALA's resolved
-     * {@code MethodReference.getDeclaringClass()}. WALA normalizes an inherited
-     * {@code this.foo()} call to the declaring superclass, but the Mixin
-     * {@code @WrapOperation} handler receiver must be the exact bytecode
-     * invoke owner (the static receiver type, i.e. the caller subclass) or
-     * Mixin rejects the signature. Reading the constant-pool owner gives
-     * exactly what Mixin expects, version-robustly.
+     * invoke ({@code getClassType()}) so dispatch-aware resolution starts
+     * from the exact constant-pool owner, version-robustly.
      */
-    private TreeSet<String> collectSinkCallsites(CallGraph cg, Set<String> chain) {
+    private TreeSet<String> collectSinkCallsites(
+        CallGraph cg, Set<String> chain, SinkEffectAnalysis effects,
+        java.util.Map<String, String> derivation) {
         TreeSet<String> out = new TreeSet<>();
         Set<IMethod> scanned = new HashSet<>();
         for (CGNode node : cg) {
@@ -172,10 +192,12 @@ final class WalaPipelineRunner {
             if (!callerType.startsWith(AnalysisConfig.TARGET_PACKAGE_INTERNAL_L)) {
                 continue;
             }
-            String callerInternal = stripL(callerType);
-            if (!chain.contains(callerInternal)) {
-                continue; // only gate concrete, client-tickable movement classes
-            }
+            // No chain restriction: the gate is callee-side (inside the
+            // effect method), so ANY caller — chain classes, the tickables
+            // loop (AmbientSoundPlayer/BiomeEffectSoundPlayer/…),
+            // onTrackedDataSet callbacks, a deferred-queue enqueue — is
+            // covered. We still only scan net.minecraft callers (TARGET
+            // package) to find the effect call-sites and their true owners.
             if (!scanned.add(caller)) {
                 continue; // a method may have many context-sensitive CG nodes
             }
@@ -190,27 +212,50 @@ final class WalaPipelineRunner {
             if (insns == null) {
                 continue;
             }
-            String callerClassDot = callerInternal.replace('/', '.');
-            String callerSelector = caller.getName().toString()
-                + caller.getDescriptor().toString();
             for (Object insn : insns) {
                 if (!(insn instanceof IInvokeInstruction ii)) {
                     continue;
                 }
                 String calleeOwner = stripL(ii.getClassType()); // true bytecode owner
                 String calleeName = ii.getMethodName();
-                if (!SinkRules.isSink(calleeOwner, calleeName)) {
+                String calleeDesc = ii.getMethodSignature();
+                // MixinExtras @WrapOperation cannot wrap a bare <init> /
+                // <clinit> invoke (a constructor call must be targeted as the
+                // NEW instantiation, not the INVOKESPECIAL). Such a gate fails
+                // mixin apply at runtime, so these are never sink call-sites.
+                if (calleeName.equals("<init>") || calleeName.equals("<clinit>")) {
                     continue;
                 }
-                IInvokeInstruction.IDispatch code = ii.getInvocationCode();
-                String kind =
-                    code == IInvokeInstruction.Dispatch.STATIC ? "STATIC"
-                  : code == IInvokeInstruction.Dispatch.SPECIAL ? "SPECIAL"
-                  : code == IInvokeInstruction.Dispatch.INTERFACE ? "INTERFACE"
-                  : "VIRTUAL";
-                out.add(callerClassDot + "|" + callerSelector + "|"
-                    + calleeOwner + "|" + calleeName + "|"
-                    + ii.getMethodSignature() + "|" + kind);
+                // Compiler-generated synthetic/bridge methods (e.g. an enum's
+                // $values()) are never a movement effect; gating one returns
+                // null on the prediction thread and NPEs the clone tick.
+                if (effects.isSyntheticOrBridge(
+                        calleeOwner, calleeName, calleeDesc)) {
+                    continue;
+                }
+                boolean derived =
+                    effects.isEffectfulCallee(calleeOwner, calleeName, calleeDesc);
+                boolean curated = SinkRules.isSink(calleeOwner, calleeName);
+                if (!derived && !curated) {
+                    continue;
+                }
+                derivation.putIfAbsent(
+                    calleeOwner + "#" + calleeName + calleeDesc,
+                    derived && curated ? "BOTH"
+                        : derived ? "DERIVED-ONLY" : "CURATED-ONLY");
+                // Resolve to the concrete effect-LEAF owner(s) to gate
+                // callee-side. Empty = a transitive-only escaping parent
+                // (not curated): not gated, so HEAD-cancelling never freezes
+                // the clone's own state evolution (its leaves are gated
+                // independently).
+                for (String ow : effects.gateOwners(
+                        calleeOwner, calleeName, calleeDesc, curated)) {
+                    // 4th field: S(tatic) | I(nstance) — Mixin needs the
+                    // callback's static-ness to match the target method's.
+                    String mod = effects.isStaticMethod(ow, calleeName, calleeDesc)
+                        ? "S" : "I";
+                    out.add(ow + "|" + calleeName + "|" + calleeDesc + "|" + mod);
+                }
             }
         }
         return out;

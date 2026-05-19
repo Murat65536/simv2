@@ -3,6 +3,8 @@ package murat.simv2.predict;
 import murat.simv2.SimV2;
 import net.minecraft.util.math.Vec3d;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -31,7 +33,7 @@ import java.util.List;
  * field-by-field from a single small {@code net.minecraft.*} object (no JDK
  * wall). The clone shares the real {@code ClientWorld}/network handler; every
  * side effect that would reach them is suppressed by the WALA-generated
- * {@code Prediction.ACTIVE} gate Mixins.
+ * {@code Prediction}-gated Mixins (active only on the predicting thread).
  *
  * <p>Any resolution mismatch fails <em>loud at init</em> (disabled + logged)
  * — never silent corruption. Fully defensive: never throws into the client
@@ -44,9 +46,20 @@ public final class MovementPredictor {
     /** Predicted ticks per frame (≈ {@value}/20 s of look-ahead). */
     private static final int HORIZON = 60;
 
+    /**
+     * Real-player NBT snapshot/diff backstop. Off by default: it serialised
+     * the entire real player to NBT <em>twice</em> every client tick (before
+     * and after the K-tick loop) on the render thread — the dominant
+     * per-frame cost. Enable with {@code -Dsimv2.predict.debug=true} when
+     * hunting a state leak; the generated gates are the primary defense.
+     */
+    private static final boolean DEBUG =
+        Boolean.getBoolean("simv2.predict.debug");
+
     private boolean initialized;
     private boolean enabled;
     private boolean warned;
+    private int diag;
 
     private Object unsafe;
     private Method allocateInstance;
@@ -59,6 +72,25 @@ public final class MovementPredictor {
     private Method mCopyFrom;  // Entity.copyFrom(Entity) — the game's own transfer
     private Method mTick;      // the entry we run forward (full entity tick)
     private Method mGetPos;    // the result we read
+
+    // Bound MethodHandles for the K-tick hot loop: tick()+getPos() run
+    // HORIZON×/frame. Method.invoke does an access check + arg boxing per
+    // call; an unreflected handle is ~direct-call fast and removes 120+
+    // reflective dispatches per client tick.
+    private MethodHandle hTick;
+    private MethodHandle hGetPos;
+
+    // Marks the clone "loaded" so ClientPlayerEntity.tick()'s
+    // `if (this.isLoaded())` guard lets super.tick() (all movement) run every
+    // horizon tick. setLoaded(boolean) preferred; field fallback otherwise.
+    private Method mSetLoaded;
+    private Field loadedField;   // boolean: the load gate
+    private Field loadCountField; // int: tick-down counter (set to 0)
+
+    // Best-effort real-player NBT snapshot — the version-robust catch-all that
+    // detects any direct state impact the choke probes did not explain.
+    private Method mWriteNbt;
+    private Constructor<?> nbtCtor;
 
     private MovementPredictor() {
     }
@@ -89,36 +121,85 @@ public final class MovementPredictor {
                 return List.of(); // not ready — ticking would share real input
             }
 
-            Object clone = ctor.newInstance(ctorArgs(client, realPlayer));
-
-            // The game's own cross-entity state transfer (writeNbt(real) ->
-            // readNbt(clone) + portal fields): position, motion, rotation,
-            // fall distance, on-ground, abilities — into the clone's *own*
-            // structures. Reads the real player; does not mutate it.
-            mCopyFrom.invoke(clone, realPlayer);
-
-            // input is client-only transient (not in NBT) and ctor-null — the
-            // one sub-object we must give the clone its own private copy of.
-            Object privInput = allocate(input.getClass());
-            copyFields(input, privInput);
-            inputField.set(clone, privInput);
-
-            List<Vec3d> path = new ArrayList<>(HORIZON);
-            Prediction.ACTIVE = true;
+            // Gate the ENTIRE clone lifecycle, not just the K-tick loop.
+            // ctor + copyFrom(readNbt(clone)) + markLoaded already run effect
+            // leaves on the SHARED real world/network handler — equip sounds
+            // (LivingEntity.onEquipStack), game events, attribute-sync
+            // packets — when the clone is seeded. Before, these ran *before*
+            // Prediction.begin(), so the gates saw isActive()==false and the
+            // effects leaked into the real game every client tick (the
+            // reported step/equip noises). begin() is thread-scoped, so
+            // suppressing them here cannot touch the real game; clone-owned
+            // state (position/motion/abilities written into the clone's own
+            // fields by readNbt) does not pass through the gated leaves and
+            // is unaffected.
+            LeakDetector.beginWindow();
+            Prediction.begin();
             try {
+                Object clone = ctor.newInstance(ctorArgs(client, realPlayer));
+
+                // The game's own cross-entity state transfer (writeNbt(real)
+                // -> readNbt(clone) + portal fields): position, motion,
+                // rotation, fall distance, on-ground, abilities — into the
+                // clone's *own* structures. Reads the real player; no mutate.
+                mCopyFrom.invoke(clone, realPlayer);
+
+                // input is client-only transient (not in NBT) and ctor-null —
+                // the one sub-object we must give the clone its own copy of.
+                Object privInput = allocate(input.getClass());
+                copyFields(input, privInput);
+                inputField.set(clone, privInput);
+
+                // Without this the clone's tick() skips super.tick() (all
+                // movement) for the whole horizon — pure clone mutation.
+                markLoaded(clone);
+
+                String nbtBefore = DEBUG ? snapshotNbt(realPlayer) : null;
+
+                Object startObj = hGetPos.invoke(clone);
+                Vec3d start = startObj instanceof Vec3d sv ? sv : null;
+
+                List<Vec3d> path = new ArrayList<>(HORIZON);
                 for (int i = 0; i < HORIZON; i++) {
-                    mTick.invoke(clone);
-                    Object p = mGetPos.invoke(clone);
+                    hTick.invoke(clone);
+                    Object p = hGetPos.invoke(clone);
                     if (p instanceof Vec3d v) {
                         path.add(v);
                     } else {
                         break;
                     }
                 }
+
+                // Throttled diagnostic (~every 40 ticks ≈ 2 s): is the clone
+                // actually advancing, and what input is it replaying?
+                if (diag++ % 40 == 0 && start != null && !path.isEmpty()) {
+                    Vec3d end = path.get(path.size() - 1);
+                    SimV2.LOGGER.info(
+                        "[simv2] predict: {} ticks, disp {} blocks (start {} ->"
+                            + " end {}); input {}",
+                        path.size(),
+                        String.format("%.3f", end.distanceTo(start)),
+                        fmt(start), fmt(end), dumpInput(privInput));
+                }
+
+                // Catch-all (DEBUG only): the real player must be
+                // byte-identical across the prediction. Any difference is an
+                // impact the gates missed. Off in normal play — this
+                // serialised the whole player to NBT a second time per frame.
+                if (DEBUG) {
+                    String nbtAfter = snapshotNbt(realPlayer);
+                    if (nbtBefore != null && nbtAfter != null
+                        && !nbtBefore.equals(nbtAfter)) {
+                        LeakDetector.recordPlayerStateChange(
+                            "NBT len " + nbtBefore.length() + " -> "
+                                + nbtAfter.length() + "; "
+                                + firstDiff(nbtBefore, nbtAfter));
+                    }
+                }
+                return path;
             } finally {
-                Prediction.ACTIVE = false;
+                Prediction.end();
             }
-            return path;
         } catch (Throwable t) {
             enabled = false;
             if (!warned) {
@@ -175,6 +256,60 @@ public final class MovementPredictor {
         }
         mTick = playerClass.getMethod("tick");
         mGetPos = playerClass.getMethod("getPos");
+        MethodHandles.Lookup lk = MethodHandles.lookup();
+        hTick = lk.unreflect(mTick);
+        hGetPos = lk.unreflect(mGetPos);
+
+        // The clone must be "loaded" or ClientPlayerEntity.tick()'s
+        // `if (this.isLoaded())` skips super.tick() (= all movement) for the
+        // whole horizon. Prefer the public setLoaded(boolean); fall back to
+        // the private boolean gate field (+ its int countdown) so a rename
+        // does not silently freeze prediction.
+        for (Method m : playerClass.getMethods()) {
+            if (m.getName().equals("setLoaded")
+                && m.getParameterCount() == 1
+                && m.getParameterTypes()[0] == boolean.class) {
+                mSetLoaded = m;
+                break;
+            }
+        }
+        if (mSetLoaded == null) {
+            for (Field f : playerFields) {
+                String n = f.getName().toLowerCase();
+                if (loadedField == null && f.getType() == boolean.class
+                    && n.contains("load")) {
+                    f.setAccessible(true);
+                    loadedField = f;
+                } else if (loadCountField == null && f.getType() == int.class
+                    && n.contains("load")) {
+                    f.setAccessible(true);
+                    loadCountField = f;
+                }
+            }
+        }
+        if (mSetLoaded == null && loadedField == null) {
+            disable("cannot mark clone loaded (no setLoaded / load field)");
+            return;
+        }
+
+        // Best-effort NBT snapshot wiring (writeNbt + NbtCompound are as
+        // stable as copyFrom). If absent, the choke probes still detect.
+        try {
+            Class<?> nbt = Class.forName(
+                "net.minecraft.nbt.NbtCompound", false, playerClass.getClassLoader());
+            nbtCtor = nbt.getDeclaredConstructor();
+            nbtCtor.setAccessible(true);
+            for (Method m : playerClass.getMethods()) {
+                if (m.getName().equals("writeNbt")
+                    && m.getParameterCount() == 1
+                    && m.getParameterTypes()[0].isAssignableFrom(nbt)) {
+                    mWriteNbt = m;
+                    break;
+                }
+            }
+        } catch (Throwable ignored) {
+            mWriteNbt = null;
+        }
 
         inputField = null;
         Class<?> inputType = tryLoad("net.minecraft.client.input.Input");
@@ -238,6 +373,23 @@ public final class MovementPredictor {
         return null;
     }
 
+    /**
+     * Marks the clone loaded so {@code ClientPlayerEntity.tick()} runs the
+     * full movement path every horizon tick. Resolved in {@link #init}; one of
+     * the two mechanisms is guaranteed non-null there or the predictor is
+     * already disabled.
+     */
+    private void markLoaded(Object clone) throws Exception {
+        if (mSetLoaded != null) {
+            mSetLoaded.invoke(clone, true);
+            return;
+        }
+        loadedField.set(clone, true);
+        if (loadCountField != null) {
+            loadCountField.set(clone, 0);
+        }
+    }
+
     private Object allocate(Class<?> c) throws Exception {
         return allocateInstance.invoke(unsafe, c);
     }
@@ -253,6 +405,72 @@ public final class MovementPredictor {
     private void disable(String why) {
         enabled = false;
         SimV2.LOGGER.warn("[simv2] movement predictor disabled: {}", why);
+    }
+
+    /** Real player's NBT as a string, or {@code null} if wiring unavailable. */
+    private String snapshotNbt(Object realPlayer) {
+        if (mWriteNbt == null || nbtCtor == null) {
+            return null;
+        }
+        try {
+            Object nbt = nbtCtor.newInstance();
+            mWriteNbt.invoke(realPlayer, nbt);
+            return String.valueOf(nbt);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static String fmt(Vec3d v) {
+        return String.format("(%.2f,%.2f,%.2f)", v.x, v.y, v.z);
+    }
+
+    /**
+     * Dumps every primitive {@code float}/{@code double}/{@code boolean} field
+     * of the clone's copied {@code Input} (e.g. {@code movementForward},
+     * {@code jumping}, {@code sprinting}) — version-portable, no name strings.
+     * If these are all zero/false the clone replays "no keys held".
+     */
+    private static String dumpInput(Object in) {
+        if (in == null) {
+            return "<null>";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Class<?> k = in.getClass(); k != null && k != Object.class;
+             k = k.getSuperclass()) {
+            for (Field f : k.getDeclaredFields()) {
+                if (Modifier.isStatic(f.getModifiers())) {
+                    continue;
+                }
+                Class<?> t = f.getType();
+                if (t != float.class && t != double.class
+                    && t != boolean.class) {
+                    continue;
+                }
+                try {
+                    f.setAccessible(true);
+                    if (sb.length() > 0) {
+                        sb.append(' ');
+                    }
+                    sb.append(f.getName()).append('=').append(f.get(in));
+                } catch (Throwable ignored) {
+                    // best-effort diagnostic only
+                }
+            }
+        }
+        return sb.length() == 0 ? "<none>" : sb.toString();
+    }
+
+    /** A short hint at where two NBT strings first diverge. */
+    private static String firstDiff(String a, String b) {
+        int n = Math.min(a.length(), b.length());
+        int i = 0;
+        while (i < n && a.charAt(i) == b.charAt(i)) {
+            i++;
+        }
+        int from = Math.max(0, i - 20);
+        int to = Math.min(a.length(), i + 40);
+        return "near: ..." + a.substring(from, to).replace('\n', ' ') + "...";
     }
 
     /**

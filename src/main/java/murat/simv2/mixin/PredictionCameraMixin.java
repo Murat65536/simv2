@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * without this the clone never applies the held input and the prediction
  * decays to "if you released all keys".
  *
- * <p>Forcing {@code isCamera()} true only while {@link Prediction#ACTIVE}
+ * <p>Forcing {@code isCamera()} true only while {@link Prediction#isActive()}
  * (i.e. only during the synchronous K-tick loop, which only ever ticks the
  * clone) makes the clone reuse MC's own player-controlled movement path — no
  * duplicated movement math — so the prediction is "where you'd be if you kept
@@ -31,7 +31,7 @@ public abstract class PredictionCameraMixin {
 
     @Inject(method = "isCamera", at = @At("HEAD"), cancellable = true)
     private void simv2$predictAsCamera(CallbackInfoReturnable<Boolean> cir) {
-        if (Prediction.ACTIVE) {
+        if (Prediction.isActive()) {
             cir.setReturnValue(true);
         }
     }
