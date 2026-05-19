@@ -36,6 +36,18 @@ import java.util.List;
  * {@code copyFrom}/{@code tickMovement}/{@code getPos} (the most stable in the
  * game) plus the {@code Input}/{@code Vec3d} types.
  *
+ * <p>By default {@code copyFrom} is used only as a fallback: the clone is
+ * seeded by a faster <em>targeted</em> copy of just the physics state — flat
+ * value fields, the {@code DataTracker} (positionally), {@code
+ * AttributeContainer.setFrom}, and the flat {@code PlayerAbilities}/{@code
+ * HungerManager} — skipping the whole-player NBT round-trip (inventory,
+ * components, …). It is identified by type, not field name, so it stays
+ * version-portable. The deferred 1-tick fidelity probe validates it every
+ * recompute and, on any divergence, the predictor <em>auto-reverts to {@code
+ * copyFrom} for the session</em> (also forceable with {@code
+ * -Dsimv2.predict.nbtSeed=true}): the fast path can never silently corrupt
+ * the prediction.
+ *
  * <p>The one sub-object the ctor leaves null and {@code copyFrom} does not
  * restore (client-only transient, not in NBT) is {@code input}; it is copied
  * field-by-field from a single small {@code net.minecraft.*} object (no JDK
@@ -179,6 +191,26 @@ public final class MovementPredictor {
     private long fidelityTick;     // predictTick value that armed it
     private long predictTick;      // ++ once per predict() past the input gate
 
+    // --- targeted seed (replaces copyFrom's whole-player NBT) ---------
+    // Identified by stable TYPE simple-name, never field name. If any
+    // required piece is unresolved, or -Dsimv2.predict.nbtSeed=true, or
+    // the fidelity probe ever trips, fastSeed stays/goes off and the
+    // pristine-restore + copyFrom fallback is used (correct, just slower).
+    private static final boolean FORCE_NBT =
+        Boolean.getBoolean("simv2.predict.nbtSeed");
+    private boolean fastSeed;
+    private volatile boolean fastSeedTripped;
+    private boolean revertLogged;
+    private Field dtField;          // the DataTracker-typed player field
+    private Field dtEntriesField;   // DataTracker's Entry[] array
+    private Method mEntryGet;       // DataTracker$Entry.get()
+    private Method mEntrySet;       // DataTracker$Entry.set(T)
+    private Field attrField;        // the AttributeContainer-typed field
+    private Method mAttrSetFrom;    // AttributeContainer.setFrom(same)
+    private Field abilField;        // PlayerAbilities-typed field (flat)
+    private Field hungerField;      // HungerManager-typed field (flat)
+    private Method mSetPosition;    // setPosition(DDD): re-derive the box
+
     private MovementPredictor() {
     }
 
@@ -218,22 +250,36 @@ public final class MovementPredictor {
             Vec3d curPos = posOf(realPlayer);
             double[] sig = inputSignature(input);
 
-            // B verification (DEBUG): deferred 1-tick fidelity probe. Run
-            // before the cache-hit return so even decimated ticks validate
-            // the previous recompute. predictTick counts client ticks past
-            // the input gate; the previous recompute armed predictedNext
-            // (its clone after exactly one tick) at fidelityTick. If this
-            // is the very next client tick (no decimation gap) and the
-            // real player did not take an external jump in between, its
-            // actual position now must equal that prediction within float
-            // noise — otherwise the reused clone was seeded unfaithfully.
+            // Deferred 1-tick fidelity probe. Runs whenever the fast seed
+            // is live (the production safety interlock — one Vec3d compare,
+            // negligible) and always under DEBUG (validates even the NBT
+            // path). Run before the cache-hit return so decimated ticks
+            // still validate the previous recompute. predictTick counts
+            // client ticks past the input gate; the previous recompute
+            // armed predictedNext (its clone after exactly one tick) at
+            // fidelityTick. If this is the very next client tick (no
+            // decimation gap) and the real player took no external jump in
+            // between, its actual position now must equal that prediction
+            // within float noise — otherwise the clone was seeded
+            // unfaithfully: log it (dedup) and, if the fast seed produced
+            // it, auto-revert to copyFrom for the rest of the session.
             predictTick++;
-            if (DEBUG && predictedNext != null && curPos != null
+            boolean checkFidelity = DEBUG || (fastSeed && !fastSeedTripped);
+            if (checkFidelity && predictedNext != null && curPos != null
                 && fidelityBase != null
                 && predictTick == fidelityTick + 1
                 && curPos.squaredDistanceTo(fidelityBase) < JUMP_SQ) {
                 double d = curPos.distanceTo(predictedNext);
                 if (d > FIDELITY_EPS) {
+                    fastSeedTripped = true;
+                    if (!revertLogged) {
+                        revertLogged = true;
+                        SimV2.LOGGER.warn(
+                            "[simv2] fidelity probe tripped ({} blocks > {})"
+                                + " — reverting clone seed to NBT copyFrom"
+                                + " for this session",
+                            String.format("%.6f", d), FIDELITY_EPS);
+                    }
                     LeakDetector.recordFidelity(d,
                         "actual " + fmt(curPos) + " vs predicted "
                             + fmt(predictedNext) + ", 1 tick from seed "
@@ -286,18 +332,16 @@ public final class MovementPredictor {
                         cloneSnapshot = snapshotClone(clone);
                         reusableClone = clone;
                     }
-                } else {
-                    // Field-identical to a fresh ctor build; copyFrom
-                    // below then re-seeds the live player state.
-                    restoreClone(clone, cloneSnapshot);
                 }
                 long tCtor = System.nanoTime();
 
-                // The game's own cross-entity state transfer (writeNbt(real)
-                // -> readNbt(clone) + portal fields): position, motion,
-                // rotation, fall distance, on-ground, abilities — into the
-                // clone's *own* structures. Reads the real player; no mutate.
-                mCopyFrom.invoke(clone, realPlayer);
+                // Seed the clone from the live player. Fast path: targeted
+                // copy of just the physics state (flat fields + DataTracker
+                // + attributes + abilities/hunger), no whole-player NBT.
+                // Fallback (probe tripped / forced / unavailable): restore
+                // the pristine snapshot then the game's own Entity.copyFrom
+                // (writeNbt(real) -> readNbt(clone)). Reads real; no mutate.
+                seed(clone, realPlayer);
                 long tCopy = System.nanoTime();
 
                 // Seed the transient client boolean copyFrom's NBT skips:
@@ -392,7 +436,7 @@ public final class MovementPredictor {
                 // exactly one tick = the prediction of the real player's
                 // position one client tick from this seed. The next
                 // predict() call (one END_CLIENT_TICK later) checks it.
-                if (DEBUG && start != null && !path.isEmpty()) {
+                if (checkFidelity && start != null && !path.isEmpty()) {
                     predictedNext = path.get(0);
                     fidelityBase = start;
                     fidelityTick = predictTick;
@@ -520,6 +564,54 @@ public final class MovementPredictor {
         mGetPitch = tryMethod(playerClass, "getPitch");
         mIsOnGround = tryMethod(playerClass, "isOnGround");
         mGetVelocity = tryMethod(playerClass, "getVelocity");
+
+        // Targeted-seed wiring (best-effort, type-name based). Any gap =>
+        // fastSeed disabled, copyFrom fallback used. Never fatal.
+        try {
+            dtField = fieldByTypeSimpleName("DataTracker");
+            if (dtField != null) {
+                for (Field f : dtField.getType().getDeclaredFields()) {
+                    if (f.getType().isArray()
+                        && !Modifier.isStatic(f.getModifiers())) {
+                        f.setAccessible(true);
+                        dtEntriesField = f;
+                        break;
+                    }
+                }
+                if (dtEntriesField != null) {
+                    Class<?> entry =
+                        dtEntriesField.getType().getComponentType();
+                    mEntryGet = entry.getMethod("get");
+                    for (Method m : entry.getMethods()) {
+                        if (m.getName().equals("set")
+                            && m.getParameterCount() == 1) {
+                            mEntrySet = m;
+                            break;
+                        }
+                    }
+                }
+            }
+            attrField = fieldByTypeSimpleName("AttributeContainer");
+            if (attrField != null) {
+                Class<?> ac = attrField.getType();
+                mAttrSetFrom = ac.getMethod("setFrom", ac);
+            }
+            abilField = fieldByTypeSimpleName("PlayerAbilities");
+            hungerField = fieldByTypeSimpleName("HungerManager");
+            mSetPosition = playerClass.getMethod(
+                "setPosition", double.class, double.class, double.class);
+        } catch (Throwable ignored) {
+            // leave whatever resolved; the conjunction below gates it
+        }
+        fastSeed = !FORCE_NBT && dtField != null && dtEntriesField != null
+            && mEntryGet != null && mEntrySet != null && attrField != null
+            && mAttrSetFrom != null && abilField != null
+            && hungerField != null && mSetPosition != null;
+        SimV2.LOGGER.info(
+            "[simv2] clone seed: {}",
+            fastSeed ? "targeted (copyFrom = probe-guarded fallback)"
+                : FORCE_NBT ? "NBT copyFrom (forced)"
+                    : "NBT copyFrom (targeted unavailable)");
         if (mGetWorld == null) {
             SimV2.LOGGER.info(
                 "[simv2] Entity.getWorld() not found; clone rebuilt each"
@@ -807,6 +899,88 @@ public final class MovementPredictor {
                 // unsettable final the ctor fixed once — already correct
             }
         }
+    }
+
+    /**
+     * Seeds the clone from the live player. Fast path = targeted physics
+     * copy (no whole-player NBT). Fallback = pristine restore + the game's
+     * own {@code copyFrom}. Once the fidelity probe trips this switches
+     * permanently to the fallback, so the fast path can never silently
+     * corrupt the prediction. {@code autoJumpEnabled} is (re)seeded by the
+     * caller for both paths.
+     */
+    private void seed(Object clone, Object real) throws Exception {
+        if (fastSeed && !fastSeedTripped) {
+            fastSeed(clone, real);
+            return;
+        }
+        if (cloneSnapshot != null) {
+            restoreClone(clone, cloneSnapshot);
+        }
+        mCopyFrom.invoke(clone, real);
+    }
+
+    /**
+     * Targeted physics seed, identified by type (never field name): every
+     * flat value field, the {@code DataTracker} positionally, {@code
+     * AttributeContainer.setFrom}, the flat {@code PlayerAbilities}/{@code
+     * HungerManager}, then {@code setPosition} to re-derive the bounding
+     * box from the copied pos+pose. Overwrites all of it from the real
+     * player, so a reused clone keeps nothing from a prior run — without
+     * the whole-player NBT round-trip {@code copyFrom} pays.
+     */
+    private void fastSeed(Object clone, Object real) throws Exception {
+        // 1. Flat value fields (primitive / Vec3d / enum / BlockPos).
+        //    Immutable types share refs safely; the clone's tick replaces
+        //    them. Per-field guarded: a rejected set just trips the probe.
+        for (Field f : playerFields) {
+            Class<?> t = f.getType();
+            if (t.isPrimitive() || t == Vec3d.class || t.isEnum()
+                || "BlockPos".equals(t.getSimpleName())) {
+                try {
+                    f.set(clone, f.get(real));
+                } catch (Throwable ignored) {
+                    // unsettable -> fidelity probe is the safety net
+                }
+            }
+        }
+        // 2. DataTracker: positional. clone & real are the same concrete
+        //    class => identical entry layout, so index i matches. This
+        //    overwrites every clone entry (no prior-run value survives).
+        Object rt = dtField.get(real);
+        Object ct = dtField.get(clone);
+        Object[] re = (Object[]) dtEntriesField.get(rt);
+        Object[] ce = (Object[]) dtEntriesField.get(ct);
+        int n = Math.min(re.length, ce.length);
+        for (int i = 0; i < n; i++) {
+            if (re[i] != null && ce[i] != null) {
+                mEntrySet.invoke(ce[i], mEntryGet.invoke(re[i]));
+            }
+        }
+        // 3. Attributes: movement speed + modifiers (effects, equipment).
+        mAttrSetFrom.invoke(attrField.get(clone), attrField.get(real));
+        // 4/5. Flat client objects copyFrom's NBT would otherwise carry.
+        copyFields(abilField.get(real), abilField.get(clone));
+        copyFields(hungerField.get(real), hungerField.get(clone));
+        // 6. pos was copied as a raw field; re-derive the bounding box and
+        //    chunk/block caches from it now pose is set — what readNbt's
+        //    setPos would have done. Without this tick-1 collision uses a
+        //    stale box and the prediction is wrong at obstacles.
+        Object p = mGetPos.invoke(clone);
+        if (p instanceof Vec3d v) {
+            mSetPosition.invoke(clone, v.x, v.y, v.z);
+        }
+    }
+
+    /** First {@link #playerFields} entry whose TYPE simple-name matches. */
+    private Field fieldByTypeSimpleName(String simple) {
+        for (Field f : playerFields) {
+            if (f.getType().getSimpleName().equals(simple)) {
+                f.setAccessible(true);
+                return f;
+            }
+        }
+        return null;
     }
 
     private Object allocate(Class<?> c) throws Exception {
