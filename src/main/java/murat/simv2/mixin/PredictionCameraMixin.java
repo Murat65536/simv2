@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * decays to "if you released all keys".
  *
  * <p>Forcing {@code isCamera()} true only while {@link Prediction#isActive()}
- * (i.e. only during the synchronous K-tick loop, which only ever ticks the
+ * (i.e. only during the synchronous prediction, which only ever ticks the
  * clone) makes the clone reuse MC's own player-controlled movement path — no
  * duplicated movement math — so the prediction is "where you'd be if you kept
  * holding the same keys". When not predicting it is one branch-predicted load,

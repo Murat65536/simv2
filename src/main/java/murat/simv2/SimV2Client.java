@@ -13,11 +13,13 @@ public class SimV2Client implements ClientModInitializer {
     public void onInitializeClient() {
         PathRenderer.register();
 
-        // Each client tick: clone the live player, run the clone forward with
-        // side effects gated off, and hand the predicted positions to the
-        // renderer. The real player is never ticked, so the game is never
-        // impacted; MovementPredictor lazy-inits and disables itself on any
-        // failure — it never throws here.
+        // Each client tick the predictor either extends a retained, reused
+        // clone by one tick (a HORIZON-deep FIFO ring) or fully recomputes;
+        // the clone is seeded by a targeted physics copy (copyFrom only on
+        // fallback, self-healing via the fidelity probe). Side effects are
+        // cancelled at the escape-root boundary and the real player is never
+        // ticked, so the game is never impacted; MovementPredictor lazy-
+        // inits and disables itself on any failure — it never throws here.
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) {
                 PathRenderer.clearPath();

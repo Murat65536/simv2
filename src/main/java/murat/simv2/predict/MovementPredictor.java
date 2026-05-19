@@ -19,10 +19,14 @@ import java.util.List;
  * pristine post-construction snapshot and the game's own
  * {@code Entity.copyFrom} re-seeds the live state, making it field-identical
  * to a fresh build without the per-tick allocation. A dimension/world swap
- * rebuilds it. Predictions are additionally decimated — while the held input
- * and look angle are unchanged the previous path is reused (translated to
- * the player's current position), so the heavy path runs only on real input
- * change or after a few ticks.
+ * rebuilds it. The path is a {@link #HORIZON}-deep FIFO ring: in the steady
+ * "extend" regime the retained clone is ticked <em>once</em> per frame and
+ * the ring rotated (no full recompute), with a probe-bounded drift term
+ * re-gluing the origin to the live player. A full recompute happens only on
+ * a held-input change, a look-angle change when angle-sync is unavailable,
+ * an external position jump, a fidelity-probe miss, a world swap, or a
+ * skipped frame; jumps, falls and turns extend (the clone is ticked through
+ * real physics, so it is phase-correct).
  *
  * <p>The clone is created via {@code ClientPlayerEntity}'s own public
  * constructor, so it is a fully valid, independent entity that owns its own
@@ -32,9 +36,13 @@ import java.util.List;
  * dimension travel uses: {@code writeNbt(real)} → {@code readNbt(clone)}).
  * That reads the real player (no mutation) and writes values into the clone's
  * <em>own</em> sub-objects, so the real player cannot be perturbed and the
- * predictor stays version-portable — the only Minecraft names it hardcodes are
- * {@code copyFrom}/{@code tickMovement}/{@code getPos} (the most stable in the
- * game) plus the {@code Input}/{@code Vec3d} types.
+ * predictor stays version-portable: every Minecraft member it touches is
+ * resolved reflectively by a stable method name ({@code copyFrom}, {@code
+ * tick}, {@code getPos}, the {@code get/set} look + position accessors,
+ * {@code writeNbt}, …) or by type ({@code Input}/{@code Vec3d}/{@code
+ * DataTracker}/{@code AttributeContainer}/{@code PlayerAbilities}/{@code
+ * HungerManager}) — never an obfuscated field name. Any resolution mismatch
+ * fails loud at init rather than corrupting silently.
  *
  * <p>By default {@code copyFrom} is used only as a fallback: the clone is
  * seeded by a faster <em>targeted</em> copy of just the physics state — flat
@@ -76,7 +84,7 @@ public final class MovementPredictor {
     /**
      * Real-player NBT snapshot/diff backstop. Off by default: it serialised
      * the entire real player to NBT <em>twice</em> every client tick (before
-     * and after the K-tick loop) on the render thread — the dominant
+     * and after the HORIZON loop) on the render thread — the dominant
      * per-frame cost. Enable with {@code -Dsimv2.predict.debug=true} when
      * hunting a state leak; the boundary gates are the primary defense.
      */
@@ -100,7 +108,7 @@ public final class MovementPredictor {
     private Method mTick;      // the entry we run forward (full entity tick)
     private Method mGetPos;    // the result we read
 
-    // Bound MethodHandles for the K-tick hot loop: tick()+getPos() run
+    // Bound MethodHandles for the HORIZON hot loop: tick()+getPos() run
     // HORIZON×/frame. Method.invoke does an access check + arg boxing per
     // call; an unreflected handle is ~direct-call fast and removes 120+
     // reflective dispatches per client tick.
@@ -326,7 +334,6 @@ public final class MovementPredictor {
                 && (angleSyncable || angleUnchanged(realPlayer))
                 && curPos.squaredDistanceTo(predictedNext) < JUMP_SQ) {
                 Vec3d drift = curPos.subtract(predictedNext);
-                LeakDetector.beginWindow();
                 Prediction.begin();
                 try {
                     markLoaded(reusableClone);
@@ -366,7 +373,7 @@ public final class MovementPredictor {
                 }
             }
 
-            // Gate the ENTIRE clone lifecycle, not just the K-tick loop.
+            // Gate the ENTIRE clone lifecycle, not just the HORIZON loop.
             // ctor + copyFrom(readNbt(clone)) + markLoaded already run effect
             // leaves on the SHARED real world/network handler — equip sounds
             // (LivingEntity.onEquipStack), game events, attribute-sync
@@ -378,7 +385,6 @@ public final class MovementPredictor {
             // state (position/motion/abilities written into the clone's own
             // fields by readNbt) does not pass through the gated leaves and
             // is unaffected.
-            LeakDetector.beginWindow();
             Prediction.begin();
             try {
                 long tA = System.nanoTime();
@@ -440,12 +446,12 @@ public final class MovementPredictor {
                 }
                 long tLoop1 = System.nanoTime();
 
-                // Throttled diagnostic (~every 40 ticks ≈ 2 s): clone advance,
-                // replayed input, and the per-phase cost breakdown (µs) so the
-                // dominant cost is visible — ctor alloc (incl. now-cached
-                // ctorArgs) vs. copyFrom NBT round-trip vs. the irreducible
-                // 60-tick physics loop. Decides whether reuse/targeted-copy/
-                // memoize is worth it.
+                // Throttled diagnostic (~every 40 ticks ≈ 2 s):
+                // retrospective profiling of the committed design — clone
+                // advance, replayed input, and the per-phase cost (µs):
+                // ctor (≈0 on reuse) vs. targeted seed (copyFrom only on
+                // fallback) vs. the HORIZON physics loop, plus extends
+                // since the last recompute (incremental coverage).
                 if (diag++ % 40 == 0 && start != null && !path.isEmpty()) {
                     Vec3d end = path.get(path.size() - 1);
                     SimV2.LOGGER.info(
