@@ -73,6 +73,26 @@ public final class LeakDetector {
                 + "across a prediction: {}", detail);
     }
 
+    /**
+     * Reports that the reused prediction clone diverged from the real
+     * player after one identical tick — i.e. it was not seeded faithfully.
+     * This is the {@code MovementPredictor} clone-reuse failure mode, the
+     * one with no other automated check; the deferred 1-tick fidelity
+     * probe is its independent observer. Logged once per session (dedup)
+     * with the divergence magnitude and a concrete example.
+     */
+    public static void recordFidelity(double diff, String detail) {
+        synchronized (SEEN) {
+            if (!SEEN.add("fidelity")) {
+                return;
+            }
+        }
+        SimV2.LOGGER.warn(
+            "[simv2] PREDICTION FIDELITY — reused clone diverged {} blocks "
+                + "after 1 identical tick (clone seed incomplete): {}",
+            String.format("%.6f", diff), detail);
+    }
+
     /** First few non-simv2/non-JDK frames identify the leaking call path. */
     private static String siteKey(StackTraceElement[] st) {
         StringBuilder b = new StringBuilder();

@@ -13,8 +13,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Predicts the real player's future positions by ticking a <em>disposable
- * clone built with the real constructor</em>.
+ * Predicts the real player's future positions by ticking a clone of the
+ * real player. The clone is <em>built once</em> with the real constructor
+ * and reused: before each prediction every declared field is reset to its
+ * pristine post-construction snapshot and the game's own
+ * {@code Entity.copyFrom} re-seeds the live state, making it field-identical
+ * to a fresh build without the per-tick allocation. A dimension/world swap
+ * rebuilds it. Predictions are additionally decimated — while the held input
+ * and look angle are unchanged the previous path is reused (translated to
+ * the player's current position), so the heavy path runs only on real input
+ * change or after a few ticks.
  *
  * <p>The clone is created via {@code ClientPlayerEntity}'s own public
  * constructor, so it is a fully valid, independent entity that owns its own
@@ -117,6 +125,60 @@ public final class MovementPredictor {
     private static final Object ARG_CLIENT = new Object();
     private static final Object ARG_FALSE = new Object();
 
+    // --- B: clone reuse ------------------------------------------------
+    // The clone is built once and reused every predict instead of
+    // reconstructed per client tick (the ctor allocates a whole
+    // ClientPlayerEntity — DataTracker/attributes/abilities/inventory — and
+    // 20 such throwaways/s was the dominant alloc + GC source). Correctness
+    // is preserved by restoring every declared instance field to the
+    // pristine post-ctor snapshot before each reuse, then running copyFrom:
+    // field-for-field identical to a fresh build, minus the allocation.
+    // The clone's collision world is fixed at construction, so a
+    // dimension/world swap (realPlayer.getWorld() identity changes) forces
+    // a rebuild.
+    private Object reusableClone;
+    private Object[] cloneSnapshot;     // pristine post-ctor field values
+    private Method mGetWorld;           // Entity.getWorld() — swap guard
+
+    // --- A: recompute decimation --------------------------------------
+    // predict() runs every client tick; held input changes slowly. While
+    // the input signature + look angle are unchanged and the cache is
+    // young, the previous path is reused, translated to the player's
+    // current position (origin stays glued; shape is at most
+    // MAX_CACHE_TICKS stale). Recompute on any input/angle change, cache
+    // expiry, or a position jump (teleport/knockback). A cache hit does
+    // zero clone work, so it cannot leak by construction.
+    private static final int MAX_CACHE_TICKS = 3;
+    private static final double JUMP_SQ = 1.0;       // >1 block = external
+    private static final float ANG_EPS = 0.5F;       // degrees
+    private static final double VEL_Y_EPS = 0.01;    // grounded == steady
+    private List<Vec3d> cachedPath;
+    private double[] lastInputSig;
+    private Vec3d cacheBasePos;
+    private float lastYaw;
+    private float lastPitch;
+    private int cacheAge;
+    private int cacheHits;
+    private Method mGetYaw;             // best-effort look-angle accessors
+    private Method mGetPitch;
+    private Method mIsOnGround;         // translation-invariance gate
+    private Method mGetVelocity;
+
+    // --- B verification: deferred 1-tick fidelity probe (DEBUG) -------
+    // The one B failure mode with no other automated check: a reused
+    // clone seeded unfaithfully (silently wrong path). Each recompute
+    // ticks the clone exactly once; that position predicts where the real
+    // player will be one client tick later. predict() runs once per
+    // END_CLIENT_TICK, so the *next* call's actual real position is
+    // exactly that — compared here. Divergence > FIDELITY_EPS with no
+    // external position jump (teleport/knockback) between seed and sample
+    // => the clone seed is incomplete. DEBUG-gated; zero cost otherwise.
+    private static final double FIDELITY_EPS = 1.0E-3;  // 1 mm
+    private Vec3d predictedNext;   // clone pos 1 tick out, from last recompute
+    private Vec3d fidelityBase;    // seeded real pos that produced it
+    private long fidelityTick;     // predictTick value that armed it
+    private long predictTick;      // ++ once per predict() past the input gate
+
     private MovementPredictor() {
     }
 
@@ -146,6 +208,59 @@ public final class MovementPredictor {
                 return List.of(); // not ready — ticking would share real input
             }
 
+            // A: decimation. Reusing a path = rigidly translating it by
+            // (curPos - basePos); that is only correct in the
+            // translation-invariant regime: grounded, steady, same held
+            // input + look angle, young cache, no position jump. Airborne
+            // / jumping / falling motion is ballistic — phase changes
+            // every tick — so it always recomputes (else the shifted arc
+            // jerks). A cache hit does no clone work, so it cannot leak.
+            Vec3d curPos = posOf(realPlayer);
+            double[] sig = inputSignature(input);
+
+            // B verification (DEBUG): deferred 1-tick fidelity probe. Run
+            // before the cache-hit return so even decimated ticks validate
+            // the previous recompute. predictTick counts client ticks past
+            // the input gate; the previous recompute armed predictedNext
+            // (its clone after exactly one tick) at fidelityTick. If this
+            // is the very next client tick (no decimation gap) and the
+            // real player did not take an external jump in between, its
+            // actual position now must equal that prediction within float
+            // noise — otherwise the reused clone was seeded unfaithfully.
+            predictTick++;
+            if (DEBUG && predictedNext != null && curPos != null
+                && fidelityBase != null
+                && predictTick == fidelityTick + 1
+                && curPos.squaredDistanceTo(fidelityBase) < JUMP_SQ) {
+                double d = curPos.distanceTo(predictedNext);
+                if (d > FIDELITY_EPS) {
+                    LeakDetector.recordFidelity(d,
+                        "actual " + fmt(curPos) + " vs predicted "
+                            + fmt(predictedNext) + ", 1 tick from seed "
+                            + fmt(fidelityBase));
+                }
+            }
+
+            if (cachedPath != null && curPos != null && cacheBasePos != null
+                && cacheAge < MAX_CACHE_TICKS
+                && verticallySteady(realPlayer)
+                && sigEquals(sig, lastInputSig)
+                && angleUnchanged(realPlayer)
+                && curPos.squaredDistanceTo(cacheBasePos) < JUMP_SQ) {
+                cacheAge++;
+                cacheHits++;
+                return shiftPath(cachedPath, curPos.subtract(cacheBasePos));
+            }
+
+            // Cache miss -> full predict. A world swap invalidates the
+            // reused clone (its collision world is ctor-bound): drop it so
+            // it is rebuilt against the current world below.
+            if (reusableClone != null && mGetWorld != null
+                && worldOf(reusableClone) != worldOf(realPlayer)) {
+                reusableClone = null;
+                cloneSnapshot = null;
+            }
+
             // Gate the ENTIRE clone lifecycle, not just the K-tick loop.
             // ctor + copyFrom(readNbt(clone)) + markLoaded already run effect
             // leaves on the SHARED real world/network handler — equip sounds
@@ -162,7 +277,20 @@ public final class MovementPredictor {
             Prediction.begin();
             try {
                 long tA = System.nanoTime();
-                Object clone = ctor.newInstance(ctorArgs(client, realPlayer));
+                Object clone = reusableClone;
+                if (clone == null) {
+                    clone = ctor.newInstance(ctorArgs(client, realPlayer));
+                    // Reuse only when the swap guard is available;
+                    // otherwise rebuild every tick (correct, just no win).
+                    if (mGetWorld != null) {
+                        cloneSnapshot = snapshotClone(clone);
+                        reusableClone = clone;
+                    }
+                } else {
+                    // Field-identical to a fresh ctor build; copyFrom
+                    // below then re-seeds the live player state.
+                    restoreClone(clone, cloneSnapshot);
+                }
                 long tCtor = System.nanoTime();
 
                 // The game's own cross-entity state transfer (writeNbt(real)
@@ -220,12 +348,12 @@ public final class MovementPredictor {
                     SimV2.LOGGER.info(
                         "[simv2] predict: {} ticks, disp {} blocks (start {} ->"
                             + " end {}); input {}; cost ctor {}µs copyFrom {}µs"
-                            + " loop {}µs",
+                            + " loop {}µs; {} cache-hits since last recompute",
                         path.size(),
                         String.format("%.3f", end.distanceTo(start)),
                         fmt(start), fmt(end), dumpInput(privInput),
                         (tCtor - tA) / 1000, (tCopy - tCtor) / 1000,
-                        (tLoop1 - tLoop0) / 1000);
+                        (tLoop1 - tLoop0) / 1000, cacheHits);
                 }
 
                 // Catch-all (DEBUG only): the real player must be
@@ -242,6 +370,33 @@ public final class MovementPredictor {
                                 + firstDiff(nbtBefore, nbtAfter));
                     }
                 }
+
+                // Arm the decimation cache from this fresh compute. The
+                // path is anchored at the real player's current position;
+                // subsequent hits translate it by (curPos - cacheBasePos).
+                cachedPath = path;
+                lastInputSig = sig;
+                cacheBasePos = curPos;
+                if (mGetYaw != null && mGetPitch != null) {
+                    try {
+                        lastYaw = (Float) mGetYaw.invoke(realPlayer);
+                        lastPitch = (Float) mGetPitch.invoke(realPlayer);
+                    } catch (Throwable ignored) {
+                        // angle term simply weakened until next recompute
+                    }
+                }
+                cacheAge = 0;
+                cacheHits = 0;
+
+                // Arm the fidelity probe: path.get(0) is the clone after
+                // exactly one tick = the prediction of the real player's
+                // position one client tick from this seed. The next
+                // predict() call (one END_CLIENT_TICK later) checks it.
+                if (DEBUG && start != null && !path.isEmpty()) {
+                    predictedNext = path.get(0);
+                    fidelityBase = start;
+                    fidelityTick = predictTick;
+                }
                 return path;
             } finally {
                 Prediction.end();
@@ -250,8 +405,7 @@ public final class MovementPredictor {
             enabled = false;
             if (!warned) {
                 warned = true;
-                SimV2.LOGGER.warn("[simv2] movement predictor disabled: {}",
-                    String.valueOf(t), t);
+                SimV2.LOGGER.warn("[simv2] movement predictor disabled: {}", t, t);
             }
             return List.of();
         }
@@ -354,6 +508,22 @@ public final class MovementPredictor {
             SimV2.LOGGER.info(
                 "[simv2] autoJumpEnabled field not found; clone uses ctor"
                     + " default (prediction may auto-jump)");
+        }
+
+        // Stable Entity getters for the reuse / decimation fast paths
+        // (same stability class as getPos/copyFrom). Each best-effort:
+        // getWorld absent -> no clone reuse (rebuild per tick, still
+        // correct); getYaw/getPitch absent -> angle term skipped (cache
+        // bounded by the input signature + MAX_CACHE_TICKS instead).
+        mGetWorld = tryMethod(playerClass, "getWorld");
+        mGetYaw = tryMethod(playerClass, "getYaw");
+        mGetPitch = tryMethod(playerClass, "getPitch");
+        mIsOnGround = tryMethod(playerClass, "isOnGround");
+        mGetVelocity = tryMethod(playerClass, "getVelocity");
+        if (mGetWorld == null) {
+            SimV2.LOGGER.info(
+                "[simv2] Entity.getWorld() not found; clone rebuilt each"
+                    + " tick (no reuse, still correct)");
         }
 
         // Best-effort NBT snapshot wiring (writeNbt + NbtCompound are as
@@ -485,6 +655,160 @@ public final class MovementPredictor {
         }
     }
 
+    private static Method tryMethod(Class<?> c, String name) {
+        try {
+            return c.getMethod(name);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /** {@code entity.getPos()} as a {@link Vec3d}, or {@code null}. */
+    private Vec3d posOf(Object entity) {
+        try {
+            return mGetPos.invoke(entity) instanceof Vec3d v ? v : null;
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /** {@code entity.getWorld()} identity for the swap guard. */
+    private Object worldOf(Object entity) {
+        try {
+            return mGetWorld.invoke(entity);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /** True if look angle is within {@link #ANG_EPS} of the cached compute. */
+    private boolean angleUnchanged(Object realPlayer) {
+        if (mGetYaw == null || mGetPitch == null) {
+            return true; // accessor absent -> bounded by sig + cache age
+        }
+        try {
+            float yaw = (Float) mGetYaw.invoke(realPlayer);
+            float pitch = (Float) mGetPitch.invoke(realPlayer);
+            return Math.abs(yaw - lastYaw) <= ANG_EPS
+                && Math.abs(pitch - lastPitch) <= ANG_EPS;
+        } catch (Throwable t) {
+            return false; // can't tell -> recompute (safe)
+        }
+    }
+
+    /**
+     * The translate-stale-path shortcut is only valid in the
+     * quasi-stationary regime: on the ground with negligible vertical
+     * velocity. Airborne / jumping / falling / step-up motion is ballistic
+     * and changes phase every tick, so a rigidly shifted arc would jerk —
+     * those always recompute. Unknown (accessor absent or throws) is
+     * treated as not-steady (recompute = always correct, just slower).
+     */
+    private boolean verticallySteady(Object realPlayer) {
+        try {
+            if (mIsOnGround == null
+                || !((Boolean) mIsOnGround.invoke(realPlayer))) {
+                return false;
+            }
+            return mGetVelocity == null
+                || !(mGetVelocity.invoke(realPlayer) instanceof Vec3d v)
+                || Math.abs(v.y) <= VEL_Y_EPS;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private static List<Vec3d> shiftPath(List<Vec3d> base, Vec3d d) {
+        List<Vec3d> out = new ArrayList<>(base.size());
+        for (Vec3d p : base) {
+            out.add(p.add(d));
+        }
+        return out;
+    }
+
+    /**
+     * Every primitive {@code float}/{@code double}/{@code boolean} of the
+     * {@code Input}, in stable hierarchy/declaration order (mirrors {@link
+     * #dumpInput}). No name strings — version-portable. An unequal array
+     * means the held input changed; equal means the path is still valid.
+     */
+    private static double[] inputSignature(Object in) {
+        List<Double> vals = new ArrayList<>();
+        for (Class<?> k = in.getClass(); k != null && k != Object.class;
+             k = k.getSuperclass()) {
+            for (Field f : k.getDeclaredFields()) {
+                if (Modifier.isStatic(f.getModifiers())) {
+                    continue;
+                }
+                Class<?> t = f.getType();
+                try {
+                    if (t == boolean.class) {
+                        f.setAccessible(true);
+                        vals.add(f.getBoolean(in) ? 1.0 : 0.0);
+                    } else if (t == float.class) {
+                        f.setAccessible(true);
+                        vals.add((double) f.getFloat(in));
+                    } else if (t == double.class) {
+                        f.setAccessible(true);
+                        vals.add(f.getDouble(in));
+                    }
+                } catch (Throwable ignored) {
+                    // skipped field only weakens the cache, never wrong
+                }
+            }
+        }
+        double[] a = new double[vals.size()];
+        for (int i = 0; i < a.length; i++) {
+            a[i] = vals.get(i);
+        }
+        return a;
+    }
+
+    private static boolean sigEquals(double[] a, double[] b) {
+        if (a == null || b == null || a.length != b.length) {
+            return false;
+        }
+        for (int i = 0; i < a.length; i++) {
+            if (a[i] != b[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Pristine post-ctor value of every field in {@link #playerFields}. */
+    private Object[] snapshotClone(Object clone) {
+        Object[] snap = new Object[playerFields.size()];
+        for (int i = 0; i < snap.length; i++) {
+            try {
+                snap[i] = playerFields.get(i).get(clone);
+            } catch (Throwable ignored) {
+                snap[i] = null;
+            }
+        }
+        return snap;
+    }
+
+    /**
+     * Resets every declared field to its pristine post-ctor value so a
+     * reused clone is field-identical to a freshly built one before
+     * {@code copyFrom} re-seeds the live player state. Transient timers
+     * (jump/sprint cooldown, swing) and the removed flag are covered
+     * generically — no per-field name list. A field the ctor set once and
+     * movement never reassigns (often {@code final}) may reject the set;
+     * leaving it is correct (it still holds that ctor value).
+     */
+    private void restoreClone(Object clone, Object[] snap) {
+        List<Field> fs = playerFields;
+        for (int i = 0; i < fs.size(); i++) {
+            try {
+                fs.get(i).set(clone, snap[i]);
+            } catch (Throwable ignored) {
+                // unsettable final the ctor fixed once — already correct
+            }
+        }
+    }
+
     private Object allocate(Class<?> c) throws Exception {
         return allocateInstance.invoke(unsafe, c);
     }
@@ -544,7 +868,7 @@ public final class MovementPredictor {
                 }
                 try {
                     f.setAccessible(true);
-                    if (sb.length() > 0) {
+                    if (!sb.isEmpty()) {
                         sb.append(' ');
                     }
                     sb.append(f.getName()).append('=').append(f.get(in));
@@ -553,7 +877,7 @@ public final class MovementPredictor {
                 }
             }
         }
-        return sb.length() == 0 ? "<none>" : sb.toString();
+        return sb.isEmpty() ? "<none>" : sb.toString();
     }
 
     /** A short hint at where two NBT strings first diverge. */
