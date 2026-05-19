@@ -31,7 +31,11 @@ import java.util.List;
  * <p>The one sub-object the ctor leaves null and {@code copyFrom} does not
  * restore (client-only transient, not in NBT) is {@code input}; it is copied
  * field-by-field from a single small {@code net.minecraft.*} object (no JDK
- * wall). The clone shares the real {@code ClientWorld}/network handler; every
+ * wall). The clone also inherits the ctor default for {@code autoJumpEnabled}
+ * (a transient client boolean {@code copyFrom} skips, normally re-synced only
+ * by {@code sendMovementPackets} after the tick); it is seeded from the live
+ * player so the prediction honours the real auto-jump setting from tick 1.
+ * The clone shares the real {@code ClientWorld}/network handler; every
  * side effect that would reach them is cancelled at the escape-root boundary
  * (the {@code ClientWorld}/{@code World}/network/sound/{@code MinecraftClient}
  * write methods) by the hand-written {@code murat.simv2.mixin.boundary} Mixins,
@@ -90,10 +94,28 @@ public final class MovementPredictor {
     private Field loadedField;   // boolean: the load gate
     private Field loadCountField; // int: tick-down counter (set to 0)
 
+    // Client-only transient state copyFrom's NBT round-trip does not carry:
+    // ClientPlayerEntity's ctor defaults autoJumpEnabled = true and only
+    // sendMovementPackets() (which runs *after* the tick's movement) syncs
+    // it to the real option. A fresh clone would therefore auto-jump on its
+    // first predicted tick whatever the real setting. Seeded from the live
+    // player each predict (resolved here once).
+    private Field autoJumpField; // boolean: autoJumpEnabled
+
     // Best-effort real-player NBT snapshot — the version-robust catch-all that
     // detects any direct state impact the choke probes did not explain.
     private Method mWriteNbt;
     private Constructor<?> nbtCtor;
+
+    // Per-ctor-arg resolution plan, built once on the first call: each slot
+    // is ARG_CLIENT (use the passed client), ARG_FALSE (the constant false),
+    // or the player Field to read live. Removes the O(params ×
+    // playerFields) reflective scan from the per-tick path; still correct
+    // across a dimension/world swap because the Fields are re-read from the
+    // current realPlayer every tick.
+    private Object[] argPlan;
+    private static final Object ARG_CLIENT = new Object();
+    private static final Object ARG_FALSE = new Object();
 
     private MovementPredictor() {
     }
@@ -139,13 +161,25 @@ public final class MovementPredictor {
             LeakDetector.beginWindow();
             Prediction.begin();
             try {
+                long tA = System.nanoTime();
                 Object clone = ctor.newInstance(ctorArgs(client, realPlayer));
+                long tCtor = System.nanoTime();
 
                 // The game's own cross-entity state transfer (writeNbt(real)
                 // -> readNbt(clone) + portal fields): position, motion,
                 // rotation, fall distance, on-ground, abilities — into the
                 // clone's *own* structures. Reads the real player; no mutate.
                 mCopyFrom.invoke(clone, realPlayer);
+                long tCopy = System.nanoTime();
+
+                // Seed the transient client boolean copyFrom's NBT skips:
+                // without this the fresh clone keeps the ctor default
+                // autoJumpEnabled = true and auto-jumps on tick 1 into any
+                // adjacent block regardless of the real option.
+                if (autoJumpField != null) {
+                    autoJumpField.setBoolean(
+                        clone, autoJumpField.getBoolean(realPlayer));
+                }
 
                 // input is client-only transient (not in NBT) and ctor-null —
                 // the one sub-object we must give the clone its own copy of.
@@ -162,6 +196,7 @@ public final class MovementPredictor {
                 Object startObj = hGetPos.invoke(clone);
                 Vec3d start = startObj instanceof Vec3d sv ? sv : null;
 
+                long tLoop0 = System.nanoTime();
                 List<Vec3d> path = new ArrayList<>(HORIZON);
                 for (int i = 0; i < HORIZON; i++) {
                     hTick.invoke(clone);
@@ -172,17 +207,25 @@ public final class MovementPredictor {
                         break;
                     }
                 }
+                long tLoop1 = System.nanoTime();
 
-                // Throttled diagnostic (~every 40 ticks ≈ 2 s): is the clone
-                // actually advancing, and what input is it replaying?
+                // Throttled diagnostic (~every 40 ticks ≈ 2 s): clone advance,
+                // replayed input, and the per-phase cost breakdown (µs) so the
+                // dominant cost is visible — ctor alloc (incl. now-cached
+                // ctorArgs) vs. copyFrom NBT round-trip vs. the irreducible
+                // 60-tick physics loop. Decides whether reuse/targeted-copy/
+                // memoize is worth it.
                 if (diag++ % 40 == 0 && start != null && !path.isEmpty()) {
                     Vec3d end = path.get(path.size() - 1);
                     SimV2.LOGGER.info(
                         "[simv2] predict: {} ticks, disp {} blocks (start {} ->"
-                            + " end {}); input {}",
+                            + " end {}); input {}; cost ctor {}µs copyFrom {}µs"
+                            + " loop {}µs",
                         path.size(),
                         String.format("%.3f", end.distanceTo(start)),
-                        fmt(start), fmt(end), dumpInput(privInput));
+                        fmt(start), fmt(end), dumpInput(privInput),
+                        (tCtor - tA) / 1000, (tCopy - tCtor) / 1000,
+                        (tLoop1 - tLoop0) / 1000);
                 }
 
                 // Catch-all (DEBUG only): the real player must be
@@ -295,6 +338,24 @@ public final class MovementPredictor {
             return;
         }
 
+        // The lone boolean field whose name carries "autojump" is
+        // ClientPlayerEntity.autoJumpEnabled. Best-effort: if a remap hides
+        // the name the clone still predicts, just with the ctor-default
+        // auto-jump (logged, not fatal).
+        for (Field f : playerFields) {
+            if (f.getType() == boolean.class
+                && f.getName().toLowerCase().contains("autojump")) {
+                f.setAccessible(true);
+                autoJumpField = f;
+                break;
+            }
+        }
+        if (autoJumpField == null) {
+            SimV2.LOGGER.info(
+                "[simv2] autoJumpEnabled field not found; clone uses ctor"
+                    + " default (prediction may auto-jump)");
+        }
+
         // Best-effort NBT snapshot wiring (writeNbt + NbtCompound are as
         // stable as copyFrom). If absent, the choke probes still detect.
         try {
@@ -340,37 +401,68 @@ public final class MovementPredictor {
     /**
      * Resolves the constructor arguments from the real player by type: the
      * passed {@code client}, the trailing booleans as {@code false}, and every
-     * other reference arg by scanning the player's own {@code net.minecraft.*}
-     * fields for an assignable value (world / network handler / stat handler /
-     * recipe book — no hardcoded names).
+     * other reference arg by reading the player's own {@code net.minecraft.*}
+     * fields (world / network handler / stat handler / recipe book — no
+     * hardcoded names). The type→field resolution is the expensive part
+     * (O(params × playerFields)); it is computed once into {@link #argPlan}
+     * and thereafter only the live values are read, so this is cheap on the
+     * per-tick path. Re-reading the current {@code realPlayer} each call keeps
+     * it correct if a dimension swap recreated the player/world.
      */
     private Object[] ctorArgs(Object client, Object realPlayer) throws Exception {
-        Class<?>[] pts = ctor.getParameterTypes();
-        Object[] args = new Object[pts.length];
-        for (int i = 0; i < pts.length; i++) {
-            Class<?> pt = pts[i];
-            if (pt == boolean.class) {
-                args[i] = Boolean.FALSE;
-            } else if (pt.isInstance(client)) {
+        Object[] plan = argPlan;
+        if (plan == null) {
+            plan = buildArgPlan(client, realPlayer);
+            argPlan = plan;
+        }
+        Object[] args = new Object[plan.length];
+        for (int i = 0; i < plan.length; i++) {
+            Object slot = plan[i];
+            if (slot == ARG_CLIENT) {
                 args[i] = client;
+            } else if (slot == ARG_FALSE) {
+                args[i] = Boolean.FALSE;
             } else {
-                args[i] = scanField(realPlayer, pt);
-                if (args[i] == null) {
-                    disable("cannot resolve ctor arg #" + i + " : " + pt.getName());
-                    throw new IllegalStateException("unresolved ctor arg " + pt);
+                Object v = ((Field) slot).get(realPlayer);
+                if (v == null) {
+                    // Resolved at build time but null now (player/world
+                    // recreated by a dimension swap). Rebuild once against
+                    // the current player; resolveField only picks non-null
+                    // fields, so the rebuilt plan reads non-null this tick.
+                    argPlan = null;
+                    return ctorArgs(client, realPlayer);
                 }
+                args[i] = v;
             }
         }
         return args;
     }
 
-    private Object scanField(Object realPlayer, Class<?> pt) throws Exception {
-        for (Field f : playerFields) {
-            if (pt.isAssignableFrom(f.getType())) {
-                Object v = f.get(realPlayer);
-                if (v != null) {
-                    return v;
+    private Object[] buildArgPlan(Object client, Object realPlayer) throws Exception {
+        Class<?>[] pts = ctor.getParameterTypes();
+        Object[] plan = new Object[pts.length];
+        for (int i = 0; i < pts.length; i++) {
+            Class<?> pt = pts[i];
+            if (pt == boolean.class) {
+                plan[i] = ARG_FALSE;
+            } else if (pt.isInstance(client)) {
+                plan[i] = ARG_CLIENT;
+            } else {
+                Field f = resolveField(realPlayer, pt);
+                if (f == null) {
+                    disable("cannot resolve ctor arg #" + i + " : " + pt.getName());
+                    throw new IllegalStateException("unresolved ctor arg " + pt);
                 }
+                plan[i] = f;
+            }
+        }
+        return plan;
+    }
+
+    private Field resolveField(Object realPlayer, Class<?> pt) throws Exception {
+        for (Field f : playerFields) {
+            if (pt.isAssignableFrom(f.getType()) && f.get(realPlayer) != null) {
+                return f;
             }
         }
         return null;
