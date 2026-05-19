@@ -1,0 +1,16 @@
+{
+	"required": true,
+	"package": "murat.simv2.mixin.boundary",
+	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"BoundaryClientWorldMixin",
+		"BoundaryMinecraftClientMixin",
+		"BoundaryNetworkMixin",
+		"BoundarySoundManagerMixin",
+		"BoundaryTutorialManagerMixin",
+		"BoundaryWorldMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

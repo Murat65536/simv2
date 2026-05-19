@@ -32,8 +32,11 @@ import java.util.List;
  * restore (client-only transient, not in NBT) is {@code input}; it is copied
  * field-by-field from a single small {@code net.minecraft.*} object (no JDK
  * wall). The clone shares the real {@code ClientWorld}/network handler; every
- * side effect that would reach them is suppressed by the WALA-generated
- * {@code Prediction}-gated Mixins (active only on the predicting thread).
+ * side effect that would reach them is cancelled at the escape-root boundary
+ * (the {@code ClientWorld}/{@code World}/network/sound/{@code MinecraftClient}
+ * write methods) by the hand-written {@code murat.simv2.mixin.boundary} Mixins,
+ * each gated on {@link Prediction#isActive()} so only the predicting thread is
+ * affected. Reads pass through untouched, so predicted physics stays exact.
  *
  * <p>Any resolution mismatch fails <em>loud at init</em> (disabled + logged)
  * — never silent corruption. Fully defensive: never throws into the client
@@ -51,7 +54,7 @@ public final class MovementPredictor {
      * the entire real player to NBT <em>twice</em> every client tick (before
      * and after the K-tick loop) on the render thread — the dominant
      * per-frame cost. Enable with {@code -Dsimv2.predict.debug=true} when
-     * hunting a state leak; the generated gates are the primary defense.
+     * hunting a state leak; the boundary gates are the primary defense.
      */
     private static final boolean DEBUG =
         Boolean.getBoolean("simv2.predict.debug");

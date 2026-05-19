@@ -24,7 +24,7 @@
 	},
 	"mixins": [
 		"sim-v2.mixins.json",
-		"sim-v2.gen.mixins.json"
+		"sim-v2.boundary.mixins.json"
 	],
 	"depends": {
 		"fabricloader": ">=0.18.5",

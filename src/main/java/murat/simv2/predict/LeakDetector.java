@@ -6,24 +6,23 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Detects effects that escape a prediction to the real game.
+ * Independent backstop that verifies a prediction left no trace on the real
+ * game.
  *
- * <p>Static analysis cannot enumerate the escaping-effect set
- * (demonstrated — it bottoms out in code WALA can't see). So instead we
- * <em>observe the effect boundary at runtime</em>: tiny Mixins at the
- * universal effect chokes ({@code SoundManager.play},
- * {@code ParticleManager.add*}, {@code ClientConnection.send},
- * {@code ClientWorld.addEntity}, {@code World.setBlockState}) call
- * {@link #record} while {@link Prediction#ACTIVE}. Because every sound /
- * particle / packet / spawn / block-write funnels through these regardless of
- * the call path, this catches leaks the caller-side generated gates miss
- * <em>and</em> automatically catches new ones after a Minecraft update — the
- * chokes are version-stable; a new leaking path still funnels through them and
- * its stack trace is logged.
+ * <p>Isolation itself is done by the {@code murat.simv2.mixin.boundary} Mixins,
+ * which cancel every effect at the escape-root boundary
+ * ({@code ClientWorld}/{@code World}/network/sound/{@code MinecraftClient})
+ * while {@link Prediction#isActive()}. Those gates fire on essentially every
+ * predicted tick <em>by design</em> — that is the suppression working, not a
+ * leak — so they are deliberately <em>not</em> wired into this detector.
  *
- * <p>Each distinct {@code (kind, call-site)} is logged once (the predicted K
- * ticks would otherwise repeat it 60×/frame); the logged stack pinpoints the
- * exact ungated path so it can be gated.
+ * <p>This class is the version-robust catch-all instead: {@link
+ * #recordPlayerStateChange} is called from {@link MovementPredictor} when the
+ * real player's NBT is not byte-identical across a prediction window. Any such
+ * diff means an effect reached the real player through a path the boundary
+ * missed; it is logged once (dedup) with detail so the gap can be closed. The
+ * ad-hoc {@link #record} probe remains available for pinpointing a specific
+ * leaking call path during debugging.
  */
 public final class LeakDetector {
 
