@@ -62,20 +62,26 @@ final class WalaPipelineRunner {
                     + AnalysisConfig.ENTRY_METHOD.selector());
             }
 
-            System.out.println("\nBuilding 0-CFA call graph...");
+            System.out.println("\nBuilding 0-1-CFA call graph...");
             AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
             // Reflection modeling (default FULL) is pure overhead here: the
             // movement path is direct/virtual calls, never reflective, and FULL
             // reflection handling inflates CG construction badly on a jar this
             // size. NONE drops it soundly for our purpose.
             options.setReflectionOptions(AnalysisOptions.ReflectionOptions.NONE);
-            // 0-CFA (context-insensitive, allocation-site heap). We dropped from
-            // 0-1-CFA to 0-CFA because the full-call-graph backward slice's heap
-            // dependences (ModRef) explode under more precise points-to sets:
-            // 0-CFA's coarser, smaller instance-key sets keep SDG/PDG
-            // construction within the memory budget. (0-1-*Container*-CFA, the
-            // original choice, never even converged on MC's ~31k classes.)
-            CallGraphBuilder<InstanceKey> builder = Util.makeZeroCFABuilder(
+            // 0-1-CFA: context-insensitive calls, but allocation sites carry a
+            // one-level heap context. Versus plain 0-CFA this distinguishes
+            // distinct Vec3d / entity instances instead of collapsing them onto a
+            // single allocation-site key, so the heap-on slice's ModRef dependences
+            // are tighter and more accurate (fewer spurious "every write reaches
+            // every read" edges, which is what bloats the PDGs). It costs more to
+            // build (~47 s on this jar) and more RAM — pair it with a high-memory
+            // box. (0-1-*Container*-CFA, the original choice, never converged on
+            // MC's ~31k classes; do not go back to it.) If 0-1-CFA + heap-on is too
+            // heavy even on Colab, drop this one line back to makeZeroCFABuilder —
+            // heap-on (above) is the change that recovers the missing methods, not
+            // the CFA level.
+            CallGraphBuilder<InstanceKey> builder = Util.makeZeroOneCFABuilder(
                 Language.JAVA, options, new AnalysisCacheImpl(), cha);
             PrintingProgressMonitor progressMonitor = new PrintingProgressMonitor();
             long cgStart = System.currentTimeMillis();

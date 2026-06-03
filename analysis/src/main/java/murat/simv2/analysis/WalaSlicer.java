@@ -91,16 +91,27 @@ final class WalaSlicer {
         long t0 = System.currentTimeMillis();
         SDG<InstanceKey> sdg;
         try (PhaseHeartbeat ignored = PhaseHeartbeat.start("SDG build", SLICE_HEARTBEAT_MILLIS)) {
-            // NO_BASE_NO_HEAP: track only explicit (SSA register) data flow, not
-            // flow through the heap. Heap dependences (via ModRef) are what made
-            // the full-CG slice's PDGs explode past 6 GB — it stalled at the same
-            // node every run regardless of which heap types we excluded. Movement
-            // values still propagate through method returns and locals (getWorld(),
-            // getBlockState(), the per-tick gravity/friction/collision math), so
-            // those are captured; what is lost is state that flows only through a
-            // field write in one method and a read in another.
+            // NO_BASE_PTRS: track heap data flow (a field write in one method
+            // feeding a field read in another), but ignore the dependence of a
+            // heap access on the computation of its base pointer — those base-ptr
+            // edges are noise for value flow and roughly double PDG size.
+            //
+            // Heap flow is what links the *velocity* physics to the *pos* write:
+            // applyGravity()/setVelocity()/addVelocity()/jump()/knockback() write
+            // this.velocity, and move() reads it (getVelocity()) to compute the new
+            // position. Under NO_BASE_NO_HEAP that write->read link is severed, so
+            // gravity, jumping, knockback and the friction math all fall out of the
+            // slice. Turning the heap back on recovers them *without* hard-coding
+            // velocity as a second seed — the dependence is discovered, not asserted.
+            //
+            // The cost is memory: the heap-on slice is much heavier (it OOM'd around
+            // 6.5 GB on a 16 GB box). It is bounded by heapExcl — world/collision/
+            // chunk/block heap is excluded wholesale (movement reads those via method
+            // *returns*, kept as explicit dataflow), while entity (velocity/pos) and
+            // util/math (Vec3d) heap is tracked. Give it the RAM (-PanalysisXmx) to
+            // finish; ExitOnOutOfMemoryError makes a too-small budget fail cleanly.
             sdg = new SDG<>(cg, pa, ModRef.make(),
-                DataDependenceOptions.NO_BASE_NO_HEAP,
+                DataDependenceOptions.NO_BASE_PTRS,
                 ControlDependenceOptions.NO_EXCEPTIONAL_EDGES,
                 heapExcl);
         }
