@@ -3,6 +3,8 @@ plugins {
     id 'application'
 }
 
+import java.util.Locale
+
 java {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
@@ -37,17 +39,39 @@ application {
 }
 
 def analysisXmx = (project.findProperty('analysisXmx') ?: '8g').toString()
+def analysisMaxMetaspace = (project.findProperty('analysisMaxMetaspace') ?: '1g')
+    .toString()
+def analysisMaxRamPercentage = (project.findProperty('analysisMaxRamPercentage') ?: '')
+    .toString()
+def analysisExitOnOutOfMemory = (project.findProperty('analysisExitOnOutOfMemory') ?: 'true')
+    .toString()
+    .toBoolean()
 def analysisVerboseFixedPoint = (project.findProperty('analysisVerboseFixedPoint') ?: 'false')
     .toString()
     .toBoolean()
 def analysisDisableBytecodeVerify = (project.findProperty('analysisDisableBytecodeVerify') ?: 'false')
     .toString()
     .toBoolean()
-// -XX:+ExitOnOutOfMemoryError: if the (now-bounded) analysis ever exceeds the
-// heap cap, the JVM exits immediately instead of GC-thrashing the whole box.
-// MaxMetaspaceSize bounds class metadata (all of MC + the JDK get loaded).
-def analysisJvmArgs = ['-Xmx' + analysisXmx, '-XX:+UseParallelGC',
-                       '-XX:+ExitOnOutOfMemoryError', '-XX:MaxMetaspaceSize=1g']
+def isUnboundedMemoryValue = { String value ->
+    def normalized = value.trim().toLowerCase(Locale.ROOT)
+    return normalized.isEmpty()
+        || normalized == 'none'
+        || normalized == 'unlimited'
+        || normalized == 'auto'
+}
+def analysisJvmArgs = ['-XX:+UseParallelGC']
+if (!isUnboundedMemoryValue(analysisXmx)) {
+    analysisJvmArgs.add('-Xmx' + analysisXmx)
+}
+if (!analysisMaxRamPercentage.isBlank()) {
+    analysisJvmArgs.add('-XX:MaxRAMPercentage=' + analysisMaxRamPercentage)
+}
+if (analysisExitOnOutOfMemory) {
+    analysisJvmArgs.add('-XX:+ExitOnOutOfMemoryError')
+}
+if (!isUnboundedMemoryValue(analysisMaxMetaspace)) {
+    analysisJvmArgs.add('-XX:MaxMetaspaceSize=' + analysisMaxMetaspace)
+}
 if (analysisDisableBytecodeVerify) {
     analysisJvmArgs.add('-noverify')
 }
