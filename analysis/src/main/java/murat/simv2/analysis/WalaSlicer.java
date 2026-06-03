@@ -91,8 +91,16 @@ final class WalaSlicer {
         long t0 = System.currentTimeMillis();
         SDG<InstanceKey> sdg;
         try (PhaseHeartbeat ignored = PhaseHeartbeat.start("SDG build", SLICE_HEARTBEAT_MILLIS)) {
+            // NO_BASE_NO_HEAP: track only explicit (SSA register) data flow, not
+            // flow through the heap. Heap dependences (via ModRef) are what made
+            // the full-CG slice's PDGs explode past 6 GB — it stalled at the same
+            // node every run regardless of which heap types we excluded. Movement
+            // values still propagate through method returns and locals (getWorld(),
+            // getBlockState(), the per-tick gravity/friction/collision math), so
+            // those are captured; what is lost is state that flows only through a
+            // field write in one method and a read in another.
             sdg = new SDG<>(cg, pa, ModRef.make(),
-                DataDependenceOptions.NO_BASE_PTRS,
+                DataDependenceOptions.NO_BASE_NO_HEAP,
                 ControlDependenceOptions.NO_EXCEPTIONAL_EDGES,
                 heapExcl);
         }

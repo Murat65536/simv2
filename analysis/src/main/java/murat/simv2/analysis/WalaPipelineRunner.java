@@ -62,20 +62,20 @@ final class WalaPipelineRunner {
                     + AnalysisConfig.ENTRY_METHOD.selector());
             }
 
-            System.out.println("\nBuilding 0-1-CFA call graph...");
+            System.out.println("\nBuilding 0-CFA call graph...");
             AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
             // Reflection modeling (default FULL) is pure overhead here: the
             // movement path is direct/virtual calls, never reflective, and FULL
             // reflection handling inflates CG construction badly on a jar this
             // size. NONE drops it soundly for our purpose.
             options.setReflectionOptions(AnalysisOptions.ReflectionOptions.NONE);
-            // 0-1-CFA, NOT 0-1-*Container*-CFA. Container (collection) context
-            // sensitivity clones an analysis context per collection instance,
-            // which does not converge on Minecraft's ~31k-class universe (CG
-            // build was still diverging at 9+ min, 552s between progress ticks).
-            // Allocation-site (0-1) precision is plenty for a backward slice and
-            // actually terminates.
-            CallGraphBuilder<InstanceKey> builder = Util.makeZeroOneCFABuilder(
+            // 0-CFA (context-insensitive, allocation-site heap). We dropped from
+            // 0-1-CFA to 0-CFA because the full-call-graph backward slice's heap
+            // dependences (ModRef) explode under more precise points-to sets:
+            // 0-CFA's coarser, smaller instance-key sets keep SDG/PDG
+            // construction within the memory budget. (0-1-*Container*-CFA, the
+            // original choice, never even converged on MC's ~31k classes.)
+            CallGraphBuilder<InstanceKey> builder = Util.makeZeroCFABuilder(
                 Language.JAVA, options, new AnalysisCacheImpl(), cha);
             PrintingProgressMonitor progressMonitor = new PrintingProgressMonitor();
             long cgStart = System.currentTimeMillis();

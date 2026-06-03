@@ -140,11 +140,16 @@ public final class AnalysisConfig {
         "net/minecraft/item/.*",
         "net/minecraft/nbt/.*",
         "net/minecraft/registry/.*",
-        "net/minecraft/world/event/GameEvent",
-        "net/minecraft/world/Difficulty",
-        "net/minecraft/world/GameMode",
-        "net/minecraft/world/GameRules.*",
-        "net/minecraft/world/chunk/.*",
+        // World/collision heap excluded wholesale: movement reads the world via
+        // method *returns* (getWorld, getBlockState, collision results), which the
+        // slice keeps as explicit dataflow — only the internal heap (chunk arrays,
+        // world fields, voxel-shape internals) is dropped, and that is what made
+        // the full-CG slice's PDGs explode. util/math (Vec3d x/y/z) and entity
+        // heap (velocity/pos) are deliberately NOT excluded so the physics holds.
+        "net/minecraft/world/.*",
+        "net/minecraft/client/world/.*",
+        "net/minecraft/server/world/.*",
+        "net/minecraft/util/shape/.*",
         "net/minecraft/util/Identifier",
         "net/minecraft/util/Formatting",
         "net/minecraft/util/DyeColor",
