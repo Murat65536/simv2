@@ -21,6 +21,7 @@ dependencies {
     implementation 'com.ibm.wala:com.ibm.wala.shrike:1.6.9'
     implementation 'org.ow2.asm:asm:9.7'
     implementation 'org.ow2.asm:asm-tree:9.7'
+    implementation 'org.ow2.asm:asm-analysis:9.7'
     implementation 'org.slf4j:slf4j-simple:2.0.16'
     implementation 'com.google.code.gson:gson:2.11.0'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
@@ -35,14 +36,18 @@ application {
     mainClass = 'murat.simv2.analysis.MovementFieldAnalyzer'
 }
 
-def analysisXmx = (project.findProperty('analysisXmx') ?: '64g').toString()
+def analysisXmx = (project.findProperty('analysisXmx') ?: '8g').toString()
 def analysisVerboseFixedPoint = (project.findProperty('analysisVerboseFixedPoint') ?: 'false')
     .toString()
     .toBoolean()
 def analysisDisableBytecodeVerify = (project.findProperty('analysisDisableBytecodeVerify') ?: 'false')
     .toString()
     .toBoolean()
-def analysisJvmArgs = ['-Xmx' + analysisXmx, '-XX:+UseParallelGC']
+// -XX:+ExitOnOutOfMemoryError: if the (now-bounded) analysis ever exceeds the
+// heap cap, the JVM exits immediately instead of GC-thrashing the whole box.
+// MaxMetaspaceSize bounds class metadata (all of MC + the JDK get loaded).
+def analysisJvmArgs = ['-Xmx' + analysisXmx, '-XX:+UseParallelGC',
+                       '-XX:+ExitOnOutOfMemoryError', '-XX:MaxMetaspaceSize=1g']
 if (analysisDisableBytecodeVerify) {
     analysisJvmArgs.add('-noverify')
 }
@@ -164,5 +169,27 @@ tasks.register('runWala', JavaExec) { JavaExec walaTask ->
     classpath = sourceSets.main.runtimeClasspath
     mainClass = application.mainClass
     configureAnalysisExec(walaTask)
+}
+
+tasks.register('stripJar', JavaExec) { JavaExec stripTask ->
+    group = 'application'
+    description = 'Rewrite the Minecraft jar into a movement-only skeleton jar ' +
+        'from the analysis artifacts.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'murat.simv2.analysis.MovementJarStripper'
+    stripTask.jvmArgs = analysisJvmArgs
+    stripTask.doFirst {
+        def resolved = resolveAnalysisArgs()
+        def jarArg = (resolved[0] ?: "").toString()
+        if (jarArg.isBlank()) {
+            throw new GradleException(
+                "Could not resolve a Minecraft merged JAR. Pass -PmcJar=<path>.")
+        }
+        def outputDir = resolved[1].toString()
+        def outJar = project.findProperty('strippedJar')
+            ?: new File(outputDir, 'movement-stripped.jar').absolutePath
+        def stripMode = (project.findProperty('stripMode') ?: 'movement-only').toString()
+        stripTask.setArgs([jarArg, outputDir, outJar.toString(), stripMode])
+    }
 }
 

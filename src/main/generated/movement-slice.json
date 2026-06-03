@@ -1,0 +1,282 @@
+{
+  "contract": "movement-analysis/v2",
+  "lines": {
+    "net.minecraft.client.network.ClientPlayerEntity": {
+      "move(Lnet/minecraft/entity/MovementType;Lnet/minecraft/util/math/Vec3d;)V": [
+        931
+      ],
+      "tickMovement()V": [
+        842
+      ]
+    },
+    "net.minecraft.entity.Entity": {
+      "\u003cinit\u003e(Lnet/minecraft/entity/EntityType;Lnet/minecraft/world/World;)V": [
+        400,
+        401,
+        414,
+        415
+      ],
+      "calculateDimensions()V": [
+        4373,
+        4376,
+        4378,
+        4379,
+        4380,
+        4386
+      ],
+      "move(Lnet/minecraft/entity/MovementType;Lnet/minecraft/util/math/Vec3d;)V": [
+        932,
+        933,
+        935,
+        937,
+        953,
+        967,
+        969,
+        977,
+        982,
+        983,
+        984
+      ],
+      "onTrackedDataSet(Lnet/minecraft/entity/data/TrackedData;)V": [
+        4355,
+        4356
+      ],
+      "recalculateDimensions(Lnet/minecraft/entity/EntityDimensions;)Z": [
+        4398,
+        4399,
+        4402,
+        4406,
+        4407
+      ],
+      "refreshPosition()V": [
+        663
+      ],
+      "serverDamage(Lnet/minecraft/entity/damage/DamageSource;F)V": [
+        2154,
+        2155
+      ],
+      "setPos(DDD)V": [
+        5192,
+        5193
+      ],
+      "setPosition(DDD)V": [
+        650
+      ],
+      "setPosition(Lnet/minecraft/util/math/Vec3d;)V": [
+        637
+      ]
+    },
+    "net.minecraft.entity.ExperienceOrbEntity": {
+      "\u003cinit\u003e(Lnet/minecraft/entity/EntityType;Lnet/minecraft/world/World;)V": [
+        57
+      ],
+      "\u003cinit\u003e(Lnet/minecraft/world/World;DDDI)V": [
+        46,
+        47,
+        53
+      ],
+      "setValue(I)V": [
+        299
+      ],
+      "spawn(Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/util/math/Vec3d;I)V": [
+        165,
+        167,
+        168,
+        169
+      ]
+    },
+    "net.minecraft.entity.ItemEntity": {
+      "\u003cinit\u003e(Lnet/minecraft/entity/EntityType;Lnet/minecraft/world/World;)V": [
+        63
+      ],
+      "\u003cinit\u003e(Lnet/minecraft/world/World;DDDLnet/minecraft/item/ItemStack;)V": [
+        69
+      ],
+      "\u003cinit\u003e(Lnet/minecraft/world/World;DDDLnet/minecraft/item/ItemStack;DDD)V": [
+        73,
+        74,
+        76
+      ],
+      "onTrackedDataSet(Lnet/minecraft/entity/data/TrackedData;)V": [
+        402
+      ],
+      "setStack(Lnet/minecraft/item/ItemStack;)V": [
+        397
+      ]
+    },
+    "net.minecraft.entity.LivingEntity": {
+      "applyMovementInput(Lnet/minecraft/util/math/Vec3d;F)Lnet/minecraft/util/math/Vec3d;": [
+        2528,
+        2530,
+        2531
+      ],
+      "checkGlidingCollision(DD)V": [
+        2479,
+        2480,
+        2481,
+        2482,
+        2484
+      ],
+      "damage(Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/damage/DamageSource;F)Z": [
+        1206,
+        1208,
+        1210,
+        1213,
+        1214,
+        1218,
+        1223,
+        1225,
+        1226,
+        1229,
+        1231,
+        1234,
+        1239,
+        1240,
+        1244,
+        1245,
+        1248,
+        1249,
+        1250,
+        1288,
+        1289,
+        1295
+      ],
+      "drop(Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/damage/DamageSource;)V": [
+        1540
+      ],
+      "dropExperience(Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/Entity;)V": [
+        1554,
+        1556
+      ],
+      "onDeath(Lnet/minecraft/entity/damage/DamageSource;)V": [
+        1473,
+        1480,
+        1481,
+        1488,
+        1490,
+        1491,
+        1493,
+        1494
+      ],
+      "onKilledBy(Lnet/minecraft/entity/LivingEntity;)V": [
+        1512,
+        1514,
+        1515,
+        1518,
+        1524,
+        1525
+      ],
+      "setAbsorptionAmount(F)V": [
+        3181
+      ],
+      "tickCramming()V": [
+        3005,
+        3006,
+        3008,
+        3011,
+        3012,
+        3013,
+        3017,
+        3018
+      ],
+      "tickMovement()V": [
+        2862,
+        2863,
+        2907,
+        2912,
+        2913,
+        2914,
+        2915,
+        2927,
+        2935,
+        2936,
+        2948,
+        2950,
+        2951
+      ],
+      "travel(Lnet/minecraft/util/math/Vec3d;)V": [
+        2346,
+        2347,
+        2348,
+        2349,
+        2351
+      ],
+      "travelControlled(Lnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/util/math/Vec3d;)V": [
+        2492,
+        2494
+      ],
+      "travelGliding(Lnet/minecraft/util/math/Vec3d;)V": [
+        2433,
+        2434,
+        2440,
+        2441,
+        2443
+      ],
+      "travelInFluid(Lnet/minecraft/util/math/Vec3d;)V": [
+        2384,
+        2402,
+        2404,
+        2405,
+        2412
+      ],
+      "travelMidAir(Lnet/minecraft/util/math/Vec3d;)V": [
+        2357,
+        2359
+      ],
+      "wakeUp()V": [
+        3604
+      ]
+    },
+    "net.minecraft.entity.data.DataTracker": {
+      "set(Lnet/minecraft/entity/data/TrackedData;Ljava/lang/Object;)V": [
+        57
+      ],
+      "set(Lnet/minecraft/entity/data/TrackedData;Ljava/lang/Object;Z)V": [
+        62,
+        64
+      ]
+    },
+    "net.minecraft.entity.player.PlayerEntity": {
+      "applyDamage(Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/damage/DamageSource;F)V": [
+        927,
+        931
+      ],
+      "damage(Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/damage/DamageSource;F)Z": [
+        860,
+        862,
+        866,
+        870,
+        871,
+        875,
+        879,
+        880,
+        884
+      ],
+      "onDeath(Lnet/minecraft/entity/damage/DamageSource;)V": [
+        681,
+        682,
+        683,
+        684
+      ],
+      "setAbsorptionAmountUnclamped(F)V": [
+        1859
+      ],
+      "tickMovement()V": [
+        579
+      ],
+      "travel(Lnet/minecraft/util/math/Vec3d;)V": [
+        1492,
+        1493,
+        1504,
+        1506,
+        1509
+      ],
+      "wakeUp()V": [
+        1424
+      ],
+      "wakeUp(ZZ)V": [
+        1414
+      ]
+    }
+  }
+}

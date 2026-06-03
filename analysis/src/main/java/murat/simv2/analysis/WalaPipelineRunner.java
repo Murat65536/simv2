@@ -2,6 +2,7 @@ package murat.simv2.analysis;
 
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IMethod;
+import com.ibm.wala.classLoader.Language;
 import com.ibm.wala.core.util.config.AnalysisScopeReader;
 import com.ibm.wala.ipa.callgraph.AnalysisCacheImpl;
 import com.ibm.wala.ipa.callgraph.AnalysisOptions;
@@ -35,6 +36,7 @@ import java.util.Set;
  *   <li>Derive (a) per-method bytecode line numbers, (b) MOD/REF field categories,
  *       (c) the class closure from the slice.</li>
  *   <li>Persist the WALA artifacts.</li>
+ *   <li>Strip the Minecraft jar down to the slice ({@code movement-stripped.jar}).</li>
  * </ol>
  */
 final class WalaPipelineRunner {
@@ -60,10 +62,21 @@ final class WalaPipelineRunner {
                     + AnalysisConfig.ENTRY_METHOD.selector());
             }
 
-            System.out.println("\nBuilding 0-1-Container-CFA call graph...");
+            System.out.println("\nBuilding 0-1-CFA call graph...");
             AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
-            CallGraphBuilder<InstanceKey> builder = Util.makeZeroOneContainerCFABuilder(
-                options, new AnalysisCacheImpl(), cha);
+            // Reflection modeling (default FULL) is pure overhead here: the
+            // movement path is direct/virtual calls, never reflective, and FULL
+            // reflection handling inflates CG construction badly on a jar this
+            // size. NONE drops it soundly for our purpose.
+            options.setReflectionOptions(AnalysisOptions.ReflectionOptions.NONE);
+            // 0-1-CFA, NOT 0-1-*Container*-CFA. Container (collection) context
+            // sensitivity clones an analysis context per collection instance,
+            // which does not converge on Minecraft's ~31k-class universe (CG
+            // build was still diverging at 9+ min, 552s between progress ticks).
+            // Allocation-site (0-1) precision is plenty for a backward slice and
+            // actually terminates.
+            CallGraphBuilder<InstanceKey> builder = Util.makeZeroOneCFABuilder(
+                Language.JAVA, options, new AnalysisCacheImpl(), cha);
             PrintingProgressMonitor progressMonitor = new PrintingProgressMonitor();
             long cgStart = System.currentTimeMillis();
             CallGraph cg = builder.makeCallGraph(options, progressMonitor);
@@ -110,6 +123,11 @@ final class WalaPipelineRunner {
             AnalysisArtifacts.writeFieldManifest(AnalysisArtifacts.fieldManifestPath(outputDir), slice.fields());
 
             System.out.println("\nWALA artifacts written to " + outputDir);
+
+            // Emit the movement-only jar from the same slice — the deliverable.
+            Path strippedJar = outputDir.resolve("movement-stripped.jar");
+            MovementJarStripper.run(config.minecraftJar(), slice.lineByMethod(),
+                slice.fields(), strippedJar, JarStripper.Mode.MOVEMENT_ONLY);
         } finally {
             //noinspection ResultOfMethodCallIgnored
             exclusionsFile.delete();
