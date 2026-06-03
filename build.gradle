@@ -87,3 +87,15 @@ publishing {
 		// retrieving dependencies.
 	}
 }
+
+tasks.register('runWala') {
+	group = 'application'
+	description = 'Alias for :analysis:runWala.'
+	dependsOn ':analysis:runWala'
+}
+
+tasks.register('stripJar') {
+	group = 'application'
+	description = 'Alias for :analysis:stripJar.'
+	dependsOn ':analysis:stripJar'
+}

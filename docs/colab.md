@@ -22,6 +22,7 @@ bottom.
 The notebook defaults to:
 
 - Repository: `https://github.com/Murat65536/simv2.git`
+- Branch: `analysis`
 - Output directory: `/content/simv2/src/main/generated`
 - Gradle daemon heap: small, so Gradle itself does not consume the machine
 - Analysis heap: no fixed `-Xmx`; the JVM uses most of the Colab VM via
@@ -51,7 +52,7 @@ else
 fi
 java -version
 
-git clone https://github.com/Murat65536/simv2.git
+git clone --branch analysis --single-branch https://github.com/Murat65536/simv2.git
 cd simv2
 
 mkdir -p ~/.gradle
