@@ -52,6 +52,9 @@ def analysisVerboseFixedPoint = (project.findProperty('analysisVerboseFixedPoint
 def analysisDisableBytecodeVerify = (project.findProperty('analysisDisableBytecodeVerify') ?: 'false')
     .toString()
     .toBoolean()
+// Call-graph precision: 'zeroone' (default, most precise, smallest output, high
+// RAM) or 'zero' (fast, coarse, larger output — for iteration). One-time cost.
+def analysisCfa = (project.findProperty('analysisCfa') ?: 'zeroone').toString()
 def isUnboundedMemoryValue = { String value ->
     def normalized = value.trim().toLowerCase(Locale.ROOT)
     return normalized.isEmpty()
@@ -59,7 +62,7 @@ def isUnboundedMemoryValue = { String value ->
         || normalized == 'unlimited'
         || normalized == 'auto'
 }
-def analysisJvmArgs = ['-XX:+UseParallelGC']
+def analysisJvmArgs = ['-XX:+UseParallelGC', '-Danalysis.cfa=' + analysisCfa]
 if (!isUnboundedMemoryValue(analysisXmx)) {
     analysisJvmArgs.add('-Xmx' + analysisXmx)
 }

@@ -62,27 +62,37 @@ final class WalaPipelineRunner {
                     + AnalysisConfig.ENTRY_METHOD.selector());
             }
 
-            System.out.println("\nBuilding 0-1-CFA call graph...");
             AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
             // Reflection modeling (default FULL) is pure overhead here: the
             // movement path is direct/virtual calls, never reflective, and FULL
             // reflection handling inflates CG construction badly on a jar this
             // size. NONE drops it soundly for our purpose.
             options.setReflectionOptions(AnalysisOptions.ReflectionOptions.NONE);
-            // 0-1-CFA: context-insensitive calls, but allocation sites carry a
-            // one-level heap context. Versus plain 0-CFA this distinguishes
-            // distinct Vec3d / entity instances instead of collapsing them onto a
-            // single allocation-site key, so the heap-on slice's ModRef dependences
-            // are tighter and more accurate (fewer spurious "every write reaches
-            // every read" edges, which is what bloats the PDGs). It costs more to
-            // build (~47 s on this jar) and more RAM — pair it with a high-memory
-            // box. (0-1-*Container*-CFA, the original choice, never converged on
-            // MC's ~31k classes; do not go back to it.) If 0-1-CFA + heap-on is too
-            // heavy even on Colab, drop this one line back to makeZeroCFABuilder —
-            // heap-on (above) is the change that recovers the missing methods, not
-            // the CFA level.
-            CallGraphBuilder<InstanceKey> builder = Util.makeZeroOneCFABuilder(
-                Language.JAVA, options, new AnalysisCacheImpl(), cha);
+            // Call-graph precision is the main lever on OUTPUT size, and output
+            // size is the deliverable: a minimal movement core reused across
+            // millions of simulations. The slice — and thus the stripped jar — is a
+            // SUBSET under more precise points-to. Coarse 0-CFA merges all Vec3d /
+            // entity instances into one abstraction, inventing heap dependences that
+            // drag particle / AI / render code into the movement slice as false
+            // positives; 0-1-CFA separates those instances and prunes them. The
+            // analysis is a ONE-TIME build step whose cost we don't care about, so
+            // default to the most precise builder that terminates.
+            //
+            // Cost note: 0-1-CFA's points-to fixpoint hit ~164 GB on MC's ~31k
+            // classes — it needs a big-RAM box, and that is a hard wall, not just
+            // time. 0-1-Container-CFA never converged at all, so it is not offered.
+            // For a fast, bloated iteration build pass -PanalysisCfa=zero.
+            String cfa = System.getProperty("analysis.cfa", "zeroone")
+                .trim().toLowerCase(java.util.Locale.ROOT);
+            AnalysisCacheImpl cache = new AnalysisCacheImpl();
+            CallGraphBuilder<InstanceKey> builder;
+            if (cfa.equals("zero") || cfa.equals("0") || cfa.equals("0-cfa")) {
+                System.out.println("\nBuilding 0-CFA call graph (fast, coarse — larger output)...");
+                builder = Util.makeZeroCFABuilder(Language.JAVA, options, cache, cha);
+            } else {
+                System.out.println("\nBuilding 0-1-CFA call graph (precise — smallest output, needs big RAM)...");
+                builder = Util.makeZeroOneCFABuilder(Language.JAVA, options, cache, cha);
+            }
             PrintingProgressMonitor progressMonitor = new PrintingProgressMonitor();
             long cgStart = System.currentTimeMillis();
             CallGraph cg = builder.makeCallGraph(options, progressMonitor);
