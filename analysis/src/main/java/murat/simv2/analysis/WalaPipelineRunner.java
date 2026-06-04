@@ -68,31 +68,24 @@ final class WalaPipelineRunner {
             // reflection handling inflates CG construction badly on a jar this
             // size. NONE drops it soundly for our purpose.
             options.setReflectionOptions(AnalysisOptions.ReflectionOptions.NONE);
-            // Call-graph precision is the main lever on OUTPUT size, and output
-            // size is the deliverable: a minimal movement core reused across
-            // millions of simulations. The slice — and thus the stripped jar — is a
-            // SUBSET under more precise points-to. Coarse 0-CFA merges all Vec3d /
+            // 0-1-CFA: the most precise call graph that terminates on MC, and the
+            // only one we build. Precision is the main lever on OUTPUT size, and
+            // output size is the deliverable — a minimal movement core reused across
+            // millions of simulations. The slice (and thus the stripped jar) is a
+            // SUBSET under more precise points-to: coarse 0-CFA merges all Vec3d /
             // entity instances into one abstraction, inventing heap dependences that
-            // drag particle / AI / render code into the movement slice as false
-            // positives; 0-1-CFA separates those instances and prunes them. The
-            // analysis is a ONE-TIME build step whose cost we don't care about, so
-            // default to the most precise builder that terminates.
+            // drag particle / AI / render code into the slice as false positives;
+            // 0-1-CFA separates those instances and prunes them. The analysis is a
+            // ONE-TIME build whose cost we don't care about, so we always pay for the
+            // precision.
             //
             // Cost note: 0-1-CFA's points-to fixpoint hit ~164 GB on MC's ~31k
-            // classes — it needs a big-RAM box, and that is a hard wall, not just
-            // time. 0-1-Container-CFA never converged at all, so it is not offered.
-            // For a fast, bloated iteration build pass -PanalysisCfa=zero.
-            String cfa = System.getProperty("analysis.cfa", "zeroone")
-                .trim().toLowerCase(java.util.Locale.ROOT);
-            AnalysisCacheImpl cache = new AnalysisCacheImpl();
-            CallGraphBuilder<InstanceKey> builder;
-            if (cfa.equals("zero") || cfa.equals("0") || cfa.equals("0-cfa")) {
-                System.out.println("\nBuilding 0-CFA call graph (fast, coarse — larger output)...");
-                builder = Util.makeZeroCFABuilder(Language.JAVA, options, cache, cha);
-            } else {
-                System.out.println("\nBuilding 0-1-CFA call graph (precise — smallest output, needs big RAM)...");
-                builder = Util.makeZeroOneCFABuilder(Language.JAVA, options, cache, cha);
-            }
+            // classes — a big-RAM box, and that is a hard wall, not just time.
+            // 0-1-Container-CFA never converged at all. See analysis/RUN_ON_GCP.md.
+            System.out.println(
+                "\nBuilding 0-1-CFA call graph (precise — smallest output, needs big RAM)...");
+            CallGraphBuilder<InstanceKey> builder = Util.makeZeroOneCFABuilder(
+                Language.JAVA, options, new AnalysisCacheImpl(), cha);
             PrintingProgressMonitor progressMonitor = new PrintingProgressMonitor();
             long cgStart = System.currentTimeMillis();
             CallGraph cg = builder.makeCallGraph(options, progressMonitor);

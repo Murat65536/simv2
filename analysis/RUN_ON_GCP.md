@@ -6,8 +6,8 @@ only the OUTPUT matters, so we run the most precise (smallest-output) config and
 don't care what it costs in RAM/time.
 
 ## Config that must be true before you spend VM time
-- **Call graph: 0-1-CFA** (default `analysis.cfa=zeroone`) — most precise, smallest
-  output. Peak seen ~164 GB+; this is why we need the big box.
+- **Call graph: 0-1-CFA** — the only builder (the 0-CFA option was removed). Most
+  precise, smallest output. Peak seen ~164 GB+; this is why we need the big box.
 - **Slice: heap-on** (`DataDependenceOptions.NO_BASE_PTRS`) — captures the velocity
   physics (gravity / jump / setVelocity / knockback flow velocity→pos via the heap).
 - **Exclusions intact** (heap + scope) — they bound both analysis cost and output.
@@ -16,7 +16,7 @@ don't care what it costs in RAM/time.
 Verify on the VM after extracting:
 ```bash
 grep -n NO_BASE_PTRS analysis/src/main/java/murat/simv2/analysis/WalaSlicer.java
-grep -n 'analysis.cfa", "zeroone' analysis/src/main/java/murat/simv2/analysis/WalaPipelineRunner.java
+grep -n makeZeroOneCFABuilder analysis/src/main/java/murat/simv2/analysis/WalaPipelineRunner.java
 ```
 
 ## 0. Before you provision
@@ -72,7 +72,7 @@ sh ./gradlew :analysis:runWala --no-daemon --console=plain \
   -PanalysisXmx=460g \
   2>&1 | tee ~/wala-gcp-run.log
 ```
-- `analysis.cfa` defaults to `zeroone` (precise). Do **not** pass `-PanalysisCfa=zero`.
+- The call graph is hard-wired to 0-1-CFA (precise) — there is no `-PanalysisCfa` flag.
 - `-Xmx460g` leaves ~52 GB for OS / metaspace / GC on a 512 GB box.
 - `ExitOnOutOfMemoryError` is on, so an undersized heap dies clean with a clear message.
   If it OOMs at 460g, the box isn't big enough — go to `m1-ultramem` (~1 TB) or trim the
