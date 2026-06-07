@@ -56,6 +56,20 @@ def analysisVerboseFixedPoint = (project.findProperty('analysisVerboseFixedPoint
 def analysisDisableBytecodeVerify = (project.findProperty('analysisDisableBytecodeVerify') ?: 'false')
     .toString()
     .toBoolean()
+// NUMA-aware allocation helps throughput on the multi-socket big-RAM box the
+// 0-1-CFA run targets; it is a no-op on single-socket hardware. ParallelGC
+// honors it. Pure throughput/locality — does not affect the analysis result.
+def analysisUseNuma = (project.findProperty('analysisUseNuma') ?: 'true')
+    .toString()
+    .toBoolean()
+// Opt-in soft-reference aggressiveness for the IR/DefUse caches (ms per MB of
+// free heap; JVM default is 1000). Low values reclaim cached IR sooner, trading
+// CPU recompute for RAM. Leave empty for the CG-build phase (the points-to
+// fixpoint reuses IR heavily, so eager clearing there is slow); set a small
+// value only as an escape hatch if the slice phase OOMs. Result-preserving —
+// IR is recomputed deterministically.
+def analysisSoftRefMsPerMB = (project.findProperty('analysisSoftRefMsPerMB') ?: '')
+    .toString()
 def isUnboundedMemoryValue = { String value ->
     def normalized = value.trim().toLowerCase(Locale.ROOT)
     return normalized.isEmpty()
@@ -81,6 +95,12 @@ if (analysisDisableBytecodeVerify) {
 }
 if (analysisVerboseFixedPoint) {
     analysisJvmArgs.add('-Dcom.ibm.wala.fixedpoint.impl.verbose=true')
+}
+if (analysisUseNuma) {
+    analysisJvmArgs.add('-XX:+UseNUMA')
+}
+if (!analysisSoftRefMsPerMB.isBlank()) {
+    analysisJvmArgs.add('-XX:SoftRefLRUPolicyMSPerMB=' + analysisSoftRefMsPerMB)
 }
 
 def analysisCacheSearchRoots = [

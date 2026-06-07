@@ -10,6 +10,7 @@ import com.ibm.wala.ipa.callgraph.AnalysisScope;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.CallGraphBuilder;
 import com.ibm.wala.ipa.callgraph.Entrypoint;
+import com.ibm.wala.ipa.callgraph.IAnalysisCacheView;
 import com.ibm.wala.ipa.callgraph.impl.DefaultEntrypoint;
 import com.ibm.wala.ipa.callgraph.impl.Util;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
@@ -90,8 +91,9 @@ final class WalaPipelineRunner {
         // would re-merge the very instances 0-1-CFA separates, reintroducing the
         // false-positive heap dependences this slice exists to prune. The build is
         // one-time and cost-insensitive, so we take full allocation-site precision.
+        IAnalysisCacheView cache = new AnalysisCacheImpl();
         CallGraphBuilder<InstanceKey> builder = Util.makeVanillaZeroOneCFABuilder(
-            Language.JAVA, options, new AnalysisCacheImpl(), cha);
+            Language.JAVA, options, cache, cha);
         PrintingProgressMonitor progressMonitor = new PrintingProgressMonitor();
         long cgStart = System.currentTimeMillis();
         CallGraph cg = builder.makeCallGraph(options, progressMonitor);
@@ -105,6 +107,14 @@ final class WalaPipelineRunner {
                 "Call graph is suspiciously small (" + cg.getNumberOfNodes()
                     + " nodes). Check exclusions and entrypoints.");
         }
+
+        // Drop the IR/DefUse cache populated for EVERY reachable CG method before
+        // the memory-heavy slice. It is soft-referenced, so it would otherwise stay
+        // resident until the slice pushes the heap near OOM. The slice only needs IR
+        // for the subset of methods it reaches backward from the seeds, which it
+        // recomputes deterministically on demand — result-identical, with a markedly
+        // lower slice-phase peak (we keep IR for the slice subset, not the whole CG).
+        cache.clear();
 
         System.out.println("\nRunning backward slice from Entity.pos writes...");
         WalaSlicer.SliceResult slice = new WalaSlicer(cg, pa, cha).slice();
