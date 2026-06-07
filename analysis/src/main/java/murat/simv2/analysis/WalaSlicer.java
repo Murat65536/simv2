@@ -32,10 +32,8 @@ import com.ibm.wala.types.FieldReference;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.CancelException;
 import com.ibm.wala.util.MonitorUtil.IProgressMonitor;
-import com.ibm.wala.util.config.FileOfClasses;
+import com.ibm.wala.util.config.PatternsFilter;
 
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -284,13 +282,12 @@ final class WalaSlicer {
     }
 
     private HeapExclusions buildHeapExclusions() {
-        try {
-            String text = String.join("\n", AnalysisConfig.SLICER_HEAP_EXCLUSIONS) + "\n";
-            return new HeapExclusions(new FileOfClasses(
-                new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8))));
-        } catch (Exception ex) {
-            throw new RuntimeException("Failed to build heap exclusions", ex);
-        }
+        // WALA 1.7 replaced FileOfClasses/SetOfClasses with the StringFilter
+        // interface; PatternsFilter applies the same one-regex-per-line,
+        // whole-string match semantics HeapExclusions needs — built straight from
+        // the config list, no string/byte-stream/charset plumbing.
+        return new HeapExclusions(
+            new PatternsFilter(AnalysisConfig.SLICER_HEAP_EXCLUSIONS.stream()));
     }
 
     private Collection<Statement> computeBackwardSliceWithTelemetry(

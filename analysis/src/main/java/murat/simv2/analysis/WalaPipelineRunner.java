@@ -20,11 +20,10 @@ import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.config.PatternsFilter;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -46,101 +45,104 @@ final class WalaPipelineRunner {
         System.out.println("Minecraft jar:  " + config.minecraftJar());
         System.out.println("Output dir:     " + config.outputDir());
 
-        File exclusionsFile = writeExclusionsFile();
-        try {
-            AnalysisScope scope = AnalysisScopeReader.instance.makeJavaBinaryAnalysisScope(
-                config.minecraftJar().toString(), exclusionsFile);
+        AnalysisScope scope = AnalysisScopeReader.instance.makeJavaBinaryAnalysisScope(
+            config.minecraftJar().toString(), null);
+        // WALA 1.7 exposes StringFilter/PatternsFilter directly, so scope
+        // exclusions are built in-memory from the config list — no temp file to
+        // write, hand to the reader, and delete. PatternsFilter applies the same
+        // one-regex-per-line, whole-string match semantics as the old file form.
+        scope.setExclusions(new PatternsFilter(AnalysisConfig.WALA_EXCLUSIONS.stream()));
 
-            System.out.println("\nBuilding class hierarchy...");
-            IClassHierarchy cha = ClassHierarchyFactory.make(scope);
-            System.out.println("CHA: " + cha.getNumberOfClasses() + " classes");
+        System.out.println("\nBuilding class hierarchy...");
+        IClassHierarchy cha = ClassHierarchyFactory.make(scope);
+        System.out.println("CHA: " + cha.getNumberOfClasses() + " classes");
 
-            Set<Entrypoint> entrypoints = createEntrypoints(cha);
-            if (entrypoints.isEmpty()) {
-                throw new IllegalStateException("No entrypoint resolved for "
-                    + AnalysisConfig.ENTRY_METHOD.classInternal() + "."
-                    + AnalysisConfig.ENTRY_METHOD.selector());
-            }
-
-            AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
-            // Reflection modeling (default FULL) is pure overhead here: the
-            // movement path is direct/virtual calls, never reflective, and FULL
-            // reflection handling inflates CG construction badly on a jar this
-            // size. NONE drops it soundly for our purpose.
-            options.setReflectionOptions(AnalysisOptions.ReflectionOptions.NONE);
-            // 0-1-CFA: the most precise call graph that terminates on MC, and the
-            // only one we build. Precision is the main lever on OUTPUT size, and
-            // output size is the deliverable — a minimal movement core reused across
-            // millions of simulations. The slice (and thus the stripped jar) is a
-            // SUBSET under more precise points-to: coarse 0-CFA merges all Vec3d /
-            // entity instances into one abstraction, inventing heap dependences that
-            // drag particle / AI / render code into the slice as false positives;
-            // 0-1-CFA separates those instances and prunes them. The analysis is a
-            // ONE-TIME build whose cost we don't care about, so we always pay for the
-            // precision.
-            //
-            // Cost note: 0-1-CFA's points-to fixpoint hit ~164 GB on MC's ~31k
-            // classes — a big-RAM box, and that is a hard wall, not just time.
-            // 0-1-Container-CFA never converged at all. See analysis/RUN_ON_GCP.md.
-            System.out.println(
-                "\nBuilding 0-1-CFA call graph (precise — smallest output, needs big RAM)...");
-            CallGraphBuilder<InstanceKey> builder = Util.makeZeroOneCFABuilder(
-                Language.JAVA, options, new AnalysisCacheImpl(), cha);
-            PrintingProgressMonitor progressMonitor = new PrintingProgressMonitor();
-            long cgStart = System.currentTimeMillis();
-            CallGraph cg = builder.makeCallGraph(options, progressMonitor);
-            progressMonitor.done();
-            PointerAnalysis<InstanceKey> pa = builder.getPointerAnalysis();
-            long cgMs = System.currentTimeMillis() - cgStart;
-            System.out.printf("Call graph: %d nodes in %.1fs%n",
-                cg.getNumberOfNodes(), cgMs / 1000.0);
-            if (cg.getNumberOfNodes() < 50) {
-                throw new IllegalStateException(
-                    "Call graph is suspiciously small (" + cg.getNumberOfNodes()
-                        + " nodes). Check exclusions and entrypoints.");
-            }
-
-            System.out.println("\nRunning backward slice from Entity.pos writes...");
-            WalaSlicer.SliceResult slice = new WalaSlicer(cg, pa, cha).slice();
-            int slicedMethods = slice.lineByMethod().values().stream().mapToInt(Map::size).sum();
-            System.out.printf(
-                "Slice: %d statements -> %d classes, %d methods, %d fields%n",
-                slice.statementsConsidered(),
-                slice.lineByMethod().size(),
-                slicedMethods,
-                slice.fields().size());
-            if (slice.lineByMethod().isEmpty()
-                || slice.statementsConsidered() <= slice.seedCount()
-                || slice.fields().isEmpty()) {
-                throw new IllegalStateException(
-                    "Slice is suspiciously small (statements=" + slice.statementsConsidered()
-                        + ", seeds=" + slice.seedCount()
-                        + ", classes=" + slice.lineByMethod().size()
-                        + ", fields=" + slice.fields().size()
-                        + "). Exclusions may be too aggressive.");
-            }
-
-            MirrorClosure closure = ClosureBuilder.build(slice, cha);
-            System.out.println("Closure: " + closure.classes().size() + " classes ("
-                + slice.lineByMethod().size() + " sliced)");
-
-            // Persist artifacts.
-            Path outputDir = config.outputDir();
-            Files.createDirectories(outputDir);
-            AnalysisArtifacts.writeSlice(AnalysisArtifacts.slicePath(outputDir), slice.lineByMethod());
-            AnalysisArtifacts.writeClosure(AnalysisArtifacts.closurePath(outputDir), closure);
-            AnalysisArtifacts.writeFieldManifest(AnalysisArtifacts.fieldManifestPath(outputDir), slice.fields());
-
-            System.out.println("\nWALA artifacts written to " + outputDir);
-
-            // Emit the movement-only jar from the same slice — the deliverable.
-            Path strippedJar = outputDir.resolve("movement-stripped.jar");
-            MovementJarStripper.run(config.minecraftJar(), slice.lineByMethod(),
-                slice.fields(), strippedJar, JarStripper.Mode.MOVEMENT_ONLY);
-        } finally {
-            //noinspection ResultOfMethodCallIgnored
-            exclusionsFile.delete();
+        Set<Entrypoint> entrypoints = createEntrypoints(cha);
+        if (entrypoints.isEmpty()) {
+            throw new IllegalStateException("No entrypoint resolved for "
+                + AnalysisConfig.ENTRY_METHOD.classInternal() + "."
+                + AnalysisConfig.ENTRY_METHOD.selector());
         }
+
+        AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
+        // Reflection modeling (default FULL) is pure overhead here: the
+        // movement path is direct/virtual calls, never reflective, and FULL
+        // reflection handling inflates CG construction badly on a jar this
+        // size. NONE drops it soundly for our purpose.
+        options.setReflectionOptions(AnalysisOptions.ReflectionOptions.NONE);
+        // 0-1-CFA: the most precise call graph that terminates on MC, and the
+        // only one we build. Precision is the main lever on OUTPUT size, and
+        // output size is the deliverable — a minimal movement core reused across
+        // millions of simulations. The slice (and thus the stripped jar) is a
+        // SUBSET under more precise points-to: coarse 0-CFA merges all Vec3d /
+        // entity instances into one abstraction, inventing heap dependences that
+        // drag particle / AI / render code into the slice as false positives;
+        // 0-1-CFA separates those instances and prunes them. The analysis is a
+        // ONE-TIME build whose cost we don't care about, so we always pay for the
+        // precision.
+        //
+        // Cost note: 0-1-CFA's points-to fixpoint hit ~164 GB on MC's ~31k
+        // classes — a big-RAM box, and that is a hard wall, not just time.
+        // 0-1-Container-CFA never converged at all. See docs/RUN_ON_GCP.md.
+        System.out.println(
+            "\nBuilding vanilla 0-1-CFA call graph (most precise — smallest output, needs big RAM)...");
+        // Vanilla: no SMUSH optimizations. SMUSH_MANY / SMUSH_PRIMITIVE_HOLDERS
+        // would re-merge the very instances 0-1-CFA separates, reintroducing the
+        // false-positive heap dependences this slice exists to prune. The build is
+        // one-time and cost-insensitive, so we take full allocation-site precision.
+        CallGraphBuilder<InstanceKey> builder = Util.makeVanillaZeroOneCFABuilder(
+            Language.JAVA, options, new AnalysisCacheImpl(), cha);
+        PrintingProgressMonitor progressMonitor = new PrintingProgressMonitor();
+        long cgStart = System.currentTimeMillis();
+        CallGraph cg = builder.makeCallGraph(options, progressMonitor);
+        progressMonitor.done();
+        PointerAnalysis<InstanceKey> pa = builder.getPointerAnalysis();
+        long cgMs = System.currentTimeMillis() - cgStart;
+        System.out.printf("Call graph: %d nodes in %.1fs%n",
+            cg.getNumberOfNodes(), cgMs / 1000.0);
+        if (cg.getNumberOfNodes() < 50) {
+            throw new IllegalStateException(
+                "Call graph is suspiciously small (" + cg.getNumberOfNodes()
+                    + " nodes). Check exclusions and entrypoints.");
+        }
+
+        System.out.println("\nRunning backward slice from Entity.pos writes...");
+        WalaSlicer.SliceResult slice = new WalaSlicer(cg, pa, cha).slice();
+        int slicedMethods = slice.lineByMethod().values().stream().mapToInt(Map::size).sum();
+        System.out.printf(
+            "Slice: %d statements -> %d classes, %d methods, %d fields%n",
+            slice.statementsConsidered(),
+            slice.lineByMethod().size(),
+            slicedMethods,
+            slice.fields().size());
+        if (slice.lineByMethod().isEmpty()
+            || slice.statementsConsidered() <= slice.seedCount()
+            || slice.fields().isEmpty()) {
+            throw new IllegalStateException(
+                "Slice is suspiciously small (statements=" + slice.statementsConsidered()
+                    + ", seeds=" + slice.seedCount()
+                    + ", classes=" + slice.lineByMethod().size()
+                    + ", fields=" + slice.fields().size()
+                    + "). Exclusions may be too aggressive.");
+        }
+
+        MirrorClosure closure = ClosureBuilder.build(slice, cha);
+        System.out.println("Closure: " + closure.classes().size() + " classes ("
+            + slice.lineByMethod().size() + " sliced)");
+
+        // Persist artifacts.
+        Path outputDir = config.outputDir();
+        Files.createDirectories(outputDir);
+        AnalysisArtifacts.writeSlice(AnalysisArtifacts.slicePath(outputDir), slice.lineByMethod());
+        AnalysisArtifacts.writeClosure(AnalysisArtifacts.closurePath(outputDir), closure);
+        AnalysisArtifacts.writeFieldManifest(AnalysisArtifacts.fieldManifestPath(outputDir), slice.fields());
+
+        System.out.println("\nWALA artifacts written to " + outputDir);
+
+        // Emit the movement-only jar from the same slice — the deliverable.
+        Path strippedJar = outputDir.resolve("movement-stripped.jar");
+        MovementJarStripper.run(config.minecraftJar(), slice.lineByMethod(),
+            slice.fields(), strippedJar, JarStripper.Mode.MOVEMENT_ONLY);
     }
 
     private Set<Entrypoint> createEntrypoints(IClassHierarchy cha) {
@@ -161,12 +163,5 @@ final class WalaPipelineRunner {
         System.out.println("Entry: " + em.classInternal() + "." + em.selector()
             + " (-> " + resolved.getDeclaringClass().getName() + ")");
         return Set.of(new DefaultEntrypoint(ref, cha));
-    }
-
-    private File writeExclusionsFile() throws Exception {
-        File file = File.createTempFile("wala-exclusions", ".txt");
-        file.deleteOnExit();
-        Files.writeString(file.toPath(), String.join("\n", AnalysisConfig.WALA_EXCLUSIONS) + "\n");
-        return file;
     }
 }

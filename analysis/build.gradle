@@ -18,9 +18,9 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.ibm.wala:com.ibm.wala.core:1.6.9'
-    implementation 'com.ibm.wala:com.ibm.wala.util:1.6.9'
-    implementation 'com.ibm.wala:com.ibm.wala.shrike:1.6.9'
+    implementation 'com.ibm.wala:com.ibm.wala.core:1.7.2'
+    implementation 'com.ibm.wala:com.ibm.wala.util:1.7.2'
+    implementation 'com.ibm.wala:com.ibm.wala.shrike:1.7.2'
     implementation 'org.ow2.asm:asm:9.7'
     implementation 'org.ow2.asm:asm-tree:9.7'
     implementation 'org.ow2.asm:asm-analysis:9.7'
@@ -28,6 +28,10 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.11.0'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ['-Xlint:deprecation', '-Xlint:unchecked']
 }
 
 tasks.named('test', Test) {

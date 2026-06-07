@@ -22,9 +22,6 @@ public final class AnalysisConfig {
     /** Internal name of the seed field — the only thing we slice backward from. */
     public static final String SEED_FIELD_NAME = "pos";
 
-    /** The single backward-slice seed: {@code Entity.pos} writes inside the call graph. */
-    public static final SeedField SEED_FIELD = new SeedField(ENTITY_INTERNAL, SEED_FIELD_NAME);
-
     /** Entry point method (class, method, descriptor) for the call graph. */
     public static final EntryMethod ENTRY_METHOD = new EntryMethod(
         "Lnet/minecraft/client/network/ClientPlayerEntity",
@@ -155,23 +152,6 @@ public final class AnalysisConfig {
         "net/minecraft/util/DyeColor",
         "net/minecraft/util/Rarity"
     );
-
-    /**
-     * Fields the runtime sync MUST NOT copy because they would alias real-game
-     * state into the simulator (same world, same UUID, same network handler).
-     * This is a deliberately tiny list — anything that needs more nuance lives
-     * in the slice, not here.
-     */
-    public static final Set<String> DO_NOT_SYNC_FIELDS = Set.of(
-        "uuid", "uuidString", "id",
-        "world", "networkHandler", "client",
-        "type", "gameProfile",
-        "dataTracker",
-        "passengerList", "vehicle"
-    );
-
-    public record SeedField(String declaringClassInternal, String fieldName) {
-    }
 
     public record EntryMethod(String classInternal, String name, String descriptor) {
         public String selector() {
