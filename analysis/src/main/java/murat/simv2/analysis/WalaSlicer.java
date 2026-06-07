@@ -102,12 +102,12 @@ final class WalaSlicer {
             // slice. Turning the heap back on recovers them *without* hard-coding
             // velocity as a second seed — the dependence is discovered, not asserted.
             //
-            // The cost is memory: the heap-on slice is much heavier (it OOM'd around
-            // 6.5 GB on a 16 GB box). It is bounded by heapExcl — world/collision/
-            // chunk/block heap is excluded wholesale (movement reads those via method
-            // *returns*, kept as explicit dataflow), while entity (velocity/pos) and
-            // util/math (Vec3d) heap is tracked. Give it the RAM (-PanalysisXmx) to
-            // finish; ExitOnOutOfMemoryError makes a too-small budget fail cleanly.
+            // The cost is memory: a heap-on slice is much heavier than a heap-off
+            // one. It is bounded by heapExcl — world/collision/chunk/block heap is
+            // excluded wholesale (movement reads those via method *returns*, kept as
+            // explicit dataflow), while entity (velocity/pos) and util/math (Vec3d)
+            // heap is tracked. Give it the RAM (-PanalysisXmx) to finish;
+            // ExitOnOutOfMemoryError makes a too-small budget fail cleanly.
             sdg = new SDG<>(cg, pa, ModRef.make(),
                 DataDependenceOptions.NO_BASE_PTRS,
                 ControlDependenceOptions.NO_EXCEPTIONAL_EDGES,
@@ -282,10 +282,9 @@ final class WalaSlicer {
     }
 
     private HeapExclusions buildHeapExclusions() {
-        // WALA 1.7 replaced FileOfClasses/SetOfClasses with the StringFilter
-        // interface; PatternsFilter applies the same one-regex-per-line,
-        // whole-string match semantics HeapExclusions needs — built straight from
-        // the config list, no string/byte-stream/charset plumbing.
+        // Each SLICER_HEAP_EXCLUSIONS entry is a regex matched against the whole
+        // class name; HeapExclusions drops heap data-flow through any type whose
+        // name matches, keeping the IFDS solver tractable.
         return new HeapExclusions(
             new PatternsFilter(AnalysisConfig.SLICER_HEAP_EXCLUSIONS.stream()));
     }

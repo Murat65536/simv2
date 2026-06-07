@@ -48,10 +48,9 @@ final class WalaPipelineRunner {
 
         AnalysisScope scope = AnalysisScopeReader.instance.makeJavaBinaryAnalysisScope(
             config.minecraftJar().toString(), null);
-        // WALA 1.7 exposes StringFilter/PatternsFilter directly, so scope
-        // exclusions are built in-memory from the config list — no temp file to
-        // write, hand to the reader, and delete. PatternsFilter applies the same
-        // one-regex-per-line, whole-string match semantics as the old file form.
+        // Each WALA_EXCLUSIONS entry is a regex matched against the whole class
+        // name; matching classes are kept out of the scope and never loaded into
+        // the CHA. Built in-memory from the config list — no exclusions file on disk.
         scope.setExclusions(new PatternsFilter(AnalysisConfig.WALA_EXCLUSIONS.stream()));
 
         System.out.println("\nBuilding class hierarchy...");
@@ -112,8 +111,8 @@ final class WalaPipelineRunner {
         // the memory-heavy slice. It is soft-referenced, so it would otherwise stay
         // resident until the slice pushes the heap near OOM. The slice only needs IR
         // for the subset of methods it reaches backward from the seeds, which it
-        // recomputes deterministically on demand — result-identical, with a markedly
-        // lower slice-phase peak (we keep IR for the slice subset, not the whole CG).
+        // recomputes deterministically on demand — result-identical, with a lower
+        // slice-phase peak (we keep IR for the slice subset, not the whole CG).
         cache.clear();
 
         System.out.println("\nRunning backward slice from Entity.pos writes...");
