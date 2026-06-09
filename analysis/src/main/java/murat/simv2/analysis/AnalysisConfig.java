@@ -92,7 +92,21 @@ public final class AnalysisConfig {
         "net/minecraft/world/gen/.*",
         "net/minecraft/world/dimension/.*",
         "net/minecraft/world/level/storage/.*",
-        "net/minecraft/world/storage/.*"
+        "net/minecraft/world/storage/.*",
+        // --- Tightened scope to bound CG-construction RAM (the 0-1-CFA points-to
+        // fixpoint is the ~164 GB wall). Each package below is UNREACHABLE from
+        // ClientPlayerEntity.tickMovement(), so removing it from the CHA cannot
+        // change virtual dispatch on the movement path — it only drops allocation
+        // sites that inflate the fixpoint. Soundness for Entity.pos is preserved.
+        //
+        // NOT excluded on purpose (tempting by size, but on the physics path):
+        // block/.* (collision dispatch), entity/vehicle + entity/passive (ridden
+        // mounts move the rider's pos), entity/projectile (knockback velocity->pos),
+        // entity/mob + entity/decoration (shared collision/travel dispatch).
+        "net/minecraft/entity/ai/.*",       // mob goals/brain/tasks/pathing — server-side; client player runs no AI
+        "net/minecraft/util/profiler/.*",   // tick push/pop profiling — never writes pos
+        "net/minecraft/test/.*",            // gametest framework
+        "net/minecraft/client/data/.*"      // datagen providers — dev-time only
     );
 
     /**
