@@ -1,0 +1,89 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Fabric Loom: 1.15.5
+
+> Task :analysis:compileJava UP-TO-DATE
+> Task :analysis:processResources NO-SOURCE
+> Task :analysis:classes UP-TO-DATE
+
+> Task :analysis:runWala
+=== WALA Movement Slice ===
+Minecraft jar:  C:\Users\Murat\Desktop\programming\java\simv2\.gradle\loom-cache\minecraftMaven\net\minecraft\minecraft-merged-736b6061eb\1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2\minecraft-merged-736b6061eb-1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2.jar
+Output dir:     C:\Users\Murat\Desktop\programming\java\simv2\src\main\generated
+
+--- Phase A: ZEROCFA reachability pre-pass (scope pruning) ---
+CHA: 30372 classes (full scope)
+Entry: Lnet/minecraft/client/network/ClientPlayerEntity.tickMovement()V (-> Lnet/minecraft/client/network/ClientPlayerEntity)
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@210 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle, make(BLjava/lang/Class;Ljava/lang/invoke/MemberName;Ljava/lang/Class;)Ljava/lang/invoke/DirectMethodHandle; > Context: Everywhere
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@210 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle, make(BLjava/lang/Class;Ljava/lang/invoke/MemberName;Ljava/lang/Class;)Ljava/lang/invoke/DirectMethodHandle; > Context: Everywhere
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@210 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle, make(BLjava/lang/Class;Ljava/lang/invoke/MemberName;Ljava/lang/Class;)Ljava/lang/invoke/DirectMethodHandle; > Context: Everywhere
+  [progress] call graph construction: 1 units (0.0s)
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@0 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle$StaticAccessor, copyWith(Ljava/lang/invoke/MethodType;Ljava/lang/invoke/LambdaForm;)Ljava/lang/invoke/MethodHandle; > Context: Everywhere
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@0 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle$StaticAccessor, copyWith(Ljava/lang/invoke/MethodType;Ljava/lang/invoke/LambdaForm;)Ljava/lang/invoke/MethodHandle; > Context: Everywhere
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@0 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle$StaticAccessor, copyWith(Ljava/lang/invoke/MethodType;Ljava/lang/invoke/LambdaForm;)Ljava/lang/invoke/MethodHandle; > Context: Everywhere
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@23 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle$StaticAccessor, viewAsType(Ljava/lang/invoke/MethodType;Z)Ljava/lang/invoke/MethodHandle; > Context: Everywhere
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@23 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle$StaticAccessor, viewAsType(Ljava/lang/invoke/MethodType;Z)Ljava/lang/invoke/MethodHandle; > Context: Everywhere
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@23 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle$StaticAccessor, viewAsType(Ljava/lang/invoke/MethodType;Z)Ljava/lang/invoke/MethodHandle; > Context: Everywhere
+  [progress] call graph construction: 6 units (10.1s)
+  [progress] call graph construction: 21 units (22.2s)
+  [progress] call graph construction: 105 units (29.5s)
+  [done] call graph construction in 29.5s
+Phase A call graph: 23046 nodes in 38.9s
+Phase A closure: keeping 1539 / 9148 jar classes for Phase B
+
+--- Phase B: 0-1-CFA over the pruned scope ---
+
+Building pruned class hierarchy...
+CHA: 28817 classes (pruned scope)
+Entry: Lnet/minecraft/client/network/ClientPlayerEntity.tickMovement()V (-> Lnet/minecraft/client/network/ClientPlayerEntity)
+
+Building 0-1-CFA call graph (ALLOCATIONS | SMUSH_STRINGS | SMUSH_THROWABLES)...
+  [progress] call graph construction: 1 units (0.0s)
+  [progress] call graph construction: 10 units (12.2s)
+  [progress] call graph construction: 28 units (26.0s)
+  [progress] call graph construction: 91 units (31.2s)
+  [done] call graph construction in 31.2s
+Call graph: 22558 nodes in 35.4s
+
+Running backward slice from Entity.pos writes...
+Seeds: 2 putfield Entity.pos statements
+  [slice-progress] SDG build started
+  [slice-progress] SDG build running 10.0s
+  [slice-progress] SDG build running 20.0s
+  [slice-progress] SDG build running 30.0s
+  [slice-progress] SDG build running 40.0s
+  [slice-progress] SDG build running 50.0s
+  [slice-progress] SDG build running 60.0s
+SDG ready (lazy) in 68.4s over 22558 CG nodes
+Slicing IFDS loop (telemetry: elapsed/processed/frontier/rate)...
+  [slice-progress] 0.6s processed=1 frontier=1 rate=1.6/s
+  [slice-progress] 34.4s processed=318 frontier=221 rate=9.3/s
+  [slice-progress] 56.8s processed=319 frontier=221 rate=5.6/s
+  [slice-progress] 106.1s processed=320 frontier=221 rate=3.0/s
+  [slice-progress] 154.6s processed=321 frontier=221 rate=2.1/s
+  [slice-progress] 165.1s processed=394 frontier=227 rate=2.4/s
+  [slice-progress] 177.1s processed=403 frontier=229 rate=2.3/s
+  [slice-progress] 187.4s processed=496 frontier=322 rate=2.6/s
+  [slice-progress] 197.9s processed=543 frontier=390 rate=2.7/s
+  [slice-progress] 208.2s processed=569 frontier=389 rate=2.7/s
+  [slice-progress] 219.2s processed=609 frontier=408 rate=2.8/s
+Terminating due to java.lang.OutOfMemoryError: GC overhead limit exceeded
+
+> Task :analysis:runWala FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':analysis:runWala'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 3
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 8m 54s
+2 actionable tasks: 1 executed, 1 up-to-date

@@ -1,5 +1,11 @@
 # Running the movement analysis on Google Colab
 
+> **Note:** the analysis is now two-phase (a cheap reachability pre-pass prunes
+> the scope before the precise 0-1-CFA run) and should complete on an ordinary
+> local machine — try `./gradlew :analysis:runWala` locally before reaching for
+> Colab. See `docs/RUN_ON_GCP.md` for the tuning knobs
+> (`-PanalysisPhaseA`, `-PanalysisSkipClinit`, `-PanalysisMaxCgNodes`).
+
 The analysis code is Java, but Colab can still run it because a Colab notebook
 cell can execute Linux shell commands. The reliable path is:
 

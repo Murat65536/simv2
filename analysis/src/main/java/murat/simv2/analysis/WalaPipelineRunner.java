@@ -11,10 +11,14 @@ import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.CallGraphBuilder;
 import com.ibm.wala.ipa.callgraph.Entrypoint;
 import com.ibm.wala.ipa.callgraph.IAnalysisCacheView;
+import com.ibm.wala.ipa.callgraph.cha.CHACallGraph;
 import com.ibm.wala.ipa.callgraph.impl.DefaultEntrypoint;
 import com.ibm.wala.ipa.callgraph.impl.Util;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
+import com.ibm.wala.ipa.callgraph.propagation.SSAPropagationCallGraphBuilder;
+import com.ibm.wala.ipa.callgraph.propagation.cfa.ZeroXCFABuilder;
+import com.ibm.wala.ipa.callgraph.propagation.cfa.ZeroXInstanceKeys;
 import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.types.ClassLoaderReference;
@@ -22,6 +26,7 @@ import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.config.PatternsFilter;
+import com.ibm.wala.util.config.StringFilter;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,15 +34,25 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Runs the WALA pipeline:
+ * Runs the two-phase WALA pipeline:
  * <ol>
- *   <li>Build call graph + pointer analysis from {@code ClientPlayerEntity#tickMovement()}.</li>
+ *   <li><b>Phase A</b>: cheap reachability pre-pass (0-CFA or CHA) from
+ *       {@code ClientPlayerEntity#tickMovement()} over the full jar, used only
+ *       to prune the Phase B scope down to the reachable-class closure.</li>
+ *   <li><b>Phase B</b>: precise 0-1-CFA call graph + pointer analysis over the
+ *       pruned scope.</li>
  *   <li>Compute the backward slice from every {@code putfield Entity.pos} in the CG.</li>
  *   <li>Derive (a) per-method bytecode line numbers, (b) MOD/REF field categories,
  *       (c) the class closure from the slice.</li>
  *   <li>Persist the WALA artifacts.</li>
  *   <li>Strip the Minecraft jar down to the slice ({@code movement-stripped.jar}).</li>
  * </ol>
+ *
+ * <p>The pruning is output-preserving: reachability under the coarser Phase A
+ * abstraction is a superset of reachability under 0-1-CFA, so nothing the
+ * precise run would use is removed. It exists because the vanilla single-phase
+ * 0-1-CFA fixpoint over the full universe (~31k MC classes + JDK) peaked past
+ * ~164 GB and never converged even on a 170 GB box.
  */
 final class WalaPipelineRunner {
 
@@ -46,23 +61,22 @@ final class WalaPipelineRunner {
         System.out.println("Minecraft jar:  " + config.minecraftJar());
         System.out.println("Output dir:     " + config.outputDir());
 
-        AnalysisScope scope = AnalysisScopeReader.instance.makeJavaBinaryAnalysisScope(
-            config.minecraftJar().toString(), null);
-        // Each WALA_EXCLUSIONS entry is a regex matched against the whole class
-        // name; matching classes are kept out of the scope and never loaded into
-        // the CHA. Built in-memory from the config list — no exclusions file on disk.
-        scope.setExclusions(new PatternsFilter(AnalysisConfig.WALA_EXCLUSIONS.stream()));
+        // --- Phase A: cheap reachability pre-pass over the full jar. ---
+        Set<String> universe = ScopePruner.jarClassUniverse(config.minecraftJar());
+        Set<String> kept = computePhaseAClosure(config, universe);
+        // Phase A's CHA/CG/IR (full 31k-class universe) are unreachable now;
+        // the Phase B allocations below can reclaim that heap.
 
-        System.out.println("\nBuilding class hierarchy...");
+        // --- Phase B: precise 0-1-CFA over the pruned scope. ---
+        System.out.println("\n--- Phase B: 0-1-CFA over the pruned scope ---");
+        AnalysisScope scope = makeScope(config,
+            ScopePruner.prunedExclusions(AnalysisConfig.WALA_EXCLUSIONS, universe, kept));
+
+        System.out.println("\nBuilding pruned class hierarchy...");
         IClassHierarchy cha = ClassHierarchyFactory.make(scope);
-        System.out.println("CHA: " + cha.getNumberOfClasses() + " classes");
+        System.out.println("CHA: " + cha.getNumberOfClasses() + " classes (pruned scope)");
 
         Set<Entrypoint> entrypoints = createEntrypoints(cha);
-        if (entrypoints.isEmpty()) {
-            throw new IllegalStateException("No entrypoint resolved for "
-                + AnalysisConfig.ENTRY_METHOD.classInternal() + "."
-                + AnalysisConfig.ENTRY_METHOD.selector());
-        }
 
         AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
         // Reflection modeling (default FULL) is pure overhead here: the
@@ -70,29 +84,51 @@ final class WalaPipelineRunner {
         // reflection handling inflates CG construction badly on a jar this
         // size. NONE drops it soundly for our purpose.
         options.setReflectionOptions(AnalysisOptions.ReflectionOptions.NONE);
-        // 0-1-CFA: the most precise call graph that terminates on MC, and the
-        // only one we build. Precision is the main lever on OUTPUT size, and
-        // output size is the deliverable — a minimal movement core reused across
-        // millions of simulations. The slice (and thus the stripped jar) is a
-        // SUBSET under more precise points-to: coarse 0-CFA merges all Vec3d /
-        // entity instances into one abstraction, inventing heap dependences that
-        // drag particle / AI / render code into the slice as false positives;
-        // 0-1-CFA separates those instances and prunes them. The analysis is a
-        // ONE-TIME build whose cost we don't care about, so we always pay for the
-        // precision.
-        //
-        // Cost note: 0-1-CFA's points-to fixpoint hit ~164 GB on MC's ~31k
-        // classes — a big-RAM box, and that is a hard wall, not just time.
-        // 0-1-Container-CFA never converged at all. See docs/RUN_ON_GCP.md.
+        if (config.skipClinit()) {
+            // Escape hatch: skip <clinit> modeling. MC's registry initializers
+            // (Blocks, Items, ...) are a points-to bomb, but without them
+            // registry-object dispatch (e.g. block.getVelocityMultiplier() for
+            // friction) can lose its targets and fall out of the slice.
+            // Validate the output when this is on.
+            System.out.println("WARNING: static-initializer modeling DISABLED"
+                + " (-PanalysisSkipClinit) — registry-driven dispatch (friction"
+                + " etc.) may drop out of the slice. Validate the output.");
+            options.setHandleStaticInit(false);
+        }
+        if (config.maxCgNodes() > 0) {
+            // Fail fast instead of grinding into swap on a runaway call graph.
+            options.setMaxNumberOfNodes(config.maxCgNodes());
+        }
+
+        // 0-1-CFA with targeted smushing. Precision is the main lever on
+        // OUTPUT size, and the output is the deliverable — a minimal movement
+        // core reused across millions of simulations: coarse 0-CFA merges all
+        // Vec3d / entity instances into one abstraction, inventing heap
+        // dependences that drag particle / AI / render code into the slice as
+        // false positives; allocation-site keys separate those instances and
+        // prune them. Unlike the old vanilla builder we DO smush the types
+        // that cannot carry physics dataflow:
+        //  - SMUSH_STRINGS: string/StringBuffer allocation sites are the
+        //    classic points-to blowup, and string heap is already excluded
+        //    from the slice (SLICER_HEAP_EXCLUSIONS) — merging them cannot
+        //    change the movement slice.
+        //  - SMUSH_THROWABLES: exception objects, disambiguated by type only.
+        // Deliberately NOT used:
+        //  - SMUSH_PRIMITIVE_HOLDERS merges all instances of classes with no
+        //    reference fields — that includes Vec3d (three doubles) and
+        //    BlockPos, exactly the instances 0-1-CFA must keep separate.
+        //  - SMUSH_MANY re-merges >25 same-type allocation sites per method,
+        //    which could conflate entity/vector instances on the physics path.
         System.out.println(
-            "\nBuilding vanilla 0-1-CFA call graph (most precise — smallest output, needs big RAM)...");
-        // Vanilla: no SMUSH optimizations. SMUSH_MANY / SMUSH_PRIMITIVE_HOLDERS
-        // would re-merge the very instances 0-1-CFA separates, reintroducing the
-        // false-positive heap dependences this slice exists to prune. The build is
-        // one-time and cost-insensitive, so we take full allocation-site precision.
+            "\nBuilding 0-1-CFA call graph (ALLOCATIONS | SMUSH_STRINGS | SMUSH_THROWABLES)...");
         IAnalysisCacheView cache = new AnalysisCacheImpl();
-        CallGraphBuilder<InstanceKey> builder = Util.makeVanillaZeroOneCFABuilder(
-            Language.JAVA, options, cache, cha);
+        Util.addDefaultSelectors(options, cha);
+        Util.addDefaultBypassLogic(options, Util.class.getClassLoader(), cha);
+        CallGraphBuilder<InstanceKey> builder = ZeroXCFABuilder.make(
+            Language.JAVA, cha, options, cache, null, null,
+            ZeroXInstanceKeys.ALLOCATIONS
+                | ZeroXInstanceKeys.SMUSH_STRINGS
+                | ZeroXInstanceKeys.SMUSH_THROWABLES);
         PrintingProgressMonitor progressMonitor = new PrintingProgressMonitor();
         long cgStart = System.currentTimeMillis();
         CallGraph cg = builder.makeCallGraph(options, progressMonitor);
@@ -152,6 +188,76 @@ final class WalaPipelineRunner {
         Path strippedJar = outputDir.resolve("movement-stripped.jar");
         MovementJarStripper.run(config.minecraftJar(), slice.lineByMethod(),
             slice.fields(), strippedJar, JarStripper.Mode.MOVEMENT_ONLY);
+    }
+
+    /**
+     * Phase A: build a cheap call graph from the entry method over the full
+     * jar and return the kept-class closure for the Phase B scope. Everything
+     * allocated here (full CHA, Phase A CG, IR caches) is dropped on return.
+     */
+    private Set<String> computePhaseAClosure(AnalysisRunConfig config, Set<String> universe)
+        throws Exception {
+        System.out.println("\n--- Phase A: " + config.phaseAMode()
+            + " reachability pre-pass (scope pruning) ---");
+        AnalysisScope scope = makeScope(config,
+            new PatternsFilter(AnalysisConfig.WALA_EXCLUSIONS.stream()));
+        IClassHierarchy cha = ClassHierarchyFactory.make(scope);
+        System.out.println("CHA: " + cha.getNumberOfClasses() + " classes (full scope)");
+
+        Set<Entrypoint> entrypoints = createEntrypoints(cha);
+
+        long t0 = System.currentTimeMillis();
+        CallGraph cg;
+        if (config.phaseAMode() == AnalysisRunConfig.PhaseAMode.CHA) {
+            // No points-to at all: every virtual call resolves to all CHA
+            // targets. Coarsest closure, but guaranteed cheap. applicationOnly
+            // is fine — only jar classes are ever pruned, the JDK stays whole.
+            CHACallGraph chaCg = new CHACallGraph(cha, true);
+            chaCg.init(entrypoints);
+            cg = chaCg;
+        } else {
+            // 0-CFA: type-based instance keys — dramatically cheaper than
+            // allocation-site keys, and its reachable set is a sound superset
+            // of the 0-1-CFA one.
+            AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
+            options.setReflectionOptions(AnalysisOptions.ReflectionOptions.NONE);
+            if (config.maxCgNodes() > 0) {
+                options.setMaxNumberOfNodes(config.maxCgNodes());
+            }
+            IAnalysisCacheView cache = new AnalysisCacheImpl();
+            SSAPropagationCallGraphBuilder builder =
+                Util.makeZeroCFABuilder(Language.JAVA, options, cache, cha);
+            PrintingProgressMonitor monitor = new PrintingProgressMonitor();
+            cg = builder.makeCallGraph(options, monitor);
+            monitor.done();
+        }
+        System.out.printf("Phase A call graph: %d nodes in %.1fs%n",
+            cg.getNumberOfNodes(), (System.currentTimeMillis() - t0) / 1000.0);
+        if (cg.getNumberOfNodes() < 50) {
+            throw new IllegalStateException(
+                "Phase A call graph is suspiciously small (" + cg.getNumberOfNodes()
+                    + " nodes). Check exclusions and entrypoints.");
+        }
+
+        Set<String> kept = ScopePruner.keptClasses(cg, cha, universe);
+        System.out.printf("Phase A closure: keeping %d / %d jar classes for Phase B%n",
+            kept.size(), universe.size());
+        if (kept.size() < 50) {
+            throw new IllegalStateException(
+                "Phase A closure is suspiciously small (" + kept.size()
+                    + " classes). Check exclusions and entrypoints.");
+        }
+        return kept;
+    }
+
+    private AnalysisScope makeScope(AnalysisRunConfig config, StringFilter exclusions)
+        throws Exception {
+        AnalysisScope scope = AnalysisScopeReader.instance.makeJavaBinaryAnalysisScope(
+            config.minecraftJar().toString(), null);
+        // The filter is tested against whole slash-form class names; matching
+        // classes are kept out of the scope and never loaded into the CHA.
+        scope.setExclusions(exclusions);
+        return scope;
     }
 
     private Set<Entrypoint> createEntrypoints(IClassHierarchy cha) {

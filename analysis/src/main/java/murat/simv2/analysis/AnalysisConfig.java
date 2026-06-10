@@ -93,8 +93,7 @@ public final class AnalysisConfig {
         "net/minecraft/world/dimension/.*",
         "net/minecraft/world/level/storage/.*",
         "net/minecraft/world/storage/.*",
-        // --- Tightened scope to bound CG-construction RAM (the 0-1-CFA points-to
-        // fixpoint is the ~164 GB wall). Each package below is UNREACHABLE from
+        // --- Tightened scope to bound CG-construction RAM. Each package below is UNREACHABLE from
         // ClientPlayerEntity.tickMovement(), so removing it from the CHA cannot
         // change virtual dispatch on the movement path — it only drops allocation
         // sites that inflate the fixpoint. Soundness for Entity.pos is preserved.

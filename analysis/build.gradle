@@ -56,12 +56,25 @@ def analysisVerboseFixedPoint = (project.findProperty('analysisVerboseFixedPoint
 def analysisDisableBytecodeVerify = (project.findProperty('analysisDisableBytecodeVerify') ?: 'false')
     .toString()
     .toBoolean()
-// NUMA-aware allocation helps throughput on the multi-socket big-RAM box the
-// 0-1-CFA run targets; it is a no-op on single-socket hardware. ParallelGC
-// honors it. Pure throughput/locality — does not affect the analysis result.
+// NUMA-aware allocation helps throughput on multi-socket boxes; it is a
+// no-op on single-socket hardware. ParallelGC honors it. Pure
+// throughput/locality — does not affect the analysis result.
 def analysisUseNuma = (project.findProperty('analysisUseNuma') ?: 'true')
     .toString()
     .toBoolean()
+// Which cheap call graph drives the Phase A scope pruning: 'zerocfa'
+// (default, tightest closure) or 'cha' (no points-to, cheapest fallback).
+def analysisPhaseA = (project.findProperty('analysisPhaseA') ?: 'zerocfa')
+    .toString()
+// Opt-in escape hatch: skip static-initializer modeling in Phase B. Big cost
+// cut, but registry-driven dispatch (friction etc.) may drop out of the
+// slice — validate the output if you enable this.
+def analysisSkipClinit = (project.findProperty('analysisSkipClinit') ?: 'false')
+    .toString()
+    .toBoolean()
+// Fail fast if the call graph exceeds this many nodes (0 = unlimited).
+def analysisMaxCgNodes = (project.findProperty('analysisMaxCgNodes') ?: '0')
+    .toString()
 // Opt-in soft-reference aggressiveness for the IR/DefUse caches (ms per MB of
 // free heap; JVM default is 1000). Low values reclaim cached IR sooner, trading
 // CPU recompute for RAM. Leave empty for the CG-build phase (the points-to
@@ -102,6 +115,11 @@ if (analysisUseNuma) {
 if (!analysisSoftRefMsPerMB.isBlank()) {
     analysisJvmArgs.add('-XX:SoftRefLRUPolicyMSPerMB=' + analysisSoftRefMsPerMB)
 }
+analysisJvmArgs.add('-Danalysis.phaseA=' + analysisPhaseA)
+if (analysisSkipClinit) {
+    analysisJvmArgs.add('-Danalysis.skipClinit=true')
+}
+analysisJvmArgs.add('-Danalysis.maxCgNodes=' + analysisMaxCgNodes)
 
 def analysisCacheSearchRoots = [
     file("${rootProject.projectDir}/.gradle/loom-cache"),

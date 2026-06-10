@@ -1,0 +1,84 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.3.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Fabric Loom: 1.15.5
+
+> Task :analysis:compileJava UP-TO-DATE
+> Task :analysis:processResources NO-SOURCE
+> Task :analysis:classes UP-TO-DATE
+
+> Task :analysis:runWala
+=== WALA Movement Slice ===
+Minecraft jar:  C:\Users\Murat\Desktop\programming\java\simv2\.gradle\loom-cache\minecraftMaven\net\minecraft\minecraft-merged-736b6061eb\1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2\minecraft-merged-736b6061eb-1.21.5-net.fabricmc.yarn.1_21_5.1.21.5+build.1-v2.jar
+Output dir:     C:\Users\Murat\Desktop\programming\java\simv2\src\main\generated
+
+--- Phase A: ZEROCFA reachability pre-pass (scope pruning) ---
+CHA: 30372 classes (full scope)
+Entry: Lnet/minecraft/client/network/ClientPlayerEntity.tickMovement()V (-> Lnet/minecraft/client/network/ClientPlayerEntity)
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@210 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle, make(BLjava/lang/Class;Ljava/lang/invoke/MemberName;Ljava/lang/Class;)Ljava/lang/invoke/DirectMethodHandle; > Context: Everywhere
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@210 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle, make(BLjava/lang/Class;Ljava/lang/invoke/MemberName;Ljava/lang/Class;)Ljava/lang/invoke/DirectMethodHandle; > Context: Everywhere
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@210 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle, make(BLjava/lang/Class;Ljava/lang/invoke/MemberName;Ljava/lang/Class;)Ljava/lang/invoke/DirectMethodHandle; > Context: Everywhere
+  [progress] call graph construction: 1 units (0.0s)
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@0 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle$StaticAccessor, copyWith(Ljava/lang/invoke/MethodType;Ljava/lang/invoke/LambdaForm;)Ljava/lang/invoke/MethodHandle; > Context: Everywhere
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@0 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle$StaticAccessor, copyWith(Ljava/lang/invoke/MethodType;Ljava/lang/invoke/LambdaForm;)Ljava/lang/invoke/MethodHandle; > Context: Everywhere
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@0 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle$StaticAccessor, copyWith(Ljava/lang/invoke/MethodType;Ljava/lang/invoke/LambdaForm;)Ljava/lang/invoke/MethodHandle; > Context: Everywhere
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@23 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle$StaticAccessor, viewAsType(Ljava/lang/invoke/MethodType;Z)Ljava/lang/invoke/MethodHandle; > Context: Everywhere
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@23 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle$StaticAccessor, viewAsType(Ljava/lang/invoke/MethodType;Z)Ljava/lang/invoke/MethodHandle; > Context: Everywhere
+got NEW <Primordial,Ljava/lang/invoke/DirectMethodHandle$StaticAccessor>@23 in Node: < Primordial, Ljava/lang/invoke/DirectMethodHandle$StaticAccessor, viewAsType(Ljava/lang/invoke/MethodType;Z)Ljava/lang/invoke/MethodHandle; > Context: Everywhere
+  [progress] call graph construction: 10 units (13.4s)
+  [progress] call graph construction: 21 units (25.0s)
+  [progress] call graph construction: 66 units (35.5s)
+  [progress] call graph construction: 105 units (36.6s)
+  [done] call graph construction in 36.6s
+Phase A call graph: 23046 nodes in 48.6s
+Phase A closure: keeping 1539 / 9148 jar classes for Phase B
+
+--- Phase B: 0-1-CFA over the pruned scope ---
+
+Building pruned class hierarchy...
+CHA: 28817 classes (pruned scope)
+Entry: Lnet/minecraft/client/network/ClientPlayerEntity.tickMovement()V (-> Lnet/minecraft/client/network/ClientPlayerEntity)
+
+Building 0-1-CFA call graph (ALLOCATIONS | SMUSH_STRINGS | SMUSH_THROWABLES)...
+  [progress] call graph construction: 1 units (0.0s)
+  [progress] call graph construction: 6 units (11.0s)
+  [progress] call graph construction: 15 units (23.2s)
+  [progress] call graph construction: 28 units (35.0s)
+  [progress] call graph construction: 91 units (41.6s)
+  [done] call graph construction in 41.6s
+Call graph: 22558 nodes in 46.5s
+
+Running backward slice from Entity.pos writes...
+Seeds: 2 putfield Entity.pos statements
+  [slice-progress] SDG build started
+  [slice-progress] SDG build running 10.0s
+  [slice-progress] SDG build running 20.0s
+  [slice-progress] SDG build running 30.0s
+  [slice-progress] SDG build running 40.0s
+  [slice-progress] SDG build running 50.0s
+  [slice-progress] SDG build running 60.0s
+  [slice-progress] SDG build running 70.0s
+SDG ready (lazy) in 72.2s over 22558 CG nodes
+Slicing IFDS loop (telemetry: elapsed/processed/frontier/rate)...
+  [slice-progress] 0.6s processed=1 frontier=1 rate=1.6/s
+  [slice-progress] 36.0s processed=318 frontier=221 rate=8.8/s
+  [slice-progress] 60.9s processed=319 frontier=221 rate=5.2/s
+Terminating due to java.lang.OutOfMemoryError: GC overhead limit exceeded
+
+> Task :analysis:runWala FAILED
+2 actionable tasks: 1 executed, 1 up-to-date
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':analysis:runWala'.
+> Process 'command 'C:\Program Files\Java\jdk-21.0.10\bin\java.exe'' finished with non-zero exit value 3
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 7m 29s
