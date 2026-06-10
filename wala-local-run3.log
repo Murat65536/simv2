@@ -535,3 +535,4 @@ Slicing IFDS loop (telemetry: elapsed/processed/frontier/rate)...
   [slice-progress] 4887.3s processed=2077413 frontier=26612 rate=425.1/s
   [slice-progress] 4897.3s processed=2078432 frontier=26667 rate=424.4/s
   [slice-progress] 4908.3s processed=2079499 frontier=26782 rate=423.7/s
+  [slice-progress] 4918.3s processed=2081788 frontier=26913 rate=423.3/s
