@@ -76,6 +76,15 @@ def analysisGc = (project.findProperty('analysisGc') ?: 'parallel')
 def analysisGcLog = (project.findProperty('analysisGcLog') ?: 'false')
     .toString()
     .toBoolean()
+// Back the heap with transparent huge pages. The slice is a single-threaded,
+// pointer-chasing IFDS solver over a multi-GB live set; with 4K pages the TLB
+// covers only a few MB, so nearly every access page-faults the table walk. 2M
+// pages widen TLB reach ~512x. Requires THP enabled on the host
+// (/sys/kernel/mm/transparent_hugepage/enabled = always|madvise). Pure
+// locality — does not affect the analysis result.
+def analysisLargePages = (project.findProperty('analysisLargePages') ?: 'false')
+    .toString()
+    .toBoolean()
 // Which cheap call graph drives the Phase A scope pruning: 'zerocfa'
 // (default, tightest closure) or 'cha' (no points-to, cheapest fallback).
 def analysisPhaseA = (project.findProperty('analysisPhaseA') ?: 'zerocfa')
@@ -118,6 +127,9 @@ def analysisJvmArgs = []
 analysisJvmArgs.addAll(gcArgsByName[analysisGc])
 if (analysisGcLog) {
     analysisJvmArgs.add('-Xlog:gc*:stdout:time,uptime,level,tags')
+}
+if (analysisLargePages) {
+    analysisJvmArgs.add('-XX:+UseTransparentHugePages')
 }
 if (!isUnboundedMemoryValue(analysisXmx)) {
     analysisJvmArgs.add('-Xmx' + analysisXmx)
