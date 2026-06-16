@@ -36,30 +36,6 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 
-/**
- * Rewrites the Minecraft jar into a "movement-only" jar (a <em>loadable
- * skeleton</em>):
- *
- * <ul>
- *   <li>The sliced movement methods are kept verbatim (whole bodies).</li>
- *   <li>Everything those bodies reference — classes, fields, constructors,
- *       lambda targets — is retained so the kept classes still verify and load:
- *       constructors are kept whole (a stub constructor could not initialise
- *       {@code this}); other referenced methods become trivial
- *       return-default stubs.</li>
- *   <li>Supers/interfaces of every kept class are retained so subclasses
- *       load.</li>
- *   <li>Any method that is neither kept nor referenced is dropped; any class
- *       that ends up with no members and is not needed as a super/interface is
- *       dropped.</li>
- * </ul>
- *
- * <p>Only {@code net.minecraft.*} classes are emitted; JDK and third-party
- * library classes are provided by the runtime, exactly as the analysis assumes.
- * The result loads/verifies but is not guaranteed to execute a full tick (a
- * movement body may call a now-stubbed helper) — that is the deliberate
- * trade-off of the skeleton.
- */
 final class JarStripper {
 
     static final String MC_PREFIX = "net/minecraft/";
@@ -77,11 +53,10 @@ final class JarStripper {
         int fieldsKept, int fieldsDropped, long bytesOut) {
     }
 
-    /** What the stripped jar should contain. */
     enum Mode {
-        /** Movement methods kept whole, plus the stub/super scaffolding needed to load &amp; verify. */
+
         LOADABLE,
-        /** Only the classes carrying real movement bytecode, verbatim. Smaller; not self-loading. */
+
         MOVEMENT_ONLY
     }
 
@@ -121,12 +96,6 @@ final class JarStripper {
         Mode mode) throws IOException {
         int classesIn = classBytes.size();
 
-        // Keep set is rooted ONLY at the movement slice. We deliberately do NOT
-        // seed from the type-closure (mirror-closure.json): that closure pulls in
-        // every field/param/return type for a different (source-mirror) purpose
-        // and leaves behind shells and all-stub classes that no movement body
-        // touches. Reference-closure (below) + structural supers is all that a
-        // loadable skeleton needs.
         for (String c : protectedInternal) {
             if (existsMc(c)) {
                 protectedClasses.add(c);
@@ -149,15 +118,13 @@ final class JarStripper {
         while (!scanQueue.isEmpty()) {
             scanMethod(scanQueue.poll());
         }
-        // Structural supers only matter for making the scaffolding load.
+
         if (mode == Mode.LOADABLE) {
             structuralClosure();
         }
 
         return emit(outJar, classesIn, mode);
     }
-
-    // ── Reference scanning ──
 
     private void enqueueWhole(MethodRef m) {
         stubMethods.remove(m);
@@ -170,7 +137,7 @@ final class JarStripper {
         ClassNode cn = node(ref.owner());
         if (cn == null) return;
         MethodNode mn = find(cn, ref.name(), ref.desc());
-        if (mn == null) return; // referenced but inherited (not declared here) — fine
+        if (mn == null) return;
         noteMethodDesc(ref.desc());
         if (mn.exceptions != null) mn.exceptions.forEach(this::noteInternal);
         if (mn.tryCatchBlocks != null) {
@@ -210,9 +177,7 @@ final class JarStripper {
         noteMethodDesc(desc);
         if (!isMc(owner)) return;
         MethodRef r = new MethodRef(owner, name, desc);
-        // Constructors must keep a real body — a stub cannot satisfy the verifier's
-        // "this is initialised before return" rule. Lambda bodies (synthetic
-        // lambda$… methods) are the actual movement computation, so keep them too.
+
         if (name.equals("<init>") || name.startsWith("lambda$")) {
             enqueueWhole(r);
         } else if (!keepWhole.contains(r)) {
@@ -252,7 +217,6 @@ final class JarStripper {
         noteTypeObj(Type.getReturnType(desc));
     }
 
-    /** Accepts an internal name, a type descriptor, or an array descriptor. */
     private void noteType(String s) {
         if (s == null) return;
         if (s.startsWith("[") || (s.startsWith("L") && s.endsWith(";"))) {
@@ -274,16 +238,6 @@ final class JarStripper {
         }
     }
 
-    /**
-     * Superclasses of every kept class must be present (a class cannot load
-     * without its super). Interfaces are deliberately NOT force-kept: an MC
-     * interface survives only if some kept body actually references it (landing
-     * in {@link #keepClasses} via {@link #noteInternal}), and {@link #emit}
-     * strips any unreferenced MC interface from the {@code implements} clause.
-     * This is load-safe — if kept code ever used a class <em>as</em> interface
-     * {@code I}, then {@code I} appears in that bytecode and is referenced — and
-     * it drops the swarm of marker/capability interfaces no movement code uses.
-     */
     private void structuralClosure() {
         boolean changed = true;
         while (changed) {
@@ -298,8 +252,6 @@ final class JarStripper {
             }
         }
     }
-
-    // ── Emit ──
 
     private Stats emit(Path outJar, int classesIn, Mode mode) throws IOException {
         Map<String, ClassNode> out = new TreeMap<>();
@@ -320,8 +272,7 @@ final class JarStripper {
                     break;
                 }
             }
-            // MOVEMENT_ONLY: emit only classes that carry real movement bytecode;
-            // the stub/data/shell scaffolding is dropped wholesale.
+
             if (mode == Mode.MOVEMENT_ONLY && !hasWhole) continue;
 
             List<MethodNode> methods = new ArrayList<>();
@@ -350,10 +301,6 @@ final class JarStripper {
             }
             cn.fields = fields;
 
-            // LOADABLE: drop MC interfaces nothing references so their shells prune
-            // away (non-MC interfaces stay — the runtime provides them).
-            // MOVEMENT_ONLY: leave the original signature untouched; the jar isn't
-            // meant to link, and the real {@code implements} is the faithful record.
             if (mode == Mode.LOADABLE && cn.interfaces != null && !cn.interfaces.isEmpty()) {
                 List<String> ifaces = new ArrayList<>();
                 for (String i : cn.interfaces) {
@@ -404,7 +351,6 @@ final class JarStripper {
             kept, stubbed, dropped, fKept, fDropped, bytesOut);
     }
 
-    /** Drop classes with no members that no kept class needs as a super/interface. */
     private int pruneEmptyUnused(Map<String, ClassNode> out) {
         int removed = 0;
         boolean changed = true;
@@ -435,7 +381,7 @@ final class JarStripper {
         MethodNode s = new MethodNode(Opcodes.ASM9,
             mn.access & ~Opcodes.ACC_NATIVE, mn.name, mn.desc, null, ex);
         if ((mn.access & Opcodes.ACC_ABSTRACT) != 0) {
-            // Abstract/interface method: no body, keep it abstract.
+
             s.access = mn.access;
             s.instructions = new InsnList();
             return s;
@@ -466,10 +412,8 @@ final class JarStripper {
             }
         }
         s.instructions = il;
-        return s; // maxs recomputed by ClassWriter.COMPUTE_MAXS
+        return s;
     }
-
-    // ── Helpers ──
 
     private static MethodNode find(ClassNode cn, String name, String desc) {
         for (MethodNode mn : cn.methods) {

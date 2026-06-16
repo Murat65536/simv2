@@ -28,12 +28,12 @@ class PrintingProgressMonitorTest {
         FakeClock clock = new FakeClock();
         String output = captureStdout(() -> {
             PrintingProgressMonitor monitor = new PrintingProgressMonitor(clock, 10_000L);
-            monitor.worked(1);           // immediate
-            monitor.worked(1);           // suppressed
+            monitor.worked(1);
+            monitor.worked(1);
             clock.advanceMillis(9_999);
-            monitor.worked(1);           // suppressed
+            monitor.worked(1);
             clock.advanceMillis(1);
-            monitor.worked(1);           // heartbeat print
+            monitor.worked(1);
         });
 
         int progressLineCount = countLinesContaining(output, "[progress]");

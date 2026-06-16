@@ -19,19 +19,6 @@ import java.util.TreeSet;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-/**
- * Turns the analysis results into a stripped, movement-only jar via
- * {@link JarStripper}.
- *
- * <p>Two ways in:
- * <ul>
- *   <li>{@link #main} — stand-alone CLI ({@code <mcJar> <artifactsDir> <outJar>})
- *       that reads the JSON artifacts. Lets the (slow) WALA analysis and the
- *       (fast) stripping iterate independently.</li>
- *   <li>{@link #run} — called directly by {@link WalaPipelineRunner} with the
- *       in-memory slice, so a full analysis run also emits the jar.</li>
- * </ul>
- */
 public final class MovementJarStripper {
     private MovementJarStripper() {
     }
@@ -59,12 +46,6 @@ public final class MovementJarStripper {
         run(mcJar, slice, fields, outJar, mode);
     }
 
-    /**
-     * Strips {@code mcJar} down to the movement slice and writes {@code outJar}.
-     * Shared by the stand-alone CLI and the WALA pipeline so both produce an
-     * identical jar. The keep-set is rooted only at the slice — the type-closure
-     * artifact is intentionally not consumed here (see {@link JarStripper}).
-     */
     public static JarStripper.Stats run(
         Path mcJar,
         Map<String, Map<String, Set<Integer>>> slice,
@@ -118,13 +99,6 @@ public final class MovementJarStripper {
         return stats;
     }
 
-    /**
-     * Structural smoke test: ASM's {@link BasicVerifier} checks each emitted
-     * method's stack/locals/control-flow <em>without</em> resolving the type
-     * hierarchy, so absent JDK/library/MC types do not produce false positives.
-     * It catches the failure modes stub generation could introduce (unbalanced
-     * stacks, bad return categories, wrong maxs).
-     */
     private static void verify(Path jar) throws IOException {
         int classes = 0;
         int bad = 0;

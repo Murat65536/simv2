@@ -13,22 +13,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
-/**
- * Computes the mirror closure: every {@code net.minecraft.*} type that the
- * mirror module must declare in order for the sliced bodies to compile and
- * the runtime side to instantiate {@code ClientPlayerEntity}.
- *
- * <p>Seeds:
- * <ul>
- *   <li>{@link AnalysisConfig#REQUIRED_PRIMARY_CLASSES} — always present.</li>
- *   <li>Every class that owns a method with sliced lines.</li>
- *   <li>Every class that owns a sliced field.</li>
- * </ul>
- *
- * <p>Then we expand transitively over: superclasses, interfaces, declared
- * field types, and method parameter / return types of every class in the
- * closure. This is enough to make a stub class fragment compile.
- */
 final class ClosureBuilder {
     private ClosureBuilder() {
     }
@@ -50,9 +34,6 @@ final class ClosureBuilder {
             IClass klass = lookup(cha, dotClass);
             if (klass == null) continue;
 
-            // Hierarchy. We only enqueue the immediate superclass; the BFS
-            // pops it next and walks *its* superclass, so the full chain
-            // converges in N iterations rather than N×depth.
             IClass sup = klass.getSuperclass();
             if (sup != null) {
                 addIfNew(closure, work, classNameOf(sup));
@@ -61,7 +42,6 @@ final class ClosureBuilder {
                 addIfNew(closure, work, classNameOf(iface));
             }
 
-            // Field types.
             for (IField field : klass.getDeclaredInstanceFields()) {
                 String typeName = field.getFieldTypeReference().getName().toString();
                 String referenced = referenceFromInternal(typeName);
@@ -77,7 +57,6 @@ final class ClosureBuilder {
                 }
             }
 
-            // Method signatures.
             for (IMethod method : klass.getDeclaredMethods()) {
                 String descriptor = method.getDescriptor().toString();
                 for (String referenced : descriptorReferences(descriptor)) {
@@ -85,7 +64,6 @@ final class ClosureBuilder {
                 }
             }
 
-            // Owning class for nested types — keep the chain mirrorable.
             int dollar = dotClass.lastIndexOf('$');
             while (dollar > 0) {
                 String owner = dotClass.substring(0, dollar);
@@ -119,10 +97,6 @@ final class ClosureBuilder {
         return internal.substring(1).replace('/', '.');
     }
 
-    /**
-     * Pulls every {@code Lnet/minecraft/...;} reference out of a JVM method
-     * descriptor like {@code (Lnet/minecraft/util/math/Vec3d;)V}.
-     */
     private static Set<String> descriptorReferences(String descriptor) {
         if (descriptor == null) return Set.of();
         Set<String> out = new LinkedHashSet<>();
@@ -144,11 +118,6 @@ final class ClosureBuilder {
         return out;
     }
 
-    /**
-     * Returns the dot-form class name referenced by a single JVM type
-     * descriptor or internal name. Handles {@code [Lnet/minecraft/...;},
-     * {@code Lnet/minecraft/...;}, and bare internal names.
-     */
     private static String referenceFromDescriptor(String descriptor) {
         if (descriptor == null || descriptor.isEmpty()) return null;
         int i = 0;
@@ -178,7 +147,7 @@ final class ClosureBuilder {
                 : internal.substring(i + 1, end);
             return name.startsWith("net/minecraft/") ? name.replace('/', '.') : null;
         }
-        // Bare internal name (rare, but WALA emits these for non-array refs).
+
         if (internal.startsWith("net/minecraft/")) {
             return internal.replace('/', '.');
         }

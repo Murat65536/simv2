@@ -4,27 +4,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 
-/**
- * Parsed CLI configuration: where the inputs live, where artifacts go, and
- * the analysis tuning flags.
- *
- * <p>CLI: {@code <mcJar> <outputDir> [sourcesJar|-]}.
- * The third argument is the Minecraft sources JAR or a literal {@code "-"}
- * to indicate "no sources jar".
- *
- * <p>Tuning flags arrive as system properties (plumbed from Gradle
- * {@code -P} properties by {@code analysis/build.gradle}):
- * <ul>
- *   <li>{@code analysis.phaseA} — {@code zerocfa} (default) or {@code cha}:
- *       which cheap call graph drives the Phase A scope pruning.</li>
- *   <li>{@code analysis.skipClinit} — skip static-initializer modeling in
- *       Phase B. Big cost cut but UNSOUND for registry-object dispatch
- *       (e.g. friction via {@code block.getVelocityMultiplier()}); off by
- *       default, validate the output if you turn it on.</li>
- *   <li>{@code analysis.maxCgNodes} — fail fast if the Phase B call graph
- *       exceeds this many nodes ({@code 0} = unlimited).</li>
- * </ul>
- */
 public record AnalysisRunConfig(
     Path minecraftJar,
     Path outputDir,
@@ -33,11 +12,11 @@ public record AnalysisRunConfig(
     boolean skipClinit,
     long maxCgNodes
 ) {
-    /** Which cheap call graph drives the Phase A reachability pre-pass. */
+
     public enum PhaseAMode {
-        /** 0-CFA propagation call graph — type-based instance keys, tightest closure. */
+
         ZEROCFA,
-        /** Class-hierarchy-only call graph — no points-to at all, cheapest but coarsest. */
+
         CHA
     }
 

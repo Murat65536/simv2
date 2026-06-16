@@ -45,14 +45,12 @@ public class PathRenderer {
         try (BufferAllocator allocator = new BufferAllocator(1024)) {
             VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(allocator);
 
-            // Draw small filled box at each tick position
             for (int i = 0; i < currentPath.size(); i++) {
                 Vec3d pos = currentPath.get(i);
                 double x = pos.x - cam.x;
                 double y = pos.y - cam.y;
                 double z = pos.z - cam.z;
 
-                // Color gradient: green (start) -> red (end)
                 float t = currentPath.size() == 1 ? 0f : (float) i / (currentPath.size() - 1);
                 float r = t;
                 float g = 1f - t;
@@ -68,7 +66,6 @@ public class PathRenderer {
                 );
             }
 
-            // Draw lines connecting consecutive positions
             VertexConsumer lineBuffer = immediate.getBuffer(RenderLayer.getLines());
             for (int i = 0; i < currentPath.size() - 1; i++) {
                 Vec3d from = currentPath.get(i);
@@ -81,7 +78,6 @@ public class PathRenderer {
                 float ty = (float) (to.y - cam.y);
                 float tz = (float) (to.z - cam.z);
 
-                // Normal for the line segment (direction vector, normalized)
                 float dx = tx - fx;
                 float dy = ty - fy;
                 float dz = tz - fz;

@@ -56,54 +56,34 @@ def analysisVerboseFixedPoint = (project.findProperty('analysisVerboseFixedPoint
 def analysisDisableBytecodeVerify = (project.findProperty('analysisDisableBytecodeVerify') ?: 'false')
     .toString()
     .toBoolean()
-// NUMA-aware allocation helps throughput on multi-socket boxes; it is a
-// no-op on single-socket hardware. ParallelGC honors it. Pure
-// throughput/locality — does not affect the analysis result.
+
 def analysisUseNuma = (project.findProperty('analysisUseNuma') ?: 'true')
     .toString()
     .toBoolean()
-// Garbage collector for the analysis JVM. ParallelGC (default) is a pure
-// throughput collector with a worst-case stop-the-world full GC whose pause
-// scales with heap size — fine at a small -Xmx, brutal at hundreds of GB. On a
-// huge heap, prefer a concurrent collector whose pause is heap-size-independent:
-//   parallel | g1 | zgc
-// Result-preserving — GC choice never affects the analysis output.
+
 def analysisGc = (project.findProperty('analysisGc') ?: 'parallel')
     .toString()
     .trim()
     .toLowerCase(Locale.ROOT)
-// Emit GC telemetry to stdout (Pause/heap lines) to diagnose GC-bound runs.
+
 def analysisGcLog = (project.findProperty('analysisGcLog') ?: 'false')
     .toString()
     .toBoolean()
-// Back the heap with transparent huge pages. The slice is a single-threaded,
-// pointer-chasing IFDS solver over a multi-GB live set; with 4K pages the TLB
-// covers only a few MB, so nearly every access page-faults the table walk. 2M
-// pages widen TLB reach ~512x. Requires THP enabled on the host
-// (/sys/kernel/mm/transparent_hugepage/enabled = always|madvise). Pure
-// locality — does not affect the analysis result.
+
 def analysisLargePages = (project.findProperty('analysisLargePages') ?: 'false')
     .toString()
     .toBoolean()
-// Which cheap call graph drives the Phase A scope pruning: 'zerocfa'
-// (default, tightest closure) or 'cha' (no points-to, cheapest fallback).
+
 def analysisPhaseA = (project.findProperty('analysisPhaseA') ?: 'zerocfa')
     .toString()
-// Opt-in escape hatch: skip static-initializer modeling in Phase B. Big cost
-// cut, but registry-driven dispatch (friction etc.) may drop out of the
-// slice — validate the output if you enable this.
+
 def analysisSkipClinit = (project.findProperty('analysisSkipClinit') ?: 'false')
     .toString()
     .toBoolean()
-// Fail fast if the call graph exceeds this many nodes (0 = unlimited).
+
 def analysisMaxCgNodes = (project.findProperty('analysisMaxCgNodes') ?: '0')
     .toString()
-// Opt-in soft-reference aggressiveness for the IR/DefUse caches (ms per MB of
-// free heap; JVM default is 1000). Low values reclaim cached IR sooner, trading
-// CPU recompute for RAM. Leave empty for the CG-build phase (the points-to
-// fixpoint reuses IR heavily, so eager clearing there is slow); set a small
-// value only as an escape hatch if the slice phase OOMs. Result-preserving —
-// IR is recomputed deterministically.
+
 def analysisSoftRefMsPerMB = (project.findProperty('analysisSoftRefMsPerMB') ?: '')
     .toString()
 def isUnboundedMemoryValue = { String value ->
@@ -116,7 +96,7 @@ def isUnboundedMemoryValue = { String value ->
 def gcArgsByName = [
     'parallel': ['-XX:+UseParallelGC'],
     'g1'      : ['-XX:+UseG1GC'],
-    // Generational ZGC (JDK 21): concurrent, pause time independent of heap size.
+
     'zgc'     : ['-XX:+UseZGC', '-XX:+ZGenerational'],
 ]
 if (!gcArgsByName.containsKey(analysisGc)) {
@@ -173,7 +153,7 @@ def analysisCacheSearchRoots = [
  .toList()
 
 def resolveAnalysisArgs = { ->
-    // Find merged jars across possible Loom cache layouts.
+
     def mergedCandidates = new LinkedHashSet<File>()
     analysisCacheSearchRoots.findAll { it.exists() }.each { cacheRoot ->
         fileTree(cacheRoot) {
@@ -298,4 +278,3 @@ tasks.register('stripJar', JavaExec) { JavaExec stripTask ->
         stripTask.setArgs([jarArg, outputDir, outJar.toString(), stripMode])
     }
 }
-

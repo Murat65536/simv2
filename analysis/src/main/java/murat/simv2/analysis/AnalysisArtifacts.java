@@ -13,11 +13,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-/**
- * On-disk artifact layout for WALA output.
- *
- * <p>Each artifact starts with a contract string {@code "<schema>/v<version>"}.
- */
 public final class AnalysisArtifacts {
     public static final String SCHEMA_VERSION = "movement-analysis/v2";
 
@@ -37,8 +32,6 @@ public final class AnalysisArtifacts {
     public static Path fieldManifestPath(Path outputDir) {
         return outputDir.resolve("movement-fields.txt");
     }
-
-    // ── Slice ──
 
     public static void writeSlice(Path path, Map<String, Map<String, Set<Integer>>> slice) throws IOException {
         SlicePayload payload = new SlicePayload();
@@ -73,8 +66,6 @@ public final class AnalysisArtifacts {
         return result;
     }
 
-    // ── Closure ──
-
     public static void writeClosure(Path path, MirrorClosure closure) throws IOException {
         ClosurePayload payload = new ClosurePayload();
         payload.contract = SCHEMA_VERSION;
@@ -91,8 +82,6 @@ public final class AnalysisArtifacts {
         Set<String> classes = payload.classes == null ? Set.of() : Set.copyOf(new TreeSet<>(payload.classes));
         return new MirrorClosure(classes);
     }
-
-    // ── Field manifest (human-readable) ──
 
     public static void writeFieldManifest(Path path, List<FieldResult> fields) throws IOException {
         StringBuilder sb = new StringBuilder();
@@ -121,8 +110,6 @@ public final class AnalysisArtifacts {
         }
         return result;
     }
-
-    // ── Gson payloads ──
 
     private static final class SlicePayload {
         String contract;

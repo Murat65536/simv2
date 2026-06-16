@@ -48,11 +48,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Backward slice from every {@code putfield Entity.pos} reachable in the call
- * graph, plus the derived (a) per-method line numbers, (b) per-field MOD/REF
- * categorization, all extracted from a single SDG traversal.
- */
 final class WalaSlicer {
     private static final long SLICE_HEARTBEAT_MILLIS = 10_000L;
 
@@ -76,48 +71,17 @@ final class WalaSlicer {
         }
         System.out.println("Seeds: " + seeds.size() + " putfield Entity.pos statements");
 
-        // Build the SDG over the FULL call graph. A backward slice from a
-        // pos-write must follow callee return values — getWorld(),
-        // getBlockState(), the vector math, the collision helpers — back into
-        // those methods, since they compute the values written to pos. An
-        // earlier version pruned the CG to only the *callers* (ancestors) of
-        // pos-writers; that silently dropped every such helper, so the slice
-        // captured the entity "spine" but none of the code it calls. The lazy
-        // SDG keeps the full-CG SDG affordable: it materializes a PDG only for
-        // the methods the slice actually reaches.
         HeapExclusions heapExcl = buildHeapExclusions();
         long t0 = System.currentTimeMillis();
         SDG<InstanceKey> sdg;
         try (PhaseHeartbeat ignored = PhaseHeartbeat.start("SDG build", SLICE_HEARTBEAT_MILLIS)) {
-            // NO_BASE_PTRS: track heap data flow (a field write in one method
-            // feeding a field read in another), but ignore the dependence of a
-            // heap access on the computation of its base pointer — those base-ptr
-            // edges are noise for value flow and roughly double PDG size.
-            //
-            // Heap flow is what links the *velocity* physics to the *pos* write:
-            // applyGravity()/setVelocity()/addVelocity()/jump()/knockback() write
-            // this.velocity, and move() reads it (getVelocity()) to compute the new
-            // position. Under NO_BASE_NO_HEAP that write->read link is severed, so
-            // gravity, jumping, knockback and the friction math all fall out of the
-            // slice. Turning the heap back on recovers them *without* hard-coding
-            // velocity as a second seed — the dependence is discovered, not asserted.
-            //
-            // The cost is memory: a heap-on slice is much heavier than a heap-off
-            // one. It is bounded by heapExcl — world/collision/chunk/block heap is
-            // excluded wholesale (movement reads those via method *returns*, kept as
-            // explicit dataflow), while entity (velocity/pos) and util/math (Vec3d)
-            // heap is tracked. Give it the RAM (-PanalysisXmx) to finish;
-            // ExitOnOutOfMemoryError makes a too-small budget fail cleanly.
+
             sdg = new SDG<>(cg, pa, ModRef.make(),
                 DataDependenceOptions.NO_BASE_PTRS,
                 ControlDependenceOptions.NO_EXCEPTIONAL_EDGES,
                 heapExcl);
         }
-        // The SDG is lazy: PDGs are materialized on demand. Do NOT call
-        // sdg.getNumberOfNodes()/iterator()/toString() here — each triggers
-        // SDG.eagerConstruction(), which builds and retains a PDG for *every*
-        // node in the call graph at once (tens of GB on Minecraft). The IFDS
-        // slicer below pulls only the PDGs reachable backward from the seeds.
+
         System.out.printf("SDG ready (lazy) in %.1fs over %d CG nodes%n",
             (System.currentTimeMillis() - t0) / 1000.0, cg.getNumberOfNodes());
 
@@ -134,7 +98,6 @@ final class WalaSlicer {
         return analyzeStatements(all, entitySubtypes, seeds.size());
     }
 
-    /** Collects {@code Entity} and every reachable subclass we may see in the CG. */
     private Set<TypeReference> collectEntitySubtypes() {
         TypeReference entityRef = TypeReference.findOrCreate(
             ClassLoaderReference.Application, AnalysisConfig.ENTITY_INTERNAL);
@@ -151,15 +114,6 @@ final class WalaSlicer {
         return Set.copyOf(subtypes);
     }
 
-    /**
-     * Seeds: every {@code putfield} of a field named {@code pos} declared on
-     * {@code Entity} or a subclass, reached anywhere in the call graph.
-     *
-     * <p>Pre-filters CG nodes by declaring class — {@code putfield} of an
-     * instance field can only be emitted by code on the declaring class or a
-     * subclass, so iterating the full CG (and forcing {@link CGNode#getIR()})
-     * for non-entity methods is wasted work.
-     */
     private List<Statement> findSeedStatements(Set<TypeReference> entitySubtypes) {
         Set<String> entityInternalNames = new HashSet<>(entitySubtypes.size() * 2);
         for (TypeReference t : entitySubtypes) {
@@ -185,11 +139,6 @@ final class WalaSlicer {
         return seeds;
     }
 
-    /**
-     * Buckets the slice into per-method line sets and per-field MOD/REF.
-     * Anything outside {@code net.minecraft.*} is dropped — primordial
-     * helpers don't need mirroring.
-     */
     private SliceResult analyzeStatements(
         Collection<Statement> statements, Set<TypeReference> entitySubtypes, int seedCount) {
         Map<String, Map<String, Set<Integer>>> lineByMethod = new TreeMap<>();
@@ -220,7 +169,6 @@ final class WalaSlicer {
             }
         }
 
-        // Always include the seed field itself — it's the slice's purpose.
         FieldRecord seed = lookupSeedField(entitySubtypes);
         if (seed != null) {
             String key = seed.declaringClass + "." + seed.fieldName;
@@ -282,9 +230,7 @@ final class WalaSlicer {
     }
 
     private HeapExclusions buildHeapExclusions() {
-        // Each SLICER_HEAP_EXCLUSIONS entry is a regex matched against the whole
-        // class name; HeapExclusions drops heap data-flow through any type whose
-        // name matches, keeping the IFDS solver tractable.
+
         return new HeapExclusions(
             new PatternsFilter(AnalysisConfig.SLICER_HEAP_EXCLUSIONS.stream()));
     }
@@ -425,7 +371,6 @@ final class WalaSlicer {
         }
     }
 
-    /** Result of one full slice. */
     record SliceResult(
         int statementsConsidered,
         int seedCount,

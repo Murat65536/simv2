@@ -3,37 +3,21 @@ package murat.simv2.analysis;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Static configuration for the movement-field analysis.
- * <p>
- * The analysis answers a single question: <em>what code on the client player
- * affects {@code Entity.pos} during a single tick?</em> Everything else — the
- * field manifest, the mirror closure, the generated sync code — is derived
- * mechanically from the WALA backward slice of that question.
- */
 public final class AnalysisConfig {
 
     private AnalysisConfig() {
     }
 
-    /** The internal name of {@link net.minecraft.entity.Entity}. */
     public static final String ENTITY_INTERNAL = "Lnet/minecraft/entity/Entity";
 
-    /** Internal name of the seed field — the only thing we slice backward from. */
     public static final String SEED_FIELD_NAME = "pos";
 
-    /** Entry point method (class, method, descriptor) for the call graph. */
     public static final EntryMethod ENTRY_METHOD = new EntryMethod(
         "Lnet/minecraft/client/network/ClientPlayerEntity",
         "tickMovement",
         "()V"
     );
 
-    /**
-     * Concrete vanilla classes that MUST appear in the mirror closure even if
-     * the slice never reaches them. Includes the player hierarchy so that the
-     * mirror produces a constructable {@code ClientPlayerEntity} subclass.
-     */
     public static final List<String> REQUIRED_PRIMARY_CLASSES = List.of(
         "net.minecraft.entity.Entity",
         "net.minecraft.entity.LivingEntity",
@@ -42,12 +26,6 @@ public final class AnalysisConfig {
         "net.minecraft.client.network.ClientPlayerEntity"
     );
 
-    /**
-     * WALA scope exclusions. We deliberately keep the exclusion list focused
-     * on packages that only exist for rendering / data / network and never
-     * influence movement. We do NOT exclude {@code java.*} — pointer analysis
-     * requires it.
-     */
     public static final List<String> WALA_EXCLUSIONS = List.of(
         "net/minecraft/client/render/.*",
         "net/minecraft/client/gui/.*",
@@ -93,27 +71,13 @@ public final class AnalysisConfig {
         "net/minecraft/world/dimension/.*",
         "net/minecraft/world/level/storage/.*",
         "net/minecraft/world/storage/.*",
-        // --- Tightened scope to bound CG-construction RAM. Each package below is UNREACHABLE from
-        // ClientPlayerEntity.tickMovement(), so removing it from the CHA cannot
-        // change virtual dispatch on the movement path — it only drops allocation
-        // sites that inflate the fixpoint. Soundness for Entity.pos is preserved.
-        //
-        // NOT excluded on purpose (tempting by size, but on the physics path):
-        // block/.* (collision dispatch), entity/vehicle + entity/passive (ridden
-        // mounts move the rider's pos), entity/projectile (knockback velocity->pos),
-        // entity/mob + entity/decoration (shared collision/travel dispatch).
-        "net/minecraft/entity/ai/.*",       // mob goals/brain/tasks/pathing — server-side; client player runs no AI
-        "net/minecraft/util/profiler/.*",   // tick push/pop profiling — never writes pos
-        "net/minecraft/test/.*",            // gametest framework
-        "net/minecraft/client/data/.*"      // datagen providers — dev-time only
+
+        "net/minecraft/entity/ai/.*",
+        "net/minecraft/util/profiler/.*",
+        "net/minecraft/test/.*",
+        "net/minecraft/client/data/.*"
     );
 
-    /**
-     * Heap-flow exclusions for SDG construction. These types stay in the
-     * call graph but the slicer will not track per-instance heap data flow
-     * through them. This keeps the IFDS solver tractable on JDK string and
-     * collection internals and on a few enormous {@code <clinit>}s in MC.
-     */
     public static final List<String> SLICER_HEAP_EXCLUSIONS = List.of(
         "java/lang/String",
         "java/lang/AbstractStringBuilder",
@@ -150,12 +114,7 @@ public final class AnalysisConfig {
         "net/minecraft/item/.*",
         "net/minecraft/nbt/.*",
         "net/minecraft/registry/.*",
-        // World/collision heap excluded wholesale: movement reads the world via
-        // method *returns* (getWorld, getBlockState, collision results), which the
-        // slice keeps as explicit dataflow — only the internal heap (chunk arrays,
-        // world fields, voxel-shape internals) is dropped, and that is what made
-        // the full-CG slice's PDGs explode. util/math (Vec3d x/y/z) and entity
-        // heap (velocity/pos) are deliberately NOT excluded so the physics holds.
+
         "net/minecraft/world/.*",
         "net/minecraft/client/world/.*",
         "net/minecraft/server/world/.*",
