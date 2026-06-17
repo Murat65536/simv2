@@ -68,16 +68,16 @@ final class WalaPipelineRunner {
             options.setMaxNumberOfNodes(config.maxCgNodes());
         }
 
+        int instancePolicy = ZeroXInstanceKeys.ALLOCATIONS
+            | ZeroXInstanceKeys.SMUSH_STRINGS
+            | ZeroXInstanceKeys.SMUSH_THROWABLES;
         System.out.println(
             "\nBuilding 0-1-CFA call graph (ALLOCATIONS | SMUSH_STRINGS | SMUSH_THROWABLES)...");
         IAnalysisCacheView cache = new AnalysisCacheImpl();
         Util.addDefaultSelectors(options, cha);
         Util.addDefaultBypassLogic(options, Util.class.getClassLoader(), cha);
         CallGraphBuilder<InstanceKey> builder = ZeroXCFABuilder.make(
-            Language.JAVA, cha, options, cache, null, null,
-            ZeroXInstanceKeys.ALLOCATIONS
-                | ZeroXInstanceKeys.SMUSH_STRINGS
-                | ZeroXInstanceKeys.SMUSH_THROWABLES);
+            Language.JAVA, cha, options, cache, null, null, instancePolicy);
         PrintingProgressMonitor progressMonitor = new PrintingProgressMonitor();
         long cgStart = System.currentTimeMillis();
         CallGraph cg = builder.makeCallGraph(options, progressMonitor);
@@ -123,6 +123,10 @@ final class WalaPipelineRunner {
         AnalysisArtifacts.writeSlice(AnalysisArtifacts.slicePath(outputDir), slice.lineByMethod());
         AnalysisArtifacts.writeClosure(AnalysisArtifacts.closurePath(outputDir), closure);
         AnalysisArtifacts.writeFieldManifest(AnalysisArtifacts.fieldManifestPath(outputDir), slice.fields());
+
+        // Track-2 codegen input: serialize the sliced methods' SSA IR while it is still live
+        // (the call graph is built here and not after). Decompiler-independent.
+        IrCapture.capture(cg, slice.lineByMethod(), outputDir.resolve("movement-ir.json"));
 
         System.out.println("\nWALA artifacts written to " + outputDir);
 
@@ -192,7 +196,15 @@ final class WalaPipelineRunner {
     }
 
     private Set<Entrypoint> createEntrypoints(IClassHierarchy cha) {
-        AnalysisConfig.EntryMethod em = AnalysisConfig.ENTRY_METHOD;
+        // Entry defaults to AnalysisConfig.ENTRY_METHOD but can be overridden so we
+        // can widen the scope (e.g. ClientPlayerEntity.tick()V, which covers all
+        // per-tick movement, vs the narrower tickMovement()V) without recompiling.
+        AnalysisConfig.EntryMethod em = new AnalysisConfig.EntryMethod(
+            System.getProperty("analysis.entryClass", AnalysisConfig.ENTRY_METHOD.classInternal()),
+            "", // name unused; selector carries name+descriptor
+            "");
+        String entrySelector =
+            System.getProperty("analysis.entrySelector", AnalysisConfig.ENTRY_METHOD.selector());
         TypeReference owner = TypeReference.findOrCreate(
             ClassLoaderReference.Application, em.classInternal());
         IClass ownerClass = cha.lookupClass(owner);
@@ -200,13 +212,13 @@ final class WalaPipelineRunner {
             throw new IllegalStateException("Entry owner class not in CHA: " + em.classInternal());
         }
         MethodReference ref = MethodReference.findOrCreate(
-            owner, Selector.make(em.selector()));
+            owner, Selector.make(entrySelector));
         IMethod resolved = cha.resolveMethod(ref);
         if (resolved == null) {
             throw new IllegalStateException(
-                "Entry method not found: " + em.classInternal() + "." + em.selector());
+                "Entry method not found: " + em.classInternal() + "." + entrySelector);
         }
-        System.out.println("Entry: " + em.classInternal() + "." + em.selector()
+        System.out.println("Entry: " + em.classInternal() + "." + entrySelector
             + " (-> " + resolved.getDeclaringClass().getName() + ")");
         return Set.of(new DefaultEntrypoint(ref, cha));
     }

@@ -3,6 +3,9 @@
 	"package": "murat.simv2.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [],
+	"client": [
+		"LivingEntityMixin"
+	],
 	"injectors": {
 		"defaultRequire": 1
 	},

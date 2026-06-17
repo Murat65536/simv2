@@ -74,7 +74,11 @@ def analysisLargePages = (project.findProperty('analysisLargePages') ?: 'false')
     .toString()
     .toBoolean()
 
-def analysisPhaseA = (project.findProperty('analysisPhaseA') ?: 'zerocfa')
+// Phase A is only a scope pre-filter for Phase B. CHA reachability is a sound
+// over-approximation that runs in ~2s and yields a byte-identical slice; the
+// 0-CFA pre-pass costs ~16s and (measured) does not produce a tighter Phase B.
+// CHA is therefore the default; pass -PanalysisPhaseA=zerocfa to override.
+def analysisPhaseA = (project.findProperty('analysisPhaseA') ?: 'cha')
     .toString()
 
 def analysisSkipClinit = (project.findProperty('analysisSkipClinit') ?: 'false')
@@ -140,6 +144,11 @@ if (analysisSkipClinit) {
     analysisJvmArgs.add('-Danalysis.skipClinit=true')
 }
 analysisJvmArgs.add('-Danalysis.maxCgNodes=' + analysisMaxCgNodes)
+['analysisEntryClass': 'analysis.entryClass', 'analysisEntrySelector': 'analysis.entrySelector']
+    .each { gradleProp, sysProp ->
+        def v = project.findProperty(gradleProp)
+        if (v) { analysisJvmArgs.add('-D' + sysProp + '=' + v.toString()) }
+    }
 
 def analysisCacheSearchRoots = [
     file("${rootProject.projectDir}/.gradle/loom-cache"),
@@ -277,4 +286,15 @@ tasks.register('stripJar', JavaExec) { JavaExec stripTask ->
         def stripMode = (project.findProperty('stripMode') ?: 'movement-only').toString()
         stripTask.setArgs([jarArg, outputDir, outJar.toString(), stripMode])
     }
+}
+
+tasks.register('generateBridge', JavaExec) { JavaExec genTask ->
+    group = 'application'
+    description = 'Track 1 of Option-C codegen: generate the real->sim bridge ' +
+        '(SimPlayerState + PlayerStateCapture) from the movement-field manifest.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'murat.simv2.analysis.BridgeGenerator'
+    def manifest = "${rootProject.projectDir}/src/main/generated/movement-fields.txt"
+    def javaOut = "${rootProject.projectDir}/src/main/generated/java"
+    genTask.setArgs([manifest, javaOut])
 }

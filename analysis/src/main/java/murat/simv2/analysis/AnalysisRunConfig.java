@@ -37,7 +37,7 @@ public record AnalysisRunConfig(
             mcJar,
             outputDir,
             sourcesJar,
-            parsePhaseAMode(System.getProperty("analysis.phaseA", "zerocfa")),
+            parsePhaseAMode(System.getProperty("analysis.phaseA", "cha")),
             Boolean.parseBoolean(System.getProperty("analysis.skipClinit", "false")),
             parseMaxCgNodes(System.getProperty("analysis.maxCgNodes", "0")));
     }

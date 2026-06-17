@@ -18,6 +18,18 @@ sourceSets {
 	}
 }
 
+// Self-heal at configuration time (before sourcesJar / compileJava / jar): SimPlayerState is a
+// GENERATED class (emitted into src/main/generated/java by :analysis:generateBridge). A stale
+// hand-written copy in src/main/java — left over from before codegen, or from a partial sync of
+// untracked files — collides with the generated one as a duplicate source entry and breaks the
+// build (e.g. sourcesJar "duplicate" / javac "duplicate class"). Remove it so the build is robust.
+def legacySimPlayerState = file('src/main/java/murat/simv2/sim/SimPlayerState.java')
+if (legacySimPlayerState.exists()) {
+	legacySimPlayerState.delete()
+	logger.lifecycle("Removed stale hand-written ${legacySimPlayerState} " +
+		"(SimPlayerState is generated into src/main/generated/java).")
+}
+
 repositories {
 
 }
@@ -30,6 +42,12 @@ dependencies {
 
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
+	testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+	useJUnitPlatform()
 }
 
 processResources {
@@ -74,6 +92,14 @@ publishing {
 	repositories {
 
 	}
+}
+
+// The real->sim bridge (SimPlayerState + PlayerStateCapture) is generated from the movement-field
+// manifest. Regenerate it before compiling so the generated sources always exist and are current
+// (no reliance on committing/syncing generated code; the generator also self-heals any stale
+// hand-written copy). generateBridge is fast (parses the committed manifest; no WALA run).
+tasks.named('compileJava') {
+	dependsOn ':analysis:generateBridge'
 }
 
 tasks.register('runWala') {

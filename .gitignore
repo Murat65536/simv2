@@ -32,6 +32,10 @@ bin/
 
 run/
 
+# generated bridge sources (produced by :analysis:generateBridge before compileJava)
+
+src/main/generated/java/
+
 # java
 
 hs_err_*.log

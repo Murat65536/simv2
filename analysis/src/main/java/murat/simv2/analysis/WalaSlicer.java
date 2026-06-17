@@ -12,6 +12,7 @@ import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
+import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.modref.ModRef;
 import com.ibm.wala.ipa.slicer.HeapExclusions;
@@ -23,6 +24,7 @@ import com.ibm.wala.ipa.slicer.Slicer.ControlDependenceOptions;
 import com.ibm.wala.ipa.slicer.Slicer.DataDependenceOptions;
 import com.ibm.wala.ipa.slicer.Statement;
 import com.ibm.wala.ssa.IR;
+import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 import com.ibm.wala.ssa.SSAFieldAccessInstruction;
 import com.ibm.wala.ssa.SSAGetInstruction;
 import com.ibm.wala.ssa.SSAInstruction;
@@ -33,6 +35,7 @@ import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.CancelException;
 import com.ibm.wala.util.MonitorUtil.IProgressMonitor;
 import com.ibm.wala.util.config.PatternsFilter;
+import com.ibm.wala.util.intset.OrdinalSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -63,25 +66,40 @@ final class WalaSlicer {
 
     SliceResult slice() {
         Set<TypeReference> entitySubtypes = collectEntitySubtypes();
-        List<Statement> seeds = findSeedStatements(entitySubtypes);
+        List<Statement> seeds = findSeedStatements();
         if (seeds.isEmpty()) {
             throw new IllegalStateException(
-                "No Entity.pos writes were reached by the call graph. "
-                    + "Either the entry method is unreachable, or the exclusions are too aggressive.");
+                "No player position/velocity mutations were reached by the call graph. "
+                    + "Either the entry method is unreachable, or the exclusions / receiver "
+                    + "filter are too aggressive.");
         }
-        System.out.println("Seeds: " + seeds.size() + " putfield Entity.pos statements");
+        System.out.println("Seeds: " + seeds.size()
+            + " player position/velocity mutation call sites");
 
+        // Backward IFDS slice over an SDG carrying register + interprocedural
+        // (parameter/return) def-use edges and control dependence, but NO heap data
+        // dependences. Because IFDS tabulation is context-SENSITIVE, the slice stays
+        // pinned to the real movement core and converges in well under a second here.
+        //
+        // Heap-aware alternatives were measured and rejected on this scope:
+        //   - Full heap-on slicing (DataDependenceOptions.NO_BASE_PTRS) never
+        //     converges — the context-sensitive heap reaching-defs blow the IFDS
+        //     tabulation up to millions of path edges (hours / OOM).
+        //   - WALA's context-INSENSITIVE thin slicing either under-connects
+        //     (data-only: misses velocity and the rest of the core state) or, with
+        //     control dependence on, over-approximates into ~600 spurious classes.
+        // NO_HEAP is the sweet spot: it still visits every movement method reachable
+        // by def-use/control, so their field accesses land in the manifest (this is
+        // what produces the committed movement-fields.txt).
         HeapExclusions heapExcl = buildHeapExclusions();
         long t0 = System.currentTimeMillis();
         SDG<InstanceKey> sdg;
         try (PhaseHeartbeat ignored = PhaseHeartbeat.start("SDG build", SLICE_HEARTBEAT_MILLIS)) {
-
             sdg = new SDG<>(cg, pa, ModRef.make(),
-                DataDependenceOptions.NO_BASE_PTRS,
+                DataDependenceOptions.NO_HEAP,
                 ControlDependenceOptions.NO_EXCEPTIONAL_EDGES,
                 heapExcl);
         }
-
         System.out.printf("SDG ready (lazy) in %.1fs over %d CG nodes%n",
             (System.currentTimeMillis() - t0) / 1000.0, cg.getNumberOfNodes());
 
@@ -114,29 +132,53 @@ final class WalaSlicer {
         return Set.copyOf(subtypes);
     }
 
-    private List<Statement> findSeedStatements(Set<TypeReference> entitySubtypes) {
-        Set<String> entityInternalNames = new HashSet<>(entitySubtypes.size() * 2);
-        for (TypeReference t : entitySubtypes) {
-            entityInternalNames.add(t.getName().toString());
+    // Seed on calls that mutate an entity's position/velocity whose receiver lies
+    // entirely within the movement (LivingEntity) hierarchy. Backward-slicing such a
+    // call captures the computed position/velocity — including collision adjustment,
+    // which feeds the setPosition arguments inside Entity.move. Orb/item positioning
+    // happens in their constructors on non-LivingEntity receivers, so it is excluded;
+    // unknown (empty points-to) receivers are excluded too, since we cannot confirm
+    // they are the player. See AnalysisConfig.MOVEMENT_RECEIVER_INTERNAL.
+    private List<Statement> findSeedStatements() {
+        IClass movementReceiver = cha.lookupClass(TypeReference.findOrCreate(
+            ClassLoaderReference.Application, AnalysisConfig.MOVEMENT_RECEIVER_INTERNAL));
+        if (movementReceiver == null) {
+            throw new IllegalStateException(
+                "Movement receiver type missing from CHA: " + AnalysisConfig.MOVEMENT_RECEIVER_INTERNAL);
         }
         List<Statement> seeds = new ArrayList<>();
         for (CGNode node : cg) {
-            String declInternal = node.getMethod().getDeclaringClass().getName().toString();
-            if (!entityInternalNames.contains(declInternal)) continue;
             IR ir = node.getIR();
             if (ir == null) continue;
             SSAInstruction[] insns = ir.getInstructions();
             for (int i = 0; i < insns.length; i++) {
-                SSAInstruction insn = insns[i];
-                if (!(insn instanceof SSAPutInstruction put)) continue;
-                if (put.isStatic()) continue;
-                FieldReference field = put.getDeclaredField();
-                if (!AnalysisConfig.SEED_FIELD_NAME.equals(field.getName().toString())) continue;
-                if (!entitySubtypes.contains(field.getDeclaringClass())) continue;
+                if (!(insns[i] instanceof SSAAbstractInvokeInstruction call) || call.isStatic()) continue;
+                if (!AnalysisConfig.POSITION_MUTATORS.contains(
+                        call.getDeclaredTarget().getName().toString())) continue;
+                if (!isMinecraftClass(
+                        call.getDeclaredTarget().getDeclaringClass().getName().toString())) continue;
+                if (!receiverInMovementHierarchy(node, call.getReceiver(), movementReceiver)) continue;
                 seeds.add(new NormalStatement(node, i));
             }
         }
         return seeds;
+    }
+
+    // True iff the receiver's points-to set is non-empty and every concrete type it
+    // may hold is in the movement (LivingEntity) hierarchy. A single non-LivingEntity
+    // type (e.g. ExperienceOrbEntity, ItemEntity) or an unknown/empty points-to set
+    // disqualifies the call site.
+    private boolean receiverInMovementHierarchy(
+        CGNode node, int receiverValueNumber, IClass movementReceiver) {
+        PointerKey pk = pa.getHeapModel().getPointerKeyForLocal(node, receiverValueNumber);
+        if (pk == null) return false;
+        OrdinalSet<InstanceKey> pts = pa.getPointsToSet(pk);
+        if (pts == null || pts.isEmpty()) return false;
+        for (InstanceKey ik : pts) {
+            IClass type = ik.getConcreteType();
+            if (type == null || !cha.isAssignableFrom(movementReceiver, type)) return false;
+        }
+        return true;
     }
 
     private SliceResult analyzeStatements(
