@@ -147,6 +147,10 @@ final class IrCapture {
         for (ISSABasicBlock bb : cfg) {
             Map<String, Object> block = new LinkedHashMap<>();
             block.put("id", bb.getNumber());
+            // First/last SSA instruction index of the block: goto/cbranch targets are instruction
+            // indices, so the transpiler maps a target index -> the block whose firstInsn equals it.
+            block.put("firstInsn", bb.getFirstInstructionIndex());
+            block.put("lastInsn", bb.getLastInstructionIndex());
             List<Integer> succ = new ArrayList<>();
             cfg.getSuccNodes(bb).forEachRemaining(s -> succ.add(s.getNumber()));
             block.put("succ", succ);

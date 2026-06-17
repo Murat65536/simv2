@@ -100,6 +100,7 @@ publishing {
 // hand-written copy). generateBridge is fast (parses the committed manifest; no WALA run).
 tasks.named('compileJava') {
 	dependsOn ':analysis:generateBridge'
+	dependsOn ':analysis:generateSim'
 }
 
 tasks.register('runWala') {

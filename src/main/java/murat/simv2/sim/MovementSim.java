@@ -11,10 +11,10 @@ package murat.simv2.sim;
  * levitation and slow-falling are intentionally NOT handled yet; {@link #supports} reports
  * whether a state is in scope so the harness can skip (never silently mis-simulate) the rest.
  *
- * <p>DETERMINISM CAVEAT: MC rotates movement input with MathHelper.sin/cos, which are a
- * float lookup table, NOT java.lang.Math. We use Math.sin/cos here; for yaw != 0 this is a
- * known source of tiny divergence and must be replaced with a port of MathHelper's sine table
- * before trusting long exact-match rollouts. (At yaw 0 the two agree exactly.)
+ * <p>DETERMINISM: yaw rotation goes through {@link MathHelperPort} (a bit-exact port of
+ * MathHelper's 65536-entry float sine table on a float angle), NOT java.lang.Math.sin/cos —
+ * java.lang.Math diverges from the table by up to ~1e-4, which compounds over long rollouts and
+ * was the source of the ~1e-6-per-tick off-axis residual. This makes off-axis movement bit-exact.
  */
 public final class MovementSim {
     private MovementSim() {
@@ -92,9 +92,10 @@ public final class MovementSim {
         Vec3 v = s.velocity;
         s.velocity = new Vec3(v.x(), Math.max(JUMP_VELOCITY, v.y()), v.z());
         if (s.sprinting) {
-            double yawRad = s.yaw * (Math.PI / 180.0);
+            // Sprint-jump boost — MC uses MathHelper.sin/cos here too (float table).
+            float g = s.yaw * (float) (Math.PI / 180.0);
             s.velocity = s.velocity.add(
-                -Math.sin(yawRad) * SPRINT_JUMP_BOOST, 0.0, Math.cos(yawRad) * SPRINT_JUMP_BOOST);
+                -MathHelperPort.sin(g) * SPRINT_JUMP_BOOST, 0.0, MathHelperPort.cos(g) * SPRINT_JUMP_BOOST);
         }
     }
 
@@ -104,9 +105,11 @@ public final class MovementSim {
             return Vec3.ZERO;
         }
         Vec3 scaled = (lenSq > 1.0 ? input.normalize() : input).scale(speed);
-        double yawRad = yaw * (Math.PI / 180.0);
-        double sin = Math.sin(yawRad); // see DETERMINISM CAVEAT
-        double cos = Math.cos(yawRad);
+        // Bit-exact match for MC: rotate by yaw via the float sine table on a float angle, then
+        // promote to double for the mix (== MC's `vec3d.x * (double)g - vec3d.z * (double)f`).
+        float angle = yaw * (float) (Math.PI / 180.0);
+        float sin = MathHelperPort.sin(angle);
+        float cos = MathHelperPort.cos(angle);
         return new Vec3(
             scaled.x() * cos - scaled.z() * sin,
             scaled.y(),

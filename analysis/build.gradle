@@ -298,3 +298,14 @@ tasks.register('generateBridge', JavaExec) { JavaExec genTask ->
     def javaOut = "${rootProject.projectDir}/src/main/generated/java"
     genTask.setArgs([manifest, javaOut])
 }
+
+tasks.register('generateSim', JavaExec) { JavaExec genTask ->
+    group = 'application'
+    description = 'Track 2 of Option-C codegen: transpile movement methods from the captured ' +
+        'SSA IR (movement-ir.json) into standalone Java.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'murat.simv2.analysis.SimGenerator'
+    def ir = "${rootProject.projectDir}/src/main/generated/movement-ir.json"
+    def javaOut = "${rootProject.projectDir}/src/main/generated/java"
+    genTask.setArgs([ir, javaOut])
+}
