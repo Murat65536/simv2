@@ -153,6 +153,30 @@ final class Routing {
         f("Lnet/minecraft/entity/LivingEntity.jumping", Cat.STATE_READ, "s.jumping");
         f("Lnet/minecraft/entity/LivingEntity.wasInPowderSnow", Cat.PRUNE, "false");
 
+        // ===== jump() closure (pre-travel velocity kick) =====
+        // PHYSICS (transpile/recurse). jump() reads no WORLD-template call -> no world param.
+        r("Lnet/minecraft/entity/LivingEntity#jump()V", Cat.PHYSICS, "");
+        r("Lnet/minecraft/entity/LivingEntity#getJumpVelocity()F", Cat.PHYSICS, "");
+        r("Lnet/minecraft/entity/LivingEntity#getJumpVelocity(F)F", Cat.PHYSICS, "");
+        r("Lnet/minecraft/entity/LivingEntity#getJumpBoostVelocityModifier()F", Cat.PHYSICS, "");
+        // addVelocityInternal(v): velocity = getVelocity().add(v) -> setVelocity. All callees already routed.
+        r("Lnet/minecraft/entity/Entity#addVelocityInternal(Lnet/minecraft/util/math/Vec3d;)V", Cat.PHYSICS, "");
+        // Block honey/slime jump multiplier — OUT OF SCOPE. PRUNE to float 1.0F so its world/block-
+        // reading body is never transpiled (keeps jump() world-free). Keyed on the LivingEntity call site.
+        r("Lnet/minecraft/entity/LivingEntity#getJumpVelocityMultiplier()F", Cat.PRUNE, "1.0F");
+        // JUMP_STRENGTH attribute read -> the captured snapshot field. Returns D (double); the (float)
+        // narrowing lives in the caller getJumpVelocity(F), mirroring getMovementSpeed. SAFE: keyed on the
+        // exact target, and within the transpiled closure getAttributeValue is only ever reached with
+        // JUMP_STRENGTH (gravity is PRUNEd; step-height/move-speed callers are not in the closure). If a
+        // future closure adds another getAttributeValue caller, rework this BEFORE adding it.
+        r("Lnet/minecraft/entity/LivingEntity#getAttributeValue(Lnet/minecraft/registry/entry/RegistryEntry;)D", Cat.STATE_READ, "s.jumpStrength");
+        // getstatic attribute/effect keys feed only the value-route / already-PRUNEd consumers. Benign null.
+        f("Lnet/minecraft/entity/attribute/EntityAttributes.JUMP_STRENGTH", Cat.PRUNE, "null");
+        f("Lnet/minecraft/entity/effect/StatusEffects.JUMP_BOOST", Cat.PRUNE, "null");
+        // velocityDirty: network-resync bookkeeping flag written by jump() (a putfield), NOT movement.
+        // PRUNE with empty template -> the putfield handler drops the write.
+        f("Lnet/minecraft/entity/LivingEntity.velocityDirty", Cat.PRUNE, "");
+
         // --- instanceof type tests (the simulated entity IS the local player) ---
         tt("Lnet/minecraft/entity/player/PlayerEntity", "true");  // sim entity is a player
         tt("Lnet/minecraft/entity/Flutterer", "false");           // not a bee/allay -> normal air drag (0.98F)

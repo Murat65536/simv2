@@ -221,6 +221,29 @@ class GeneratedMovementTest {
         return b.build();
     }
 
+    /**
+     * The pre-travel jump kick: transpiled {@link GeneratedMovement#jump} must match the hand-port
+     * {@link MovementSim#jump} BIT-FOR-BIT across random jump strengths (incl. attribute modifiers),
+     * sprint state and yaw — covering the float-narrowed base velocity and the sin/cos sprint boost.
+     */
+    @Test
+    void jumpMatchesHandPortBitExact() {
+        Random rnd = new Random(7777L);
+        for (int i = 0; i < 300_000; i++) {
+            SimPlayerState a = new SimPlayerState();
+            a.velocity = new Vec3(rnd.nextGaussian() * 0.3, rnd.nextGaussian() * 0.5, rnd.nextGaussian() * 0.3);
+            a.yaw = (float) (rnd.nextDouble() * 1440.0 - 720.0);
+            a.sprinting = (i & 1) == 0;
+            a.jumpStrength = 0.30 + rnd.nextDouble() * 0.3; // vanilla 0.42 +/- attribute modifiers
+            SimPlayerState b = a.copy();
+
+            MovementSim.jump(a);
+            GeneratedMovement.jump(b);
+
+            assertBitEqual(a.velocity, b.velocity, "jump i=" + i + " sprint=" + a.sprinting + " yaw=" + a.yaw);
+        }
+    }
+
     @Test
     void edgeCases() {
         // zero input -> ZERO

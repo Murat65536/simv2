@@ -36,6 +36,9 @@ public final class SimGenerator {
         // The top of the closure — one full tick of midair/on-land physics. Everything else below
         // is pulled in transitively as its PHYSICS closure expands.
         "Lnet/minecraft/entity/LivingEntity#travelMidAir(Lnet/minecraft/util/math/Vec3d;)V",
+        // The pre-travel jump kick (its closure: getJumpVelocity[(F)]/getJumpBoostVelocityModifier/
+        // addVelocityInternal) pulled in transitively -> GeneratedMovement.jump(SimPlayerState s).
+        "Lnet/minecraft/entity/LivingEntity#jump()V",
         "Lnet/minecraft/entity/Entity#movementInputToVelocity(Lnet/minecraft/util/math/Vec3d;FF)Lnet/minecraft/util/math/Vec3d;",
         "Lnet/minecraft/entity/Entity#updateVelocity(FLnet/minecraft/util/math/Vec3d;)V",
         "Lnet/minecraft/entity/player/PlayerEntity#getOffGroundSpeed()F",
@@ -122,10 +125,15 @@ public final class SimGenerator {
             if (crec == null) crec = resolveBySelector(byKey, rawTarget);
             return crec != null && worldNeeded.contains(methodKey(crec));
         };
-        Map<String, String> emitted = new LinkedHashMap<>(); // name -> source
+        // Keyed by CANON (unique), not method name: overloads (e.g. getJumpVelocity()F vs
+        // getJumpVelocity(F)F) share a name and would otherwise clobber each other in the map,
+        // dropping one overload and producing a call to a missing method.
+        Map<String, String> emitted = new LinkedHashMap<>(); // canon -> source
+        List<String> names = new ArrayList<>();
         for (Map.Entry<String, Map<String, Object>> e : recordByCanon.entrySet()) {
-            emitted.put((String) e.getValue().get("name"),
+            emitted.put(e.getKey(),
                 transpilerByCanon.get(e.getKey()).emit(worldNeeded.contains(e.getKey()), calleeNeedsWorld));
+            names.add((String) e.getValue().get("name"));
         }
 
         StringBuilder body = new StringBuilder();
@@ -156,7 +164,7 @@ public final class SimGenerator {
         Files.createDirectories(outDir);
         Files.writeString(outDir.resolve("GeneratedMovement.java"), cls);
         System.out.println("SimGenerator: emitted GeneratedMovement with " + emitted.size()
-            + " method(s): " + emitted.keySet() + " -> " + outDir);
+            + " method(s): " + names + " -> " + outDir);
     }
 
     /** Transpiles one method record to a dispatch-loop Java method. */
@@ -365,6 +373,20 @@ public final class SimGenerator {
                         throw new IllegalStateException("M2 coverage gap — unclassified static field: " + f);
                     }
                     return assign(in, applyTemplate(rt.template(), List.of()));
+                }
+                case "putfield": {
+                    // Field write. {ref, val}. Routed like a field: PRUNE+empty template drops the write
+                    // (e.g. velocityDirty network-resync bookkeeping); a STATE_WRITE template ($0=ref,
+                    // $1=value) would emit an assignment. Coverage-checked — an unrouted putfield fails.
+                    Map<String, Object> f = field(in);
+                    Routing.Route rt = Routing.fieldLookup((String) f.get("class"), (String) f.get("name"));
+                    if (rt == null) {
+                        throw new IllegalStateException("M2 coverage gap — unclassified putfield: " + f);
+                    }
+                    if (rt.cat() == Routing.Cat.PRUNE && rt.template().isEmpty()) {
+                        return null; // drop the write — mirrors void-PRUNE in emitInvoke
+                    }
+                    return applyTemplate(rt.template(), List.of(i(in.get("ref")), i(in.get("val")))) + ";";
                 }
                 case "instanceof": {
                     // Type test on the receiver. The simulated entity is the local player, so these

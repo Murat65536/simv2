@@ -1,5 +1,7 @@
 package murat.simv2.sim;
 
+import murat.simv2.sim.gen.GeneratedMovement;
+
 /**
  * Standalone one-tick player movement, ported from LivingEntity.travel / travelMidAir /
  * applyMovementInput / Entity.move / Entity.updateVelocity (Minecraft 1.21.5), operating on a
@@ -33,22 +35,27 @@ public final class MovementSim {
     // boost applies in the air too).
     public static final float OFF_GROUND_SPEED = 0.02f;
     public static final float OFF_GROUND_SPRINT_SPEED = 0.025999999f;
-    public static final double JUMP_VELOCITY = 0.42;
     public static final double SPRINT_JUMP_BOOST = 0.2;
 
     private static final double HORIZONTAL_COLLISION_EPS = 1.0E-5;
 
     /**
-     * Advance one tick. {@code movementInput} is (strafe, 0, forward) in [-1,1] (MC's travel
-     * input, pre-rotation); {@code jumpHeld} mirrors the jump key.
+     * Advance one tick of the standalone rollout. {@code movementInput} is (strafe, 0, forward) in
+     * [-1,1] (MC's travel input, pre-rotation); {@code jumpHeld} mirrors the jump key.
+     *
+     * <p>The physics is the GENERATED code ({@link GeneratedMovement}): the jump kick and the
+     * travel integration both run the transpiler output, so the rollout never depends on the
+     * hand-port. Only the input gating (when to jump) and the {@code moveSelf} collision delegate
+     * remain hand-written. The hand-port {@link #jump}/{@link #travelMidAir} survive as the
+     * bit-exact oracles the generated code is differentially tested against.
      */
     public static void step(SimPlayerState s, Vec3 movementInput, boolean jumpHeld, WorldSnapshot world) {
         // tickMovement: jump is applied before travel, when held and grounded.
         s.jumping = jumpHeld;
         if (jumpHeld && s.onGround) {
-            jump(s);
+            GeneratedMovement.jump(s);
         }
-        travelMidAir(s, movementInput, world);
+        GeneratedMovement.travelMidAir(s, movementInput, world);
     }
 
     /**
@@ -98,9 +105,19 @@ public final class MovementSim {
         // getVelocityMultiplier() (soul sand, honey) defaults to 1.0 and is omitted for now.
     }
 
-    private static void jump(SimPlayerState s) {
+    /**
+     * Oracle hand-port of LivingEntity.jump(). The production path uses {@link GeneratedMovement#jump};
+     * this is kept public so the bit-exact differential test can diff against it.
+     *
+     * <p>Jump velocity is {@code getJumpVelocity() = (float)JUMP_STRENGTH * multiplier(1) + boost(0)},
+     * computed as a FLOAT then widened for {@code Math.max} — so the base is {@code (double)(float)
+     * jumpStrength}, NOT the double literal 0.42 ((float)0.42 = 0.41999998688697815). Real MC narrows
+     * to float; matching that is what keeps this a valid oracle.
+     */
+    public static void jump(SimPlayerState s) {
+        float jumpVelocity = (float) s.jumpStrength; // *1.0F multiplier + 0.0F boost are identities in scope
         Vec3 v = s.velocity;
-        s.velocity = new Vec3(v.x(), Math.max(JUMP_VELOCITY, v.y()), v.z());
+        s.velocity = new Vec3(v.x(), Math.max((double) jumpVelocity, v.y()), v.z());
         if (s.sprinting) {
             // Sprint-jump boost — MC uses MathHelper.sin/cos here too (float table).
             float g = s.yaw * (float) (Math.PI / 180.0);

@@ -69,7 +69,12 @@ public final class BridgeGenerator {
         new FieldSpec("stepHeight", "double", "DEFAULT_STEP_HEIGHT", "player.getStepHeight()",
             null, "auto step-up height"),
         new FieldSpec("flySpeed", "float", "0.05f", "player.getAbilities().getFlySpeed()",
-            null, "creative fly speed (off-ground speed when flying)")
+            null, "creative fly speed (off-ground speed when flying)"),
+        // double (not float): getAttributeValue(JUMP_STRENGTH) returns a double; getJumpVelocity(F)
+        // narrows to float INSIDE the transpiled physics. A float field here would double-round.
+        new FieldSpec("jumpStrength", "double", "0.42",
+            "player.getAttributeValue(net.minecraft.entity.attribute.EntityAttributes.JUMP_STRENGTH)",
+            null, "JUMP_STRENGTH attribute (vanilla 0.42); base jump velocity")
     );
 
     public static void main(String[] args) throws IOException {
