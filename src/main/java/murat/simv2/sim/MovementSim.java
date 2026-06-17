@@ -21,13 +21,18 @@ public final class MovementSim {
     }
 
     public static final double GRAVITY = 0.08;
-    public static final double AIR_DRAG_Y = 0.98;
-    public static final double FRICTION_BASE = 0.91;
-    public static final double GROUND_SPEED_FACTOR = 0.21600002;
+    // Air drag and ground friction are FLOAT in Minecraft: LivingEntity.travelMidAir computes
+    // `g = slipperiness * 0.91F` and the vertical drag `* 0.98F` in float, then widens to double at
+    // the multiply. getMovementSpeed(F) likewise computes the whole speed in float. Keeping these
+    // float (not double) is load-bearing for bit-exactness against the generated physics — e.g.
+    // (double)0.98F = 0.9800000190734863, not 0.98.
+    public static final float AIR_DRAG_Y = 0.98f;
+    public static final float FRICTION_BASE = 0.91f;
+    public static final float GROUND_SPEED_FACTOR = 0.21600002f;
     // PlayerEntity.getOffGroundSpeed(): air-control speed is sprint-dependent (the +30% sprint
-    // boost applies in the air too). Float literals promoted to double to match MC's arithmetic.
-    public static final double OFF_GROUND_SPEED = 0.02F;
-    public static final double OFF_GROUND_SPRINT_SPEED = 0.025999999F;
+    // boost applies in the air too).
+    public static final float OFF_GROUND_SPEED = 0.02f;
+    public static final float OFF_GROUND_SPRINT_SPEED = 0.025999999f;
     public static final double JUMP_VELOCITY = 0.42;
     public static final double SPRINT_JUMP_BOOST = 0.2;
 
@@ -53,23 +58,28 @@ public final class MovementSim {
      * applied — so this is the exact slice of physics we ported and want to check.
      */
     public static void travelMidAir(SimPlayerState s, Vec3 movementInput, WorldSnapshot world) {
-        double slipperiness = s.onGround ? slipperinessBelow(s, world) : 1.0;
-        double horizontalDrag = slipperiness * FRICTION_BASE;
-        double speed = s.onGround
+        // MC: f = onGround ? blockSlipperiness : 1.0F; g = f * 0.91F (float).
+        float slipperiness = s.onGround ? slipperinessBelow(s, world) : 1.0f;
+        float horizontalDrag = slipperiness * FRICTION_BASE;
+        // getMovementSpeed(slipperiness): the whole speed is computed in float (movementSpeed is a
+        // float attribute snapshot); off-ground speed is sprint-dependent.
+        float speed = s.onGround
             ? s.movementSpeed * (GROUND_SPEED_FACTOR / (slipperiness * slipperiness * slipperiness))
             : (s.sprinting ? OFF_GROUND_SPRINT_SPEED : OFF_GROUND_SPEED);
 
-        // applyMovementInput: updateVelocity (add rotated input) then move(SELF, velocity)
+        // applyMovementInput: updateVelocity (add rotated input) then move(SELF, velocity).
+        // speed (float) widens to double at the call — exactly where MC widens it too.
         s.velocity = s.velocity.add(movementInputToVelocity(movementInput, speed, s.yaw));
         moveSelf(s, world);
 
-        Vec3 postMove = s.velocity;          // move() may have zeroed horizontal components
-        double newY = postMove.y() - GRAVITY; // no levitation / slow-falling in scope
+        Vec3 postMove = s.velocity;            // move() may have zeroed horizontal components
+        double newY = postMove.y() - GRAVITY;  // no levitation / slow-falling in scope
+        // x/z *= (double)g ; y *= (double)0.98F  (float drags widened at the multiply, as MC does).
         s.velocity = new Vec3(postMove.x() * horizontalDrag, newY * AIR_DRAG_Y, postMove.z() * horizontalDrag);
     }
 
     /** Entity.move(MovementType.SELF, velocity): collide, advance position, update flags. */
-    private static void moveSelf(SimPlayerState s, WorldSnapshot world) {
+    public static void moveSelf(SimPlayerState s, WorldSnapshot world) {
         Vec3 movement = s.velocity;
         AABB box = s.boundingBox();
         Vec3 adjusted = Collision.adjustForCollisions(movement, box, world, s.stepHeight, s.onGround);
@@ -116,11 +126,9 @@ public final class MovementSim {
             scaled.z() * cos + scaled.x() * sin);
     }
 
-    private static double slipperinessBelow(SimPlayerState s, WorldSnapshot world) {
-        int bx = (int) Math.floor(s.pos.x());
-        int by = (int) Math.floor(s.boundingBox().minY() - 0.5000001);
-        int bz = (int) Math.floor(s.pos.z());
-        return world.slipperinessAt(bx, by, bz);
+    private static float slipperinessBelow(SimPlayerState s, WorldSnapshot world) {
+        // Identical to the transpiler's fused slipperiness chain target, so generated == hand-port.
+        return WorldSnapshot.slipperinessAt(s, world);
     }
 
     private static boolean approximatelyEquals(double a, double b) {

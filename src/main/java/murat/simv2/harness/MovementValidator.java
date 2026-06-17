@@ -9,6 +9,7 @@ import murat.simv2.sim.MovementSim;
 import murat.simv2.sim.SimPlayerState;
 import murat.simv2.sim.Vec3;
 import murat.simv2.sim.WorldSnapshot;
+import murat.simv2.sim.gen.GeneratedMovement;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.math.Vec3d;
 
@@ -29,6 +30,7 @@ public final class MovementValidator {
     private static final double DETAIL_THRESHOLD = 1.0E-3;
 
     private static boolean announced;
+    private static boolean parityChecked;
 
     private static boolean active;
     private static Vec3 startPos;
@@ -67,7 +69,23 @@ public final class MovementValidator {
         inSprint = s.sprinting;
 
         WorldSnapshot snapshot = Captures.captureWorld(player.getWorld(), s);
-        MovementSim.travelMidAir(s, inInput, snapshot);
+
+        // Predict with the GENERATED physics — the Option C transpiler output (movement-ir -> Java),
+        // not the hand-port. A unit test proves GeneratedMovement.travelMidAir is bit-exact with
+        // MovementSim.travelMidAir; we additionally cross-check once in-game so any regeneration /
+        // classpath drift surfaces here instead of silently using stale code.
+        if (!parityChecked) {
+            parityChecked = true;
+            SimPlayerState ref = s.copy();
+            MovementSim.travelMidAir(ref, inInput, snapshot);
+            SimPlayerState gen = s.copy();
+            GeneratedMovement.travelMidAir(gen, inInput, snapshot);
+            boolean agree = ref.pos.equals(gen.pos) && ref.velocity.equals(gen.velocity);
+            SimV2.LOGGER.info("[movement-sim] generated vs hand-port parity: "
+                + (agree ? "OK (bit-exact)" : "MISMATCH ref=" + ref.pos + "/" + ref.velocity
+                    + " gen=" + gen.pos + "/" + gen.velocity));
+        }
+        GeneratedMovement.travelMidAir(s, inInput, snapshot);
         predPos = s.pos;
         predVel = s.velocity;
     }

@@ -59,7 +59,7 @@ public final class Captures {
                                 bb.maxX + x, bb.maxY + y, bb.maxZ + z));
                         }
                     }
-                    double slip = state.getBlock().getSlipperiness();
+                    float slip = state.getBlock().getSlipperiness();
                     if (slip != WorldSnapshot.DEFAULT_SLIPPERINESS) {
                         b.slipperiness(x, y, z, slip);
                     }

@@ -19,15 +19,20 @@ import java.util.Map;
  * coords); the API does not change.
  */
 public final class WorldSnapshot {
-    /** Vanilla default block friction (DEFAULT_FRICTION). */
-    public static final double DEFAULT_SLIPPERINESS = 0.6;
+    /**
+     * Vanilla default block friction (DEFAULT_FRICTION). FLOAT, not double: Minecraft's
+     * {@code Block.getSlipperiness()} is a float and the friction arithmetic
+     * ({@code g = slipperiness * 0.91F}) is done in float before widening — keeping this float is
+     * load-bearing for bit-exactness against the generated physics.
+     */
+    public static final float DEFAULT_SLIPPERINESS = 0.6f;
 
     private final List<AABB> blockers;
-    private final Map<Long, Double> slipperinessByBlock;
-    private final double defaultSlipperiness;
+    private final Map<Long, Float> slipperinessByBlock;
+    private final float defaultSlipperiness;
 
-    public WorldSnapshot(List<AABB> blockers, Map<Long, Double> slipperinessByBlock,
-                         double defaultSlipperiness) {
+    public WorldSnapshot(List<AABB> blockers, Map<Long, Float> slipperinessByBlock,
+                         float defaultSlipperiness) {
         this.blockers = List.copyOf(blockers);
         this.slipperinessByBlock = Map.copyOf(slipperinessByBlock);
         this.defaultSlipperiness = defaultSlipperiness;
@@ -46,11 +51,51 @@ public final class WorldSnapshot {
 
     /**
      * Slipperiness of the block at the given block coordinates (the velocity-affecting block).
-     * Falls back to the snapshot default outside the captured region.
+     * Falls back to the snapshot default outside the captured region. FLOAT (see field doc).
      */
-    public double slipperinessAt(int blockX, int blockY, int blockZ) {
-        Double s = slipperinessByBlock.get(packBlock(blockX, blockY, blockZ));
+    public float slipperinessAt(int blockX, int blockY, int blockZ) {
+        Float s = slipperinessByBlock.get(packBlock(blockX, blockY, blockZ));
         return s != null ? s : defaultSlipperiness;
+    }
+
+    /**
+     * Fused velocity-affecting-block slipperiness for a player state — the standalone equivalent of
+     * MC's {@code getWorld().getBlockState(getVelocityAffectingPos()).getBlock().getSlipperiness()}.
+     * The transpiler routes that whole chain to this single call (the intermediate BlockPos/
+     * BlockState/Block objects are dead). Returns FLOAT so {@code g = slip * 0.91F} stays in float.
+     */
+    public static float slipperinessAt(SimPlayerState s, WorldSnapshot world) {
+        int bx = (int) Math.floor(s.pos.x());
+        int by = (int) Math.floor(s.boundingBox().minY() - 0.5000001);
+        int bz = (int) Math.floor(s.pos.z());
+        return world.slipperinessAt(bx, by, bz);
+    }
+
+    // --- Dead-branch delegate stubs --------------------------------------------------------------
+    // These satisfy the transpiler's coverage of the levitation / client-void / climbing branches
+    // of travelMidAir/applyClimbingSpeed. Those branches are constant-folded dead at the source
+    // level (getStatusEffect -> null, isClient -> false, isClimbing -> false), so these are NEVER
+    // executed at runtime; they exist only so the emitted code (which is not dead-code-eliminated)
+    // compiles. Loosely typed (Object) because the chain locals degrade to Object in the transpiler.
+
+    public static Object velocityAffectingPos(SimPlayerState s) {
+        return null;
+    }
+
+    public static Object blockStateAt(Object world, Object pos) {
+        return null;
+    }
+
+    public static int bottomY() {
+        return -64;
+    }
+
+    public static Object blockStateAtPos(SimPlayerState s) {
+        return null;
+    }
+
+    public static boolean isOf(Object state, Object block) {
+        return false;
     }
 
     public int blockerCount() {
@@ -65,20 +110,20 @@ public final class WorldSnapshot {
     /** Builder used by the capture boundary (and tests) to assemble a snapshot. */
     public static final class Builder {
         private final List<AABB> blockers = new ArrayList<>();
-        private final Map<Long, Double> slipperiness = new HashMap<>();
-        private double defaultSlipperiness = DEFAULT_SLIPPERINESS;
+        private final Map<Long, Float> slipperiness = new HashMap<>();
+        private float defaultSlipperiness = DEFAULT_SLIPPERINESS;
 
         public Builder addBlocker(AABB box) {
             blockers.add(box);
             return this;
         }
 
-        public Builder slipperiness(int x, int y, int z, double value) {
+        public Builder slipperiness(int x, int y, int z, float value) {
             slipperiness.put(packBlock(x, y, z), value);
             return this;
         }
 
-        public Builder defaultSlipperiness(double value) {
+        public Builder defaultSlipperiness(float value) {
             this.defaultSlipperiness = value;
             return this;
         }

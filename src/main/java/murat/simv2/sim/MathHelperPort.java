@@ -29,4 +29,9 @@ public final class MathHelperPort {
     public static float cos(float value) {
         return SINE_TABLE[(int) (value * 10430.378F + 16384.0F) & 65535];
     }
+
+    /** MathHelper.clamp(double,double,double) — verbatim. Reached only in a dead climbing branch. */
+    public static double clamp(double value, double min, double max) {
+        return value < min ? min : (value > max ? max : value);
+    }
 }

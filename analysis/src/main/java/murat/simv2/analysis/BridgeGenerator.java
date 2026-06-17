@@ -62,7 +62,9 @@ public final class BridgeGenerator {
             "net.minecraft.entity.LivingEntity jumping", "jump input (sim-applied)"),
         new FieldSpec("flying", "boolean", "false", "player.getAbilities().flying",
             "net.minecraft.entity.player.PlayerAbilities flying", "creative/spectator flight"),
-        new FieldSpec("movementSpeed", "double", "0.1", "player.getMovementSpeed()",
+        // float (not double): MC's LivingEntity.movementSpeed is a float field and getMovementSpeed(F)
+        // computes the whole speed in float — widening to double here diverges bit-for-bit.
+        new FieldSpec("movementSpeed", "float", "0.1f", "player.getMovementSpeed()",
             null, "MOVEMENT_SPEED attribute value this tick (incl. sprint/effects)"),
         new FieldSpec("stepHeight", "double", "DEFAULT_STEP_HEIGHT", "player.getStepHeight()",
             null, "auto step-up height"),

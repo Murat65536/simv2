@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Predicate;
 
 /**
  * Track-2 (Option C) transpiler. Reads the captured WALA SSA IR ({@code movement-ir.json}) and
@@ -32,9 +33,15 @@ public final class SimGenerator {
 
     /** Entry methods to transpile (target form). Their PHYSICS closure is pulled in transitively. */
     private static final List<String> ENTRIES = List.of(
+        // The top of the closure — one full tick of midair/on-land physics. Everything else below
+        // is pulled in transitively as its PHYSICS closure expands.
+        "Lnet/minecraft/entity/LivingEntity#travelMidAir(Lnet/minecraft/util/math/Vec3d;)V",
         "Lnet/minecraft/entity/Entity#movementInputToVelocity(Lnet/minecraft/util/math/Vec3d;FF)Lnet/minecraft/util/math/Vec3d;",
         "Lnet/minecraft/entity/Entity#updateVelocity(FLnet/minecraft/util/math/Vec3d;)V",
-        "Lnet/minecraft/entity/player/PlayerEntity#getOffGroundSpeed()F");
+        "Lnet/minecraft/entity/player/PlayerEntity#getOffGroundSpeed()F",
+        "Lnet/minecraft/entity/LivingEntity#getMovementSpeed(F)F",
+        "Lnet/minecraft/entity/LivingEntity#getEffectiveGravity()D",
+        "Lnet/minecraft/entity/Entity#getFinalGravity()D");
 
     public static void main(String[] args) throws IOException {
         if (args.length < 2) {
@@ -52,19 +59,73 @@ public final class SimGenerator {
             byKey.put(methodKey(m), m);
         }
 
+        // Phase 1 — discover the PHYSICS closure and each method's DIRECT world dependency, without
+        // emitting yet. (Emission needs the world-threading verdict, which is a fixpoint over the
+        // whole closure, so it cannot be decided one method at a time.)
         Deque<String> worklist = new ArrayDeque<>(ENTRIES);
-        Set<String> done = new LinkedHashSet<>();
-        Map<String, String> emitted = new LinkedHashMap<>(); // name -> source
+        Set<String> seenTargets = new LinkedHashSet<>();
+        Map<String, Map<String, Object>> recordByCanon = new LinkedHashMap<>();
+        Map<String, MethodTranspiler> transpilerByCanon = new LinkedHashMap<>();
+        Map<String, Set<String>> physicsCalleeCanons = new LinkedHashMap<>();
+        Set<String> worldNeeded = new LinkedHashSet<>(); // canon keys that (transitively) read world
         while (!worklist.isEmpty()) {
             String target = worklist.poll();
-            if (!done.add(target)) continue;
+            if (!seenTargets.add(target)) continue;
             Map<String, Object> record = byKey.get(target);
+            if (record == null) {
+                // Virtual dispatch: the call's declared owner may be a supertype while the IR holds
+                // the actually-reached override. Resolve by selector (name+descriptor).
+                record = resolveBySelector(byKey, target);
+            }
             if (record == null) {
                 throw new IllegalStateException("PHYSICS target not found in IR: " + target);
             }
+            String canon = methodKey(record);
+            if (recordByCanon.containsKey(canon)) continue; // already analyzed (under another alias)
+            recordByCanon.put(canon, record);
             MethodTranspiler t = new MethodTranspiler(record);
-            emitted.put((String) record.get("name"), t.emit());
-            worklist.addAll(t.physicsCalls()); // expand the closure
+            t.analyze();
+            transpilerByCanon.put(canon, t);
+            if (t.worldDirect()) worldNeeded.add(canon);
+            Set<String> calleeCanons = new LinkedHashSet<>();
+            for (String pt : t.physicsCalls()) {
+                Map<String, Object> crec = byKey.get(pt);
+                if (crec == null) crec = resolveBySelector(byKey, pt);
+                if (crec == null) throw new IllegalStateException("PHYSICS callee not found in IR: " + pt);
+                calleeCanons.add(methodKey(crec));
+                worklist.add(pt); // expand the closure
+            }
+            physicsCalleeCanons.put(canon, calleeCanons);
+        }
+
+        // Phase 2 — fixpoint: a method needs `world` if it reads the world directly OR transitively
+        // calls (through the PHYSICS closure) a method that does.
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (Map.Entry<String, Set<String>> e : physicsCalleeCanons.entrySet()) {
+                if (worldNeeded.contains(e.getKey())) continue;
+                for (String callee : e.getValue()) {
+                    if (worldNeeded.contains(callee)) {
+                        worldNeeded.add(e.getKey());
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Phase 3 — emit. `world` is threaded as the trailing parameter into world-needing methods
+        // and as the trailing argument into calls to world-needing PHYSICS callees.
+        Predicate<String> calleeNeedsWorld = rawTarget -> {
+            Map<String, Object> crec = byKey.get(rawTarget);
+            if (crec == null) crec = resolveBySelector(byKey, rawTarget);
+            return crec != null && worldNeeded.contains(methodKey(crec));
+        };
+        Map<String, String> emitted = new LinkedHashMap<>(); // name -> source
+        for (Map.Entry<String, Map<String, Object>> e : recordByCanon.entrySet()) {
+            emitted.put((String) e.getValue().get("name"),
+                transpilerByCanon.get(e.getKey()).emit(worldNeeded.contains(e.getKey()), calleeNeedsWorld));
         }
 
         StringBuilder body = new StringBuilder();
@@ -80,6 +141,7 @@ public final class SimGenerator {
             import murat.simv2.sim.MathHelperPort;
             import murat.simv2.sim.SimRuntime;
             import murat.simv2.sim.SimPlayerState;
+            import murat.simv2.sim.WorldSnapshot;
 
             /** Transpiled standalone movement methods (Option C, Track 2). */
             public final class GeneratedMovement {
@@ -106,6 +168,9 @@ public final class SimGenerator {
         private final boolean isStatic;
         private final int thisVn;
         private final Set<String> physicsCalls = new LinkedHashSet<>();
+        private boolean worldDirect;
+        private boolean selfNeedsWorld;
+        private Predicate<String> calleeNeedsWorld;
 
         MethodTranspiler(Map<String, Object> method) {
             this.method = method;
@@ -121,7 +186,39 @@ public final class SimGenerator {
             return physicsCalls;
         }
 
-        String emit() {
+        boolean worldDirect() {
+            return worldDirect;
+        }
+
+        /**
+         * Pre-emission scan: classify every call to discover the PHYSICS closure (which callees to
+         * transpile) and whether this method reads the world DIRECTLY (a WORLD route whose template
+         * binds the {@code world} token). Fails on any unclassified call (coverage invariant).
+         */
+        void analyze() {
+            for (Map<String, Object> b : blockById.values()) {
+                for (Map<String, Object> in : listOfMaps(b.get("insns"))) {
+                    if (!"invoke".equals(in.get("op"))) continue;
+                    String target = (String) in.get("target");
+                    String selector = target.substring(target.indexOf('#') + 1);
+                    if (selector.startsWith("<init>")) continue; // constructor, handled inline (MATH)
+                    Routing.Route route = Routing.lookup(target);
+                    if (route == null) {
+                        throw new IllegalStateException("M2 coverage gap — unclassified call: " + target
+                            + " (add a Routing entry)");
+                    }
+                    if (route.cat() == Routing.Cat.PHYSICS) {
+                        physicsCalls.add(target);
+                    } else if (route.cat() == Routing.Cat.WORLD && route.template().contains("world")) {
+                        worldDirect = true;
+                    }
+                }
+            }
+        }
+
+        String emit(boolean selfNeedsWorld, Predicate<String> calleeNeedsWorld) {
+            this.selfNeedsWorld = selfNeedsWorld;
+            this.calleeNeedsWorld = calleeNeedsWorld;
             String name = (String) method.get("name");
             String descriptor = (String) method.get("descriptor");
             List<Map<String, Object>> params = listOfMaps(method.get("params"));
@@ -136,6 +233,11 @@ public final class SimGenerator {
                 } else {
                     paramDecls.add(javaType((String) p.get("type")) + " v" + vn);
                 }
+            }
+            // World-threading: methods that (transitively) touch the world take the frozen snapshot
+            // as a trailing parameter — mirrors the hand-port signature (..., WorldSnapshot world).
+            if (selfNeedsWorld) {
+                paramDecls.add("WorldSnapshot world");
             }
             String ret = javaType(returnTypeOf(descriptor));
 
@@ -264,6 +366,17 @@ public final class SimGenerator {
                     }
                     return assign(in, applyTemplate(rt.template(), List.of()));
                 }
+                case "instanceof": {
+                    // Type test on the receiver. The simulated entity is the local player, so these
+                    // fold to compile-time constants (coverage-checked — an unknown type fails).
+                    String checkType = (String) in.get("checkType");
+                    String lit = Routing.typeTest(checkType);
+                    if (lit == null) {
+                        throw new IllegalStateException("M2 coverage gap — unclassified instanceof: "
+                            + checkType + " (add a Routing type test)");
+                    }
+                    return assign(in, lit);
+                }
                 case "invoke":
                     return emitInvoke(in);
                 default:
@@ -292,6 +405,9 @@ public final class SimGenerator {
                     String calleeName = selector.substring(0, selector.indexOf('('));
                     List<String> argv = new ArrayList<>();
                     for (int useVn : u) argv.add(operand(useVn));
+                    if (calleeNeedsWorld != null && calleeNeedsWorld.test(target)) {
+                        argv.add("world"); // callee threads the snapshot too
+                    }
                     String call = calleeName + "(" + String.join(", ", argv) + ")";
                     yield in.containsKey("def") ? "v" + i(in.get("def")) + " = " + call + ";" : call + ";";
                 }
@@ -419,6 +535,22 @@ public final class SimGenerator {
         return "L" + internal + "#" + record.get("name") + record.get("descriptor");
     }
 
+    /** Resolve a call target to the unique IR method with the same selector (name+descriptor). */
+    private static Map<String, Object> resolveBySelector(Map<String, Map<String, Object>> byKey, String target) {
+        String selector = target.substring(target.indexOf('#') + 1);
+        Map<String, Object> found = null;
+        for (Map<String, Object> m : byKey.values()) {
+            if (selector.equals(m.get("name") + "" + m.get("descriptor"))) {
+                if (found != null) {
+                    throw new IllegalStateException("ambiguous virtual dispatch for selector " + selector
+                        + " (multiple overrides reached) — receiver-type resolution needed");
+                }
+                found = m;
+            }
+        }
+        return found;
+    }
+
     private static String returnTypeOf(String descriptor) {
         return descriptor.substring(descriptor.indexOf(')') + 1);
     }
@@ -438,7 +570,15 @@ public final class SimGenerator {
             // Field-chain intermediate (this.abilities.*): the player state stands in for it; the
             // local is assigned `s` and only ever used as a ref that STATE field routes ignore.
             case "Lnet/minecraft/entity/player/PlayerAbilities", "Lnet/minecraft/entity/player/PlayerAbilities;" -> "SimPlayerState";
-            default -> throw new IllegalStateException("unmapped type " + wala);
+            default -> {
+                // Unmapped REFERENCE types are only valid for PRUNE-substituted / unused locals
+                // (e.g. a RegistryEntry arg to a pruned hasStatusEffect). Degrade to Object — any
+                // real use of such a value would then fail to compile, so this isn't a silent error.
+                if (wala.startsWith("L") || wala.startsWith("[")) {
+                    yield "Object";
+                }
+                throw new IllegalStateException("unmapped primitive type " + wala);
+            }
         };
     }
 
