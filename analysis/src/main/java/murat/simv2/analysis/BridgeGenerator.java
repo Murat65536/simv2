@@ -65,7 +65,9 @@ public final class BridgeGenerator {
         new FieldSpec("movementSpeed", "double", "0.1", "player.getMovementSpeed()",
             null, "MOVEMENT_SPEED attribute value this tick (incl. sprint/effects)"),
         new FieldSpec("stepHeight", "double", "DEFAULT_STEP_HEIGHT", "player.getStepHeight()",
-            null, "auto step-up height")
+            null, "auto step-up height"),
+        new FieldSpec("flySpeed", "float", "0.05f", "player.getAbilities().getFlySpeed()",
+            null, "creative fly speed (off-ground speed when flying)")
     );
 
     public static void main(String[] args) throws IOException {

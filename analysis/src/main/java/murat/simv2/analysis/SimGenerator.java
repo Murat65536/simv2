@@ -6,58 +6,71 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
- * Track-2 (Option C) transpiler — GO/NO-GO prototype. Reads {@code movement-ir.json} (the captured
- * WALA SSA IR) and emits standalone, Minecraft-free Java for movement methods.
+ * Track-2 (Option C) transpiler. Reads the captured WALA SSA IR ({@code movement-ir.json}) and
+ * emits standalone, Minecraft-free Java for the movement methods, driven by the {@link Routing}
+ * table (M2). Starting from entry methods it transpiles the PHYSICS closure, delegating MATH to
+ * {@code Vec3}/{@code MathHelperPort}, mapping player getters/setters to {@code SimPlayerState},
+ * and failing on any unclassified call (coverage invariant — no silent drops).
  *
- * <p>Emission strategy: a block DISPATCH LOOP ({@code while(true) switch(block)}). This is
- * correctness-preserving for any (even irreducible) CFG and sidesteps general control-flow
- * reconstruction; readable structuring is a later optimisation. Out-of-SSA is done by assigning
- * phi targets on the predecessor edge. Exceptional successors are pruned (movement physics ignores
- * exception flow). Float/double widths are taken from the IR's conversions/types, so the arithmetic
- * matches Minecraft bit-for-bit; calls are routed PHYSICS/WORLD/MATH per a table (unrouted calls
- * throw — never silently dropped).
- *
- * <p>This prototype targets {@code Entity.movementInputToVelocity}, the input-rotation method —
- * it exercises the full machinery (a branch, a phi, MATH routing, float/double conversions,
- * typed constants) and is validated bit-exact against the golden {@code MovementSim} in tests.
+ * <p>Emission is a block DISPATCH LOOP ({@code while(true) switch(block)}) — correct for any CFG
+ * (incl. loops, as back-edges become {@code $b} reassignments), with out-of-SSA done by assigning
+ * phi targets on predecessor edges and exact float/double widths taken from the IR. Instance
+ * methods take {@code SimPlayerState s} as their first parameter (the {@code this} receiver).
  */
 public final class SimGenerator {
 
-    private static final String TARGET_NAME = "movementInputToVelocity";
+    /** Entry methods to transpile (target form). Their PHYSICS closure is pulled in transitively. */
+    private static final List<String> ENTRIES = List.of(
+        "Lnet/minecraft/entity/Entity#movementInputToVelocity(Lnet/minecraft/util/math/Vec3d;FF)Lnet/minecraft/util/math/Vec3d;",
+        "Lnet/minecraft/entity/Entity#updateVelocity(FLnet/minecraft/util/math/Vec3d;)V",
+        "Lnet/minecraft/entity/player/PlayerEntity#getOffGroundSpeed()F");
 
     public static void main(String[] args) throws IOException {
         if (args.length < 2) {
             throw new IllegalArgumentException("Usage: SimGenerator <movement-ir.json> <generated-java-root>");
         }
-        Path ir = Path.of(args[0]);
+        Path irPath = Path.of(args[0]);
         Path javaRoot = Path.of(args[1]);
 
         Map<String, Object> root;
-        try (Reader r = Files.newBufferedReader(ir)) {
+        try (Reader r = Files.newBufferedReader(irPath)) {
             root = new Gson().fromJson(r, Map.class);
         }
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> methods = (List<Map<String, Object>>) root.get("methods");
+        Map<String, Map<String, Object>> byKey = new TreeMap<>();
+        for (Map<String, Object> m : listOfMaps(root.get("methods"))) {
+            byKey.put(methodKey(m), m);
+        }
 
-        Map<String, Object> target = null;
-        for (Map<String, Object> m : methods) {
-            if (TARGET_NAME.equals(m.get("name"))) {
-                target = m;
-                break;
+        Deque<String> worklist = new ArrayDeque<>(ENTRIES);
+        Set<String> done = new LinkedHashSet<>();
+        Map<String, String> emitted = new LinkedHashMap<>(); // name -> source
+        while (!worklist.isEmpty()) {
+            String target = worklist.poll();
+            if (!done.add(target)) continue;
+            Map<String, Object> record = byKey.get(target);
+            if (record == null) {
+                throw new IllegalStateException("PHYSICS target not found in IR: " + target);
             }
-        }
-        if (target == null) {
-            throw new IllegalStateException("Target method not found in IR: " + TARGET_NAME);
+            MethodTranspiler t = new MethodTranspiler(record);
+            emitted.put((String) record.get("name"), t.emit());
+            worklist.addAll(t.physicsCalls()); // expand the closure
         }
 
-        String body = new MethodTranspiler(target).emit();
+        StringBuilder body = new StringBuilder();
+        for (String src : emitted.values()) {
+            body.append(src).append('\n');
+        }
         String cls = """
             package murat.simv2.sim.gen;
 
@@ -66,6 +79,7 @@ public final class SimGenerator {
             import murat.simv2.sim.Vec3;
             import murat.simv2.sim.MathHelperPort;
             import murat.simv2.sim.SimRuntime;
+            import murat.simv2.sim.SimPlayerState;
 
             /** Transpiled standalone movement methods (Option C, Track 2). */
             public final class GeneratedMovement {
@@ -74,12 +88,13 @@ public final class SimGenerator {
 
             %s
             }
-            """.formatted(body);
+            """.formatted(body.toString());
 
         Path outDir = javaRoot.resolve("murat/simv2/sim/gen");
         Files.createDirectories(outDir);
         Files.writeString(outDir.resolve("GeneratedMovement.java"), cls);
-        System.out.println("SimGenerator: emitted GeneratedMovement." + TARGET_NAME + " -> " + outDir);
+        System.out.println("SimGenerator: emitted GeneratedMovement with " + emitted.size()
+            + " method(s): " + emitted.keySet() + " -> " + outDir);
     }
 
     /** Transpiles one method record to a dispatch-loop Java method. */
@@ -88,43 +103,50 @@ public final class SimGenerator {
         private final Map<Integer, Map<String, Object>> constByVn = new TreeMap<>();
         private final Map<Integer, String> typeByVn = new TreeMap<>();
         private final Map<Integer, Map<String, Object>> blockById = new TreeMap<>();
+        private final boolean isStatic;
+        private final int thisVn;
+        private final Set<String> physicsCalls = new LinkedHashSet<>();
 
         MethodTranspiler(Map<String, Object> method) {
             this.method = method;
-            for (Map<String, Object> c : list(method.get("constants"))) {
-                constByVn.put(i(c.get("vn")), c);
-            }
-            for (Map<String, Object> t : list(method.get("types"))) {
-                typeByVn.put(i(t.get("vn")), (String) t.get("type"));
-            }
-            for (Map<String, Object> b : list(method.get("blocks"))) {
-                blockById.put(i(b.get("id")), b);
-            }
+            this.isStatic = Boolean.TRUE.equals(method.get("static"));
+            List<Map<String, Object>> params = listOfMaps(method.get("params"));
+            this.thisVn = isStatic ? -1 : i(params.get(0).get("vn"));
+            for (Map<String, Object> c : listOfMaps(method.get("constants"))) constByVn.put(i(c.get("vn")), c);
+            for (Map<String, Object> t : listOfMaps(method.get("types"))) typeByVn.put(i(t.get("vn")), (String) t.get("type"));
+            for (Map<String, Object> b : listOfMaps(method.get("blocks"))) blockById.put(i(b.get("id")), b);
+        }
+
+        Set<String> physicsCalls() {
+            return physicsCalls;
         }
 
         String emit() {
             String name = (String) method.get("name");
             String descriptor = (String) method.get("descriptor");
-            List<Map<String, Object>> params = list(method.get("params"));
+            List<Map<String, Object>> params = listOfMaps(method.get("params"));
 
-            StringBuilder sb = new StringBuilder();
-            // signature
             List<String> paramDecls = new ArrayList<>();
-            java.util.Set<Integer> paramVns = new java.util.HashSet<>();
+            Set<Integer> paramVns = new java.util.HashSet<>();
             for (Map<String, Object> p : params) {
                 int vn = i(p.get("vn"));
                 paramVns.add(vn);
-                paramDecls.add(javaType((String) p.get("type")) + " v" + vn);
+                if (vn == thisVn) {
+                    paramDecls.add("SimPlayerState s");
+                } else {
+                    paramDecls.add(javaType((String) p.get("type")) + " v" + vn);
+                }
             }
             String ret = javaType(returnTypeOf(descriptor));
+
+            StringBuilder sb = new StringBuilder();
             sb.append("    public static ").append(ret).append(' ').append(name)
                 .append('(').append(String.join(", ", paramDecls)).append(") {\n");
 
-            // local declarations for every def (insn + phi) that isn't a param/constant
-            java.util.Set<Integer> defs = new java.util.TreeSet<>();
+            Set<Integer> defs = new java.util.TreeSet<>();
             for (Map<String, Object> b : blockById.values()) {
-                for (Map<String, Object> phi : list(b.get("phis"))) defs.add(i(phi.get("def")));
-                for (Map<String, Object> in : list(b.get("insns"))) {
+                for (Map<String, Object> phi : listOfMaps(b.get("phis"))) defs.add(i(phi.get("def")));
+                for (Map<String, Object> in : listOfMaps(b.get("insns"))) {
                     if (in.containsKey("def")) defs.add(i(in.get("def")));
                 }
             }
@@ -135,13 +157,12 @@ public final class SimGenerator {
                     .append(defaultValue(jt)).append(";\n");
             }
 
-            int entry = entryBlockId();
-            sb.append("        int $b = ").append(entry).append(";\n");
+            sb.append("        int $b = ").append(entryBlockId()).append(";\n");
             sb.append("        while (true) {\n            switch ($b) {\n");
             for (Map<String, Object> b : blockById.values()) {
-                if (list(b.get("insns")).isEmpty() && list(b.get("phis")).isEmpty()
+                if (listOfMaps(b.get("insns")).isEmpty() && listOfMaps(b.get("phis")).isEmpty()
                     && normalSucc(b).isEmpty()) {
-                    continue; // unreachable/exit-only block
+                    continue;
                 }
                 sb.append("                case ").append(i(b.get("id"))).append(": {\n");
                 emitBlock(b, sb);
@@ -153,9 +174,8 @@ public final class SimGenerator {
         }
 
         private void emitBlock(Map<String, Object> b, StringBuilder sb) {
-            List<Map<String, Object>> insns = list(b.get("insns"));
             Map<String, Object> terminator = null;
-            for (Map<String, Object> in : insns) {
+            for (Map<String, Object> in : listOfMaps(b.get("insns"))) {
                 String op = (String) in.get("op");
                 if (op.equals("cbranch") || op.equals("goto") || op.equals("return")) {
                     terminator = in;
@@ -175,8 +195,7 @@ public final class SimGenerator {
                 }
                 return;
             }
-            String op = (String) terminator.get("op");
-            switch (op) {
+            switch ((String) terminator.get("op")) {
                 case "return" -> {
                     List<Integer> uses = intList(terminator.get("uses"));
                     sb.append("                    return ")
@@ -191,10 +210,13 @@ public final class SimGenerator {
                     List<Integer> uses = intList(terminator.get("uses"));
                     int taken = targetBlock(i(terminator.get("target")));
                     int fall = -1;
-                    for (int s : normalSucc(b)) if (s != taken) { fall = s; break; }
-                    String rel = relop((String) terminator.get("operator"));
-                    sb.append("                    if (").append(operand(uses.get(0))).append(' ')
-                        .append(rel).append(' ').append(operand(uses.get(1))).append(") {\n");
+                    for (int sc : normalSucc(b)) if (sc != taken) { fall = sc; break; }
+                    String cond = booleanCond(uses.get(0), uses.get(1), (String) terminator.get("operator"));
+                    if (cond == null) {
+                        cond = operand(uses.get(0)) + " " + relop((String) terminator.get("operator"))
+                            + " " + operand(uses.get(1));
+                    }
+                    sb.append("                    if (").append(cond).append(") {\n");
                     sb.append(indent(edgeAssign(from, taken)));
                     sb.append("                        $b = ").append(taken).append(";\n");
                     sb.append("                    } else {\n");
@@ -202,25 +224,21 @@ public final class SimGenerator {
                     sb.append("                        $b = ").append(fall).append(";\n");
                     sb.append("                    }\n                    break;\n");
                 }
-                default -> throw new IllegalStateException("unexpected terminator " + op);
+                default -> throw new IllegalStateException("unexpected terminator " + terminator.get("op"));
             }
         }
 
-        /** Statement for a non-terminator instruction (or null to skip). */
         private String emitInsn(Map<String, Object> in) {
             String op = (String) in.get("op");
             switch (op) {
                 case "new":
-                    return null; // the matching <init> invoke assigns the value
+                    return null;
                 case "binop": {
                     List<Integer> u = intList(in.get("uses"));
-                    return assign(in, operand(u.get(0)) + " " + arith((String) in.get("operator"))
-                        + " " + operand(u.get(1)));
+                    return assign(in, operand(u.get(0)) + " " + arith((String) in.get("operator")) + " " + operand(u.get(1)));
                 }
-                case "unop": {
-                    List<Integer> u = intList(in.get("uses"));
-                    return assign(in, "-" + operand(u.get(0))); // only neg occurs
-                }
+                case "unop":
+                    return assign(in, "-" + operand(intList(in.get("uses")).get(0)));
                 case "conversion": {
                     List<Integer> u = intList(in.get("uses"));
                     return assign(in, "(" + javaType((String) in.get("to")) + ") " + operand(u.get(0)));
@@ -228,19 +246,23 @@ public final class SimGenerator {
                 case "compare": {
                     List<Integer> u = intList(in.get("uses"));
                     String fn = "cmpg".equals(in.get("operator")) ? "cmpg" : "cmpl";
-                    return assign(in, "SimRuntime." + fn + "(" + operand(u.get(0)) + ", "
-                        + operand(u.get(1)) + ")");
+                    return assign(in, "SimRuntime." + fn + "(" + operand(u.get(0)) + ", " + operand(u.get(1)) + ")");
                 }
                 case "getfield": {
-                    String acc = fieldAccessor(field(in));
-                    return assign(in, operand(i(in.get("ref"))) + "." + acc);
+                    Map<String, Object> f = field(in);
+                    Routing.Route rt = Routing.fieldLookup((String) f.get("class"), (String) f.get("name"));
+                    if (rt == null) {
+                        throw new IllegalStateException("M2 coverage gap — unclassified field: " + f);
+                    }
+                    return assign(in, applyTemplate(rt.template(), List.of(i(in.get("ref")))));
                 }
                 case "getstatic": {
                     Map<String, Object> f = field(in);
-                    if ("Lnet/minecraft/util/math/Vec3d".equals(f.get("class")) && "ZERO".equals(f.get("name"))) {
-                        return assign(in, "Vec3.ZERO");
+                    Routing.Route rt = Routing.fieldLookup((String) f.get("class"), (String) f.get("name"));
+                    if (rt == null) {
+                        throw new IllegalStateException("M2 coverage gap — unclassified static field: " + f);
                     }
-                    throw new IllegalStateException("unrouted getstatic " + f);
+                    return assign(in, applyTemplate(rt.template(), List.of()));
                 }
                 case "invoke":
                     return emitInvoke(in);
@@ -255,99 +277,112 @@ public final class SimGenerator {
             String selector = target.substring(target.indexOf('#') + 1);
             if (selector.startsWith("<init>")) {
                 String type = javaType(target.substring(0, target.indexOf('#')));
-                List<String> args = new ArrayList<>();
-                for (int k = 1; k < u.size(); k++) args.add(operand(u.get(k)));
-                return "v" + u.get(0) + " = new " + type + "(" + String.join(", ", args) + ");";
+                List<String> argv = new ArrayList<>();
+                for (int k = 1; k < u.size(); k++) argv.add(operand(u.get(k)));
+                return "v" + u.get(0) + " = new " + type + "(" + String.join(", ", argv) + ");";
             }
-            String expr = routeCall(target, u);
-            if (in.containsKey("def")) {
-                return "v" + i(in.get("def")) + " = " + expr + ";";
+            Routing.Route route = Routing.lookup(target);
+            if (route == null) {
+                throw new IllegalStateException("M2 coverage gap — unclassified call: " + target
+                    + " (add a Routing entry)");
             }
-            return expr + ";";
-        }
-
-        /** PHYSICS/WORLD/MATH routing for the prototype's call surface (unrouted -> throw). */
-        private String routeCall(String target, List<Integer> u) {
-            return switch (target) {
-                case "Lnet/minecraft/util/math/Vec3d#lengthSquared()D" ->
-                    operand(u.get(0)) + ".lengthSquared()";
-                case "Lnet/minecraft/util/math/Vec3d#normalize()Lnet/minecraft/util/math/Vec3d;" ->
-                    operand(u.get(0)) + ".normalize()";
-                case "Lnet/minecraft/util/math/Vec3d#multiply(D)Lnet/minecraft/util/math/Vec3d;" ->
-                    operand(u.get(0)) + ".scale(" + operand(u.get(1)) + ")";
-                case "Lnet/minecraft/util/math/MathHelper#sin(F)F" ->
-                    "MathHelperPort.sin(" + operand(u.get(0)) + ")";
-                case "Lnet/minecraft/util/math/MathHelper#cos(F)F" ->
-                    "MathHelperPort.cos(" + operand(u.get(0)) + ")";
-                default -> throw new IllegalStateException("unrouted call: " + target);
+            return switch (route.cat()) {
+                case PHYSICS -> {
+                    physicsCalls.add(target);
+                    String calleeName = selector.substring(0, selector.indexOf('('));
+                    List<String> argv = new ArrayList<>();
+                    for (int useVn : u) argv.add(operand(useVn));
+                    String call = calleeName + "(" + String.join(", ", argv) + ")";
+                    yield in.containsKey("def") ? "v" + i(in.get("def")) + " = " + call + ";" : call + ";";
+                }
+                case MATH, STATE_READ, WORLD -> {
+                    String expr = applyTemplate(route.template(), u);
+                    yield in.containsKey("def") ? "v" + i(in.get("def")) + " = " + expr + ";" : expr + ";";
+                }
+                case STATE_WRITE -> applyTemplate(route.template(), u) + ";";
+                case PRUNE -> {
+                    // value-returning prune -> substitute the routed constant; void prune -> drop.
+                    if (in.containsKey("def")) {
+                        yield "v" + i(in.get("def")) + " = " + route.template() + ";";
+                    }
+                    yield null;
+                }
             };
         }
 
-        // --- edge / phi handling ---
+        private String applyTemplate(String template, List<Integer> uses) {
+            String out = template;
+            for (int k = uses.size() - 1; k >= 0; k--) {
+                out = out.replace("$" + k, operand(uses.get(k)));
+            }
+            return out;
+        }
 
         private String edgeAssign(int from, int to) {
             Map<String, Object> toBlock = blockById.get(to);
             if (toBlock == null) return "";
-            List<Map<String, Object>> phis = list(toBlock.get("phis"));
+            List<Map<String, Object>> phis = listOfMaps(toBlock.get("phis"));
             if (phis.isEmpty()) return "";
-            List<Integer> preds = intList(toBlock.get("pred"));
-            int idx = preds.indexOf(from);
+            int idx = intList(toBlock.get("pred")).indexOf(from);
             StringBuilder sb = new StringBuilder();
             for (Map<String, Object> phi : phis) {
-                List<Integer> uses = intList(phi.get("uses"));
-                int operandVn = uses.get(idx);
                 sb.append("                    v").append(i(phi.get("def"))).append(" = ")
-                    .append(operand(operandVn)).append(";\n");
+                    .append(operand(intList(phi.get("uses")).get(idx))).append(";\n");
             }
             return sb.toString();
         }
-
-        // --- helpers ---
 
         private String assign(Map<String, Object> in, String expr) {
             return "v" + i(in.get("def")) + " = " + expr + ";";
         }
 
         private String operand(int vn) {
+            if (vn == thisVn) return "s";
             Map<String, Object> c = constByVn.get(vn);
             if (c == null) return "v" + vn;
             return literal((String) c.get("kind"), c.get("value"));
         }
 
+        /**
+         * Boolean-vs-int-0/1 comparison: WALA represents Z as int, so {@code if (flying == 0)} must
+         * become boolean logic ({@code !flying}). Returns null when this isn't that case.
+         */
+        private String booleanCond(int a, int b, String op) {
+            Map<String, Object> cb = constByVn.get(b);
+            if (!"Z".equals(typeByVn.get(a)) || cb == null || !"int".equals(cb.get("kind"))) {
+                return null;
+            }
+            int bv = (int) Math.rint(((Number) cb.get("value")).doubleValue());
+            String aExpr = operand(a);
+            return switch (op) {
+                case "eq" -> bv == 0 ? "!" + aExpr : aExpr;
+                case "ne" -> bv == 0 ? aExpr : "!" + aExpr;
+                default -> null;
+            };
+        }
+
         private String literal(String kind, Object value) {
             return switch (kind) {
                 case "int" -> Integer.toString((int) Math.rint(((Number) value).doubleValue()));
-                case "long" -> ((long) ((Number) value).longValue()) + "L";
+                case "long" -> ((Number) value).longValue() + "L";
                 case "boolean" -> Boolean.toString(Boolean.TRUE.equals(value));
-                case "double" -> doubleLiteral(value);
-                case "float" -> floatLiteral(value);
+                case "double" -> token(value, "Double", () -> Double.toString(((Number) value).doubleValue()));
+                case "float" -> token(value, "Float", () -> ((Number) value).doubleValue() + "f");
                 case "null" -> "null";
                 default -> throw new IllegalStateException("unhandled const kind " + kind);
             };
         }
 
-        private String doubleLiteral(Object value) {
+        private String token(Object value, String box, java.util.function.Supplier<String> normal) {
             if (value instanceof String s) {
                 return switch (s) {
-                    case "NaN" -> "Double.NaN";
-                    case "Infinity" -> "Double.POSITIVE_INFINITY";
-                    case "-Infinity" -> "Double.NEGATIVE_INFINITY";
-                    default -> throw new IllegalStateException("bad double token " + s);
+                    case "NaN" -> box + ".NaN";
+                    case "Infinity" -> box + ".POSITIVE_INFINITY";
+                    case "-Infinity" -> box + ".NEGATIVE_INFINITY";
+                    default -> throw new IllegalStateException("bad float/double token " + s);
                 };
             }
-            return Double.toString(((Number) value).doubleValue());
-        }
-
-        private String floatLiteral(Object value) {
-            if (value instanceof String s) {
-                return switch (s) {
-                    case "NaN" -> "Float.NaN";
-                    case "Infinity" -> "Float.POSITIVE_INFINITY";
-                    case "-Infinity" -> "Float.NEGATIVE_INFINITY";
-                    default -> throw new IllegalStateException("bad float token " + s);
-                };
-            }
-            return Double.toString(((Number) value).doubleValue()) + "f";
+            return normal.get();
         }
 
         private int entryBlockId() {
@@ -358,10 +393,9 @@ public final class SimGenerator {
         }
 
         private List<Integer> normalSucc(Map<String, Object> b) {
-            List<Integer> succ = intList(b.get("succ"));
             List<Integer> exc = intList(b.get("excSucc"));
             List<Integer> out = new ArrayList<>();
-            for (int s : succ) if (!exc.contains(s)) out.add(s);
+            for (int sc : intList(b.get("succ"))) if (!exc.contains(sc)) out.add(sc);
             return out;
         }
 
@@ -376,83 +410,83 @@ public final class SimGenerator {
         private Map<String, Object> field(Map<String, Object> in) {
             return (Map<String, Object>) in.get("field");
         }
-
-        private String fieldAccessor(Map<String, Object> f) {
-            if ("Lnet/minecraft/util/math/Vec3d".equals(f.get("class"))) {
-                String n = (String) f.get("name");
-                if (n.equals("x") || n.equals("y") || n.equals("z")) return n + "()";
-            }
-            throw new IllegalStateException("unrouted field access " + f);
-        }
-
-        private static String returnTypeOf(String descriptor) {
-            return descriptor.substring(descriptor.indexOf(')') + 1);
-        }
-
-        private static String javaType(String wala) {
-            return switch (wala) {
-                case "D" -> "double";
-                case "F" -> "float";
-                case "I" -> "int";
-                case "Z" -> "boolean";
-                case "J" -> "long";
-                case "B" -> "byte";
-                case "S" -> "short";
-                case "C" -> "char";
-                case "V" -> "void";
-                case "Lnet/minecraft/util/math/Vec3d", "Lnet/minecraft/util/math/Vec3d;" -> "Vec3";
-                default -> throw new IllegalStateException("unmapped type " + wala);
-            };
-        }
-
-        private static String defaultValue(String javaType) {
-            return switch (javaType) {
-                case "double" -> "0.0";
-                case "float" -> "0.0f";
-                case "int", "byte", "short", "char" -> "0";
-                case "long" -> "0L";
-                case "boolean" -> "false";
-                default -> "null";
-            };
-        }
-
-        private static String arith(String op) {
-            return switch (op) {
-                case "add" -> "+";
-                case "sub" -> "-";
-                case "mul" -> "*";
-                case "div" -> "/";
-                case "rem" -> "%";
-                default -> throw new IllegalStateException("unhandled binop " + op);
-            };
-        }
-
-        private static String relop(String op) {
-            return switch (op) {
-                case "eq" -> "==";
-                case "ne" -> "!=";
-                case "lt" -> "<";
-                case "ge" -> ">=";
-                case "gt" -> ">";
-                case "le" -> "<=";
-                default -> throw new IllegalStateException("unhandled relop " + op);
-            };
-        }
-
-        private static String indent(String block) {
-            if (block.isEmpty()) return "";
-            StringBuilder sb = new StringBuilder();
-            for (String line : block.split("\n", -1)) {
-                if (!line.isEmpty()) sb.append("    ").append(line).append('\n');
-            }
-            return sb.toString();
-        }
     }
 
-    // --- generic JSON helpers (Gson decodes numbers as Double) ---
+    // --- shared helpers ---
+
+    private static String methodKey(Map<String, Object> record) {
+        String internal = ((String) record.get("declaringClass")).replace('.', '/');
+        return "L" + internal + "#" + record.get("name") + record.get("descriptor");
+    }
+
+    private static String returnTypeOf(String descriptor) {
+        return descriptor.substring(descriptor.indexOf(')') + 1);
+    }
+
+    private static String javaType(String wala) {
+        return switch (wala) {
+            case "D" -> "double";
+            case "F" -> "float";
+            case "I" -> "int";
+            case "Z" -> "boolean";
+            case "J" -> "long";
+            case "B" -> "byte";
+            case "S" -> "short";
+            case "C" -> "char";
+            case "V" -> "void";
+            case "Lnet/minecraft/util/math/Vec3d", "Lnet/minecraft/util/math/Vec3d;" -> "Vec3";
+            // Field-chain intermediate (this.abilities.*): the player state stands in for it; the
+            // local is assigned `s` and only ever used as a ref that STATE field routes ignore.
+            case "Lnet/minecraft/entity/player/PlayerAbilities", "Lnet/minecraft/entity/player/PlayerAbilities;" -> "SimPlayerState";
+            default -> throw new IllegalStateException("unmapped type " + wala);
+        };
+    }
+
+    private static String defaultValue(String javaType) {
+        return switch (javaType) {
+            case "double" -> "0.0";
+            case "float" -> "0.0f";
+            case "int", "byte", "short", "char" -> "0";
+            case "long" -> "0L";
+            case "boolean" -> "false";
+            default -> "null";
+        };
+    }
+
+    private static String arith(String op) {
+        return switch (op) {
+            case "add" -> "+";
+            case "sub" -> "-";
+            case "mul" -> "*";
+            case "div" -> "/";
+            case "rem" -> "%";
+            default -> throw new IllegalStateException("unhandled binop " + op);
+        };
+    }
+
+    private static String relop(String op) {
+        return switch (op) {
+            case "eq" -> "==";
+            case "ne" -> "!=";
+            case "lt" -> "<";
+            case "ge" -> ">=";
+            case "gt" -> ">";
+            case "le" -> "<=";
+            default -> throw new IllegalStateException("unhandled relop " + op);
+        };
+    }
+
+    private static String indent(String block) {
+        if (block.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (String line : block.split("\n", -1)) {
+            if (!line.isEmpty()) sb.append("    ").append(line).append('\n');
+        }
+        return sb.toString();
+    }
 
     @SuppressWarnings("unchecked")
-    private static List<Map<String, Object>> list(Object o) {
+    private static List<Map<String, Object>> listOfMaps(Object o) {
         return o == null ? List.of() : (List<Map<String, Object>>) o;
     }
 

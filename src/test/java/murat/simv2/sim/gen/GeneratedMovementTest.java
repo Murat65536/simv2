@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Random;
 import murat.simv2.sim.MathHelperPort;
+import murat.simv2.sim.SimPlayerState;
 import murat.simv2.sim.Vec3;
 import org.junit.jupiter.api.Test;
 
@@ -57,6 +58,62 @@ class GeneratedMovementTest {
             Vec3 expected = reference(input, speed, yaw);
             Vec3 actual = GeneratedMovement.movementInputToVelocity(input, speed, yaw);
             assertBitEqual(expected, actual, "i=" + i + " in=" + input + " spd=" + speed + " yaw=" + yaw);
+        }
+    }
+
+    @Test
+    void updateVelocityMatchesReferenceBitExact() {
+        Random rnd = new Random(99L);
+        for (int i = 0; i < 200_000; i++) {
+            Vec3 startVel = new Vec3(rnd.nextGaussian(), rnd.nextGaussian(), rnd.nextGaussian());
+            float yaw = (float) (rnd.nextDouble() * 1440.0 - 720.0);
+            float speed = (float) (rnd.nextDouble() * 0.3);
+            double scale = switch (i % 3) {
+                case 0 -> 1.0E-4;
+                case 1 -> 0.9;
+                default -> 3.0;
+            };
+            Vec3 input = new Vec3(
+                (rnd.nextDouble() * 2 - 1) * scale,
+                (rnd.nextDouble() * 2 - 1) * scale,
+                (rnd.nextDouble() * 2 - 1) * scale);
+
+            // reference: this.setVelocity(this.getVelocity().add(movementInputToVelocity(input, speed, yaw)))
+            Vec3 expected = startVel.add(reference(input, speed, yaw));
+
+            SimPlayerState s = new SimPlayerState();
+            s.velocity = startVel;
+            s.yaw = yaw;
+            GeneratedMovement.updateVelocity(s, speed, input);
+
+            assertBitEqual(expected, s.velocity, "updateVelocity i=" + i);
+        }
+    }
+
+    /** Exact mirror of PlayerEntity.getOffGroundSpeed (hasVehicle() pruned to false). */
+    private static float refOffGroundSpeed(boolean flying, boolean sprinting, float flySpeed) {
+        if (flying) {
+            return sprinting ? flySpeed * 2.0F : flySpeed;
+        }
+        return sprinting ? 0.025999999F : 0.02F;
+    }
+
+    @Test
+    void offGroundSpeedMatchesReferenceBitExact() {
+        Random rnd = new Random(7L);
+        for (int i = 0; i < 100_000; i++) {
+            boolean flying = (i & 1) == 0;
+            boolean sprinting = (i & 2) == 0;
+            float flySpeed = (float) (rnd.nextDouble() * 0.2);
+            SimPlayerState s = new SimPlayerState();
+            s.flying = flying;
+            s.sprinting = sprinting;
+            s.flySpeed = flySpeed;
+
+            float expected = refOffGroundSpeed(flying, sprinting, flySpeed);
+            float actual = GeneratedMovement.getOffGroundSpeed(s);
+            assertEquals(Float.floatToRawIntBits(expected), Float.floatToRawIntBits(actual),
+                "offGroundSpeed flying=" + flying + " sprint=" + sprinting + " fly=" + flySpeed);
         }
     }
 
