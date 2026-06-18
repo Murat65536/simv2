@@ -202,7 +202,7 @@ class GeneratedMovementTest {
         WorldSnapshot.Builder b = new WorldSnapshot.Builder();
         float[] slips = {0.6f, 0.98f, 0.8f, 0.5f, 1.0f}; // normal, ice, packed ice, slime, max
         int bx = (int) Math.floor(s.pos.x());
-        int by = (int) Math.floor(s.boundingBox().minY() - 0.5000001);
+        int by = (int) Math.floor(s.boundingBox().minY() - (double) 0.500001f);
         int bz = (int) Math.floor(s.pos.z());
         float slip = slips[rnd.nextInt(slips.length)];
         if (slip != WorldSnapshot.DEFAULT_SLIPPERINESS) {

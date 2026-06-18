@@ -34,4 +34,16 @@ public final class MathHelperPort {
     public static double clamp(double value, double min, double max) {
         return value < min ? min : (value > max ? max : value);
     }
+
+    /** MathHelper.floor(double) — verbatim (truncate toward -inf without the {@code Math.floor} double round-trip). */
+    public static int floor(double value) {
+        int i = (int) value;
+        return value < (double) i ? i - 1 : i;
+    }
+
+    /** MathHelper.ceil(double) — verbatim (round toward +inf). */
+    public static int ceil(double value) {
+        int i = (int) value;
+        return value > (double) i ? i + 1 : i;
+    }
 }

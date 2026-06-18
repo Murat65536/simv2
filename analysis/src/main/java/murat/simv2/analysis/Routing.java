@@ -113,16 +113,18 @@ final class Routing {
         // (getVelocityAffectingPos -> getWorld -> getBlockState -> getBlock -> getSlipperiness) folds
         // into the single fused WorldSnapshot.slipperinessAt(s, world); the intermediate objects are
         // dead. Entity.move(SELF, velocity) DELEGATES to the validated hand-port collision helper.
-        r("Lnet/minecraft/entity/LivingEntity#getVelocityAffectingPos()Lnet/minecraft/util/math/BlockPos;", Cat.WORLD, "murat.simv2.sim.WorldSnapshot.velocityAffectingPos(s)");
+        r("Lnet/minecraft/entity/LivingEntity#getVelocityAffectingPos()Lnet/minecraft/util/math/BlockPos;", Cat.WORLD, "murat.simv2.sim.SimWorldOps.velocityAffectingPos(s)");
         r("Lnet/minecraft/entity/LivingEntity#getWorld()Lnet/minecraft/world/World;", Cat.WORLD, "world");
-        r("Lnet/minecraft/world/World#getBlockState(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/BlockState;", Cat.WORLD, "murat.simv2.sim.WorldSnapshot.blockStateAt($0, $1)");
+        r("Lnet/minecraft/world/World#getBlockState(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/BlockState;", Cat.WORLD, "murat.simv2.sim.SimWorldOps.blockStateAt($0, $1)");
         r("Lnet/minecraft/block/BlockState#getBlock()Lnet/minecraft/block/Block;", Cat.WORLD, "$0");
-        r("Lnet/minecraft/block/Block#getSlipperiness()F", Cat.WORLD, "murat.simv2.sim.WorldSnapshot.slipperinessAt(s, world)");
-        r("Lnet/minecraft/world/World#getBottomY()I", Cat.WORLD, "murat.simv2.sim.WorldSnapshot.bottomY()");
+        r("Lnet/minecraft/block/Block#getSlipperiness()F", Cat.WORLD, "murat.simv2.sim.SimWorldOps.slipperinessAt(s, world)");
+        r("Lnet/minecraft/world/World#getBottomY()I", Cat.WORLD, "murat.simv2.sim.SimWorldOps.bottomY()");
         r("Lnet/minecraft/entity/LivingEntity#move(Lnet/minecraft/entity/MovementType;Lnet/minecraft/util/math/Vec3d;)V", Cat.WORLD, "murat.simv2.sim.MovementSim.moveSelf(s, world)");
         // applyClimbingSpeed dead-branch world reads — classified for coverage; eliminated by isClimbing=false.
-        r("Lnet/minecraft/entity/LivingEntity#getBlockStateAtPos()Lnet/minecraft/block/BlockState;", Cat.WORLD, "murat.simv2.sim.WorldSnapshot.blockStateAtPos(s)");
-        r("Lnet/minecraft/block/BlockState#isOf(Lnet/minecraft/block/Block;)Z", Cat.WORLD, "murat.simv2.sim.WorldSnapshot.isOf($0, $1)");
+        r("Lnet/minecraft/entity/LivingEntity#getBlockStateAtPos()Lnet/minecraft/block/BlockState;", Cat.WORLD, "murat.simv2.sim.SimWorldOps.blockStateAtPos(s)");
+        // The ONLY isOf in the closure is applyClimbingSpeed's `getBlockStateAtPos().isOf(SCAFFOLDING)`,
+        // so route it directly to the scaffolding world read (args ignored). Revisit if a second isOf appears.
+        r("Lnet/minecraft/block/BlockState#isOf(Lnet/minecraft/block/Block;)Z", Cat.WORLD, "murat.simv2.sim.SimWorldOps.isScaffoldingAt(s, world)");
 
         // PRUNE: not movement. Value-returning prunes carry a substitute constant that makes the
         // out-of-scope branches dead (no levitation/slow-falling, never no-drag, never climbing,
@@ -131,11 +133,17 @@ final class Routing {
         r("Lnet/minecraft/entity/effect/StatusEffectInstance#getAmplifier()I", Cat.PRUNE, "0");
         r("Lnet/minecraft/world/World#isChunkLoaded(Lnet/minecraft/util/math/BlockPos;)Z", Cat.PRUNE, "true");
         r("Lnet/minecraft/entity/LivingEntity#hasNoDrag()Z", Cat.PRUNE, "false");
-        r("Lnet/minecraft/entity/LivingEntity#isClimbing()Z", Cat.PRUNE, "false");
-        r("Lnet/minecraft/entity/LivingEntity#isHoldingOntoLadder()Z", Cat.PRUNE, "false");
+        // Phase 1: climbing is now in scope. isClimbing reads the live/snapshot world (ladder/vine/
+        // scaffolding at the feet cell, or an open trapdoor over a matching ladder); isHoldingOntoLadder
+        // is just sneaking. This lights up the (already-transpiled) applyClimbingSpeed clamp + the
+        // applyMovementInput climb-up branch.
+        r("Lnet/minecraft/entity/LivingEntity#isClimbing()Z", Cat.WORLD, "murat.simv2.sim.SimWorldOps.isClimbing(s, world)");
+        r("Lnet/minecraft/entity/LivingEntity#isHoldingOntoLadder()Z", Cat.STATE_READ, "s.sneaking");
         r("Lnet/minecraft/block/PowderSnowBlock#canWalkOnPowderSnow(Lnet/minecraft/entity/Entity;)Z", Cat.PRUNE, "false");
-        // Void side-effect (resets fallDistance, not movement). Drop.
-        r("Lnet/minecraft/entity/LivingEntity#onLanding()V", Cat.PRUNE, "");
+        // Entity.onLanding(): resets fallDistance to 0. Now that fallDistance is a sim-managed state
+        // field (checkWaterState calls this on every water-touch tick; applyClimbingSpeed calls it
+        // when climbing), model the reset faithfully rather than dropping it.
+        r("Lnet/minecraft/entity/LivingEntity#onLanding()V", Cat.STATE_WRITE, "s.fallDistance = 0.0");
 
         // MATH: deterministic primitives
         r("Ljava/lang/Math#max(DD)D", Cat.MATH, "java.lang.Math.max($0, $1)");
@@ -177,9 +185,95 @@ final class Routing {
         // PRUNE with empty template -> the putfield handler drops the write.
         f("Lnet/minecraft/entity/LivingEntity.velocityDirty", Cat.PRUNE, "");
 
+        // ===== sneak-edge clamp (Phase 2 of zero-hardcode): generate PlayerEntity.adjustMovementForSneaking =====
+        // PHYSICS (transpile/recurse) — all in the IR, no new transpiler ops.
+        r("Lnet/minecraft/entity/player/PlayerEntity#adjustMovementForSneaking(Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/entity/MovementType;)Lnet/minecraft/util/math/Vec3d;", Cat.PHYSICS, "");
+        r("Lnet/minecraft/entity/player/PlayerEntity#isSpaceAroundPlayerEmpty(DDD)Z", Cat.PHYSICS, "");
+        r("Lnet/minecraft/entity/player/PlayerEntity#method_30263(F)Z", Cat.PHYSICS, "");
+        // STATE / MATH leaves
+        r("Lnet/minecraft/entity/player/PlayerEntity#clipAtLedge()Z", Cat.STATE_READ, "s.sneaking");
+        r("Lnet/minecraft/entity/player/PlayerEntity#getStepHeight()F", Cat.STATE_READ, "(float) s.stepHeight");
+        r("Lnet/minecraft/entity/Entity#getBoundingBox()Lnet/minecraft/util/math/Box;", Cat.STATE_READ, "s.boundingBox()");
+        r("Ljava/lang/Math#abs(D)D", Cat.MATH, "java.lang.Math.abs($0)");
+        r("Ljava/lang/Math#signum(D)D", Cat.MATH, "java.lang.Math.signum($0)");
+        // WORLD: the empty-space probe -> a block-collision query (drops entity collisions + worldborder).
+        r("Lnet/minecraft/world/World#isSpaceEmpty(Lnet/minecraft/entity/Entity;Lnet/minecraft/util/math/Box;)Z", Cat.WORLD, "world.collisions($2).isEmpty()");
+        // Box.<init>(6 doubles) is handled inline by SimGenerator (javaType Box->AABB; new AABB(...)).
+        // Box face fields -> AABB accessors.
+        f("Lnet/minecraft/util/math/Box.minX", Cat.MATH, "$0.minX()");
+        f("Lnet/minecraft/util/math/Box.minY", Cat.MATH, "$0.minY()");
+        f("Lnet/minecraft/util/math/Box.minZ", Cat.MATH, "$0.minZ()");
+        f("Lnet/minecraft/util/math/Box.maxX", Cat.MATH, "$0.maxX()");
+        f("Lnet/minecraft/util/math/Box.maxY", Cat.MATH, "$0.maxY()");
+        f("Lnet/minecraft/util/math/Box.maxZ", Cat.MATH, "$0.maxZ()");
+        // MovementType.SELF already routed (PRUNE null); PLAYER too. The (type==SELF||type==PLAYER)
+        // check folds true since both -> null and we only ever call it for SELF movement.
+        f("Lnet/minecraft/entity/MovementType.PLAYER", Cat.PRUNE, "null");
+        // method_30263's airborne branch reads fallDistance (a captured/sim-managed state field).
+        f("Lnet/minecraft/entity/player/PlayerEntity.fallDistance", Cat.STATE_READ, "s.fallDistance");
+
+        // ===== fluid detection + flow push (zero-hardcode P1): generate Entity.updateWaterState =====
+        // Retires the velocity-bearing core of the Environment.java hand-port. Closure:
+        // updateWaterState -> {checkWaterState, updateMovementInFluid} -> {isPushedByFluids}.
+        // PHYSICS (transpile/recurse).
+        r("Lnet/minecraft/entity/Entity#updateWaterState()Z", Cat.PHYSICS, "");
+        r("Lnet/minecraft/entity/Entity#checkWaterState()V", Cat.PHYSICS, "");
+        r("Lnet/minecraft/entity/Entity#updateMovementInFluid(Lnet/minecraft/registry/tag/TagKey;D)Z", Cat.PHYSICS, "");
+        r("Lnet/minecraft/entity/Entity#isInLava()Z", Cat.PHYSICS, "");
+        // isPushedByFluids resolves (by selector) to the PlayerEntity override: !this.abilities.flying.
+        r("Lnet/minecraft/entity/Entity#isPushedByFluids()Z", Cat.PHYSICS, "");
+
+        // WORLD: the per-cell fluid resolve + the ultrawarm (Nether faster-lava) dimension read.
+        // getFluidState(pos) -> a coordinate-bound FluidView (uses the real `world` param, not the
+        // dead getWorld() chain local — mirrors the slipperiness fusion). getDimension() folds to the
+        // world; ultrawarm() reads the dimension flag.
+        r("Lnet/minecraft/world/World#getFluidState(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/fluid/FluidState;", Cat.WORLD, "new murat.simv2.sim.FluidView(world, $1)");
+        r("Lnet/minecraft/world/World#getDimension()Lnet/minecraft/world/dimension/DimensionType;", Cat.WORLD, "world");
+        r("Lnet/minecraft/world/dimension/DimensionType#ultrawarm()Z", Cat.WORLD, "world.isUltrawarm()");
+
+        // FluidView value-type methods (the FluidState chain): isIn(tag) / getHeight / getVelocity.
+        // getHeight/getVelocity drop the (world,pos) args — the coords are bound in the FluidView.
+        r("Lnet/minecraft/fluid/FluidState#isIn(Lnet/minecraft/registry/tag/TagKey;)Z", Cat.MATH, "$0.isIn($1)");
+        r("Lnet/minecraft/fluid/FluidState#getHeight(Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;)F", Cat.MATH, "$0.getHeight()");
+        r("Lnet/minecraft/fluid/FluidState#getVelocity(Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/util/math/Vec3d;", Cat.MATH, "$0.getVelocity()");
+        // BlockPos.Mutable cursor: set(x,y,z) mutates in place and returns this (BlockPosM).
+        r("Lnet/minecraft/util/math/BlockPos$Mutable#set(III)Lnet/minecraft/util/math/BlockPos$Mutable;", Cat.MATH, "$0.set($1, $2, $3)");
+        // AABB / Vec3 / MathHelper math used by the cell scan.
+        r("Lnet/minecraft/util/math/Box#contract(D)Lnet/minecraft/util/math/Box;", Cat.MATH, "$0.contract($1)");
+        r("Lnet/minecraft/util/math/Vec3d#length()D", Cat.MATH, "$0.length()");
+        r("Lnet/minecraft/util/math/MathHelper#floor(D)I", Cat.MATH, "murat.simv2.sim.MathHelperPort.floor($0)");
+        r("Lnet/minecraft/util/math/MathHelper#ceil(D)I", Cat.MATH, "murat.simv2.sim.MathHelperPort.ceil($0)");
+
+        // STATE: the fluidHeight map (Object2DoubleMap<TagKey>) -> the per-tag SimPlayerState slots,
+        // dispatched on the tag by SimRuntime. The map ref ($0 = getfield fluidHeight = `s`) is dead;
+        // the helpers take `s` directly. touchingWater is a plain state read.
+        r("Lit/unimi/dsi/fastutil/objects/Object2DoubleMap#clear()V", Cat.STATE_WRITE, "murat.simv2.sim.SimRuntime.clearFluidHeight(s)");
+        r("Lit/unimi/dsi/fastutil/objects/Object2DoubleMap#put(Ljava/lang/Object;D)D", Cat.STATE_WRITE, "murat.simv2.sim.SimRuntime.putFluidHeight(s, $1, $2)");
+        r("Lit/unimi/dsi/fastutil/objects/Object2DoubleMap#getDouble(Ljava/lang/Object;)D", Cat.STATE_READ, "murat.simv2.sim.SimRuntime.getFluidHeight(s, $1)");
+        r("Lnet/minecraft/entity/Entity#isTouchingWater()Z", Cat.STATE_READ, "s.touchingWater");
+
+        // PRUNE: out-of-scope / dead. Region always loaded (server-authoritative); no vehicle (so the
+        // boat-vehicle branch in checkWaterState is dead — its checkcast passes through and the
+        // isSubmergedInWater() call is never reached); onSwimmingStart is sound/particles.
+        r("Lnet/minecraft/entity/Entity#isRegionUnloaded()Z", Cat.PRUNE, "false");
+        r("Lnet/minecraft/entity/Entity#getVehicle()Lnet/minecraft/entity/Entity;", Cat.PRUNE, "null");
+        r("Lnet/minecraft/entity/Entity#onSwimmingStart()V", Cat.PRUNE, "");
+        r("Lnet/minecraft/entity/vehicle/AbstractBoatEntity#isSubmergedInWater()Z", Cat.PRUNE, "false");
+
+        // FIELD access reached by the fluid closure. fluidHeight (the map) stands in for state -> `s`
+        // (dead local; the map helpers reference `s` directly). touchingWater/firstUpdate are plain
+        // state fields (the touchingWater write goes through the lvalue-template putfield handler).
+        f("Lnet/minecraft/entity/Entity.fluidHeight", Cat.STATE_READ, "s");
+        f("Lnet/minecraft/entity/Entity.touchingWater", Cat.STATE_READ, "s.touchingWater");
+        f("Lnet/minecraft/entity/Entity.firstUpdate", Cat.STATE_READ, "s.firstUpdate");
+        // FluidTags keys -> the SimWorld.FluidTag enum the scan dispatches on.
+        f("Lnet/minecraft/registry/tag/FluidTags.WATER", Cat.MATH, "murat.simv2.sim.SimWorld.FluidTag.WATER");
+        f("Lnet/minecraft/registry/tag/FluidTags.LAVA", Cat.MATH, "murat.simv2.sim.SimWorld.FluidTag.LAVA");
+
         // --- instanceof type tests (the simulated entity IS the local player) ---
         tt("Lnet/minecraft/entity/player/PlayerEntity", "true");  // sim entity is a player
         tt("Lnet/minecraft/entity/Flutterer", "false");           // not a bee/allay -> normal air drag (0.98F)
+        tt("Lnet/minecraft/entity/vehicle/AbstractBoatEntity", "false"); // sim player is never a boat (vehicle branch dead)
 
         // --- FIELD access (getfield/getstatic) ---
         f("Lnet/minecraft/util/math/Vec3d.x", Cat.MATH, "$0.x()");

@@ -74,7 +74,67 @@ public final class BridgeGenerator {
         // narrows to float INSIDE the transpiled physics. A float field here would double-round.
         new FieldSpec("jumpStrength", "double", "0.42",
             "player.getAttributeValue(net.minecraft.entity.attribute.EntityAttributes.JUMP_STRENGTH)",
-            null, "JUMP_STRENGTH attribute (vanilla 0.42); base jump velocity")
+            null, "JUMP_STRENGTH attribute (vanilla 0.42); base jump velocity"),
+        // Captured scope verdict: is this seed within the ported on-land/midair physics? The rollout
+        // driver refuses out-of-scope seeds rather than silently simulating water/lava/elytra/climb/
+        // vehicle/flying with on-land physics. Mirrors the in-game validator's supports() gate.
+        new FieldSpec("inScope", "boolean", "true",
+            "murat.simv2.sim.MovementSim.supports(player.isTouchingWater(), player.isInLava(),"
+                + " player.isGliding(), player.hasVehicle(), player.getAbilities().flying)"
+                // Soul Speed: a non-zero MOVEMENT_EFFICIENCY makes getVelocityMultiplier a lerp toward
+                // 1.0, which the velocityMultiplier model (raw block value) does NOT account for. Gate it.
+                + " && player.getAttributeValue(net.minecraft.entity.attribute.EntityAttributes.MOVEMENT_EFFICIENCY) == 0.0",
+            null, "true iff the ported physics covers this state (see MovementSim.supports)"),
+        // sim-managed (not captured; no public getter for LivingEntity.jumpingCooldown). Default 0 =
+        // can jump immediately; the rollout's step() decrements it and re-arms it to JUMP_COOLDOWN
+        // after a jump, so a held jump no longer fires every grounded tick. SEED CAVEAT: because it
+        // can't be captured, a rollout seeded within ~10 ticks of a real jump may fire one early
+        // extra jump before self-correcting (see Rollout's KNOWN SEED-FIDELITY GAP).
+        new FieldSpec("jumpingCooldown", "int", "0", null,
+            null, "ticks until the next jump is allowed (vanilla 10-tick gate)"),
+        // --- input-pipeline fidelity (full raw-intent model) ---
+        new FieldSpec("sneakingSpeed", "float", "0.3f",
+            "(float) player.getAttributeValue(net.minecraft.entity.attribute.EntityAttributes.SNEAKING_SPEED)",
+            null, "SNEAKING_SPEED attribute (vanilla 0.3); sneak input slowdown factor"),
+        // MOVEMENT_SPEED WITHOUT the sprint modifier; the +30% (×(1+(double)0.3f)) is re-applied in
+        // step() keyed off s.sprinting so a sim-toggled sprint updates the on-ground speed correctly.
+        new FieldSpec("movementSpeedBase", "double", "0.1",
+            "murat.simv2.harness.Captures.movementSpeedBase(player)",
+            null, "MOVEMENT_SPEED attribute minus the sprint modifier (base for the in-step ×1.3)"),
+        new FieldSpec("canSprint", "boolean", "true",
+            "player.getHungerManager().getFoodLevel() > 6.0F || player.getAbilities().allowFlying"
+                + " || player.hasVehicle()",
+            null, "may sprint this snapshot (food>6 / creative); gates sprint start/continue"),
+        new FieldSpec("sneaking", "boolean", "false", null,
+            null, "sneak input this tick (set by the high-level step; gates the sneak-edge clamp)"),
+        // The travel-space input this tick (sidewaysSpeed, forwardSpeed), recorded by step() so
+        // moveSelf can compute collidedSoftly (the shallow-angle wall-slide test) from the desired
+        // direction vs the collision-adjusted movement.
+        new FieldSpec("inputX", "double", "0.0", null, null, "travel input sidewaysSpeed (sim-set by step)"),
+        new FieldSpec("inputZ", "double", "0.0", null, null, "travel input forwardSpeed (sim-set by step)"),
+        new FieldSpec("collidedSoftly", "boolean", "false", null,
+            null, "hit a wall at a shallow (<~8 deg) angle this tick; keeps sprint alive (sim output)"),
+        // --- environment state (Phase 2): maintained per-tick by Environment.update reading SimWorld ---
+        new FieldSpec("touchingWater", "boolean", "false", "player.isTouchingWater()",
+            null, "in a water cell this tick (sim-updated)"),
+        new FieldSpec("submergedInWater", "boolean", "false", "player.isSubmergedInWater()",
+            null, "head under water (one-tick lagged, as in MC); sim-updated"),
+        new FieldSpec("submergedFluidWater", "boolean", "false", "player.isSubmergedInWater()",
+            null, "this-tick eye-probe submersion (feeds next tick's submergedInWater lag); sim-updated"),
+        new FieldSpec("swimming", "boolean", "false", "player.isSwimming()",
+            null, "swimming pose/state (sprint + submerged); sim-updated"),
+        new FieldSpec("gliding", "boolean", "false", "player.isGliding()",
+            null, "elytra gliding (drives the travel dispatcher); sim-updated by tickGliding (later phase)"),
+        new FieldSpec("standingEyeHeight", "float", "1.62f", "(float) (player.getEyeY() - player.getY())",
+            null, "eye height above feet, for the submersion probe (pose-dependent; standing ~1.62)"),
+        new FieldSpec("fallDistance", "double", "0.0", null,
+            null, "accumulated fall distance; reset to 0 on water-touch (sim-managed)"),
+        new FieldSpec("fluidHeightWater", "double", "0.0", null,
+            null, "max water depth over the feet this tick (sim-updated)"),
+        new FieldSpec("fluidHeightLava", "double", "0.0", null,
+            null, "max lava depth over the feet this tick; >0 => isInLava (sim-updated)"),
+        new FieldSpec("firstUpdate", "boolean", "false", null,
+            null, "MC's first-tick flag; false post-seed so isInLava works immediately (sim-managed)")
     );
 
     public static void main(String[] args) throws IOException {

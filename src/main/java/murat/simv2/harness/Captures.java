@@ -26,9 +26,20 @@ public final class Captures {
     }
 
     /**
-     * Capture all block collision boxes + slipperiness in a region around the player large enough
-     * to contain this tick's movement (bounded by velocity, with a generous vertical margin for
-     * fast falls). Flattens every block's VoxelShape into world-space AABBs.
+     * MOVEMENT_SPEED attribute value with the sprint modifier removed. Captured as the sim's base
+     * speed; the rollout re-applies the +30% sprint boost ({@code ×(1+(double)0.3f)}) in-step keyed
+     * off its own sprint state, so a sim-toggled sprint updates the on-ground speed faithfully.
+     * The sprint boost is a single MULTIPLY_TOTAL factor applied multiplicatively, so dividing the
+     * full (double) value by {@code (1+(double)0.3f)} when sprinting recovers the base exactly.
+     */
+    public static double movementSpeedBase(net.minecraft.entity.player.PlayerEntity player) {
+        double full = player.getAttributeValue(net.minecraft.entity.attribute.EntityAttributes.MOVEMENT_SPEED);
+        return player.isSprinting() ? full / (1.0 + (double) 0.3f) : full;
+    }
+
+    /**
+     * Single-tick capture (used by the in-game validator): a region just large enough to contain
+     * this tick's movement (bounded by velocity, with a generous vertical margin for fast falls).
      */
     public static WorldSnapshot captureWorld(World world, SimPlayerState s) {
         AABB box = s.boundingBox();
@@ -36,15 +47,38 @@ public final class Captures {
         double marginX = Math.abs(v.x()) + 1.0;
         double marginY = Math.max(Math.abs(v.y()) + 1.0, 4.0);
         double marginZ = Math.abs(v.z()) + 1.0;
+        return captureRegion(world, new AABB(
+            box.minX() - marginX, box.minY() - marginY, box.minZ() - marginZ,
+            box.maxX() + marginX, box.maxY() + marginY, box.maxZ() + marginZ));
+    }
 
-        int minX = (int) Math.floor(box.minX() - marginX);
-        int maxX = (int) Math.floor(box.maxX() + marginX);
-        int minY = (int) Math.floor(box.minY() - marginY);
-        int maxY = (int) Math.floor(box.maxY() + marginY);
-        int minZ = (int) Math.floor(box.minZ() - marginZ);
-        int maxZ = (int) Math.floor(box.maxZ() + marginZ);
+    /**
+     * Big-region capture for MASS ROLLOUTS: capture a generous box around the seed ONCE, then run
+     * many hundred-tick rollouts against the single frozen snapshot. Terrain is static, so one
+     * capture stays valid for the whole rollout; the only constraint is spatial coverage, which the
+     * snapshot's captured-bounds + the rollout's escape check enforce honestly. Sizes the box by
+     * {@code radiusXZ} (horizontal reach) and {@code radiusY} (fall/jump reach) around the seed.
+     */
+    public static WorldSnapshot captureWorld(World world, SimPlayerState seed, int radiusXZ, int radiusY) {
+        AABB box = seed.boundingBox();
+        return captureRegion(world, new AABB(
+            box.minX() - radiusXZ, box.minY() - radiusY, box.minZ() - radiusXZ,
+            box.maxX() + radiusXZ, box.maxY() + radiusY, box.maxZ() + radiusXZ));
+    }
 
-        WorldSnapshot.Builder b = new WorldSnapshot.Builder();
+    /**
+     * Capture all block collision boxes + slipperiness in {@code region}, flattening every block's
+     * VoxelShape into world-space AABBs, and record the region as the snapshot's captured bounds.
+     */
+    public static WorldSnapshot captureRegion(World world, AABB region) {
+        int minX = (int) Math.floor(region.minX());
+        int maxX = (int) Math.floor(region.maxX());
+        int minY = (int) Math.floor(region.minY());
+        int maxY = (int) Math.floor(region.maxY());
+        int minZ = (int) Math.floor(region.minZ());
+        int maxZ = (int) Math.floor(region.maxZ());
+
+        WorldSnapshot.Builder b = new WorldSnapshot.Builder().bounds(region);
         BlockPos.Mutable pos = new BlockPos.Mutable();
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
@@ -62,6 +96,13 @@ public final class Captures {
                     float slip = state.getBlock().getSlipperiness();
                     if (slip != WorldSnapshot.DEFAULT_SLIPPERINESS) {
                         b.slipperiness(x, y, z, slip);
+                    }
+                    // Horizontal velocity multiplier (soul sand / honey = 0.4F); only the few that
+                    // deviate are stored. The Soul-Speed MOVEMENT_EFFICIENCY lerp is gated out of
+                    // scope, so the raw block value is the in-scope value (see WorldSnapshot).
+                    float velMult = state.getBlock().getVelocityMultiplier();
+                    if (velMult != WorldSnapshot.DEFAULT_VELOCITY_MULTIPLIER) {
+                        b.velocityMultiplier(x, y, z, velMult);
                     }
                 }
             }

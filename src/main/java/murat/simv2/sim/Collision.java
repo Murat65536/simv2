@@ -23,7 +23,7 @@ public final class Collision {
      * Resolve {@code movement} of {@code box} against the world, including step-up, exactly as
      * Entity.adjustMovementForCollisions(Vec3d) does.
      */
-    public static Vec3 adjustForCollisions(Vec3 movement, AABB box, WorldSnapshot world,
+    public static Vec3 adjustForCollisions(Vec3 movement, AABB box, SimWorld world,
                                            double stepHeight, boolean onGround) {
         List<AABB> blockers = world.collisions(box.stretch(movement.x(), movement.y(), movement.z()));
         Vec3 vec = movement.lengthSquared() == 0.0 ? movement : collide(movement, box, blockers);
@@ -113,15 +113,24 @@ public final class Collision {
         return d;
     }
 
-    /** Candidate step heights == distinct upward block faces in (0, verticalClip], per MC. */
+    /**
+     * Candidate step-up heights: distinct upward block faces in {@code (0, stepHeight]}, EXCLUDING
+     * the already-achieved vertical clip. Mirrors MC's {@code Entity.collectStepHeights(box, shapes,
+     * f, stepHeight)} called as {@code collectStepHeights(box, list, getStepHeight(), verticalClip)} —
+     * i.e. it skips {@code g == verticalClip} and breaks once {@code g > getStepHeight()}.
+     *
+     * <p>(The hand-port previously had these two swapped — excluding {@code g == stepHeight} and
+     * breaking at {@code g > verticalClip} — which, on a flat grounded walk where verticalClip≈0,
+     * pruned every positive face and stopped the player dead at a slab/stair instead of stepping up.)
+     */
     private static double[] collectStepHeights(AABB base, List<AABB> blockers, double stepHeight,
                                                float verticalClip) {
         TreeSet<Float> heights = new TreeSet<>();
         for (AABB b : blockers) {
             for (double face : new double[]{b.minY(), b.maxY()}) {
                 float g = (float) (face - base.minY());
-                if (!(g < 0.0F) && g != (float) stepHeight) {
-                    if (g > verticalClip) {
+                if (!(g < 0.0F) && g != verticalClip) {
+                    if (g > (float) stepHeight) {
                         break;
                     }
                     heights.add(g);

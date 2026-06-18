@@ -38,6 +38,10 @@ public record Vec3(double x, double y, double z) {
         return new Vec3(x, y, v);
     }
 
+    public double length() {
+        return Math.sqrt(x * x + y * y + z * z);
+    }
+
     public double lengthSquared() {
         return x * x + y * y + z * z;
     }

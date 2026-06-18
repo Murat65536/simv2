@@ -19,6 +19,24 @@ public record AABB(double minX, double minY, double minZ, double maxX, double ma
         return new AABB(x0, y0, z0, x1, y1, z1);
     }
 
+    /**
+     * Box.contract(value): shrink by {@code v} on the MAX faces only (positive v) — matches MC's
+     * {@code contract(v,v,v)} which moves {@code maxX/Y/Z -= v} (and {@code minX/Y/Z -= v} for v&lt;0).
+     */
+    public AABB contract(double v) {
+        double x0 = minX, y0 = minY, z0 = minZ, x1 = maxX, y1 = maxY, z1 = maxZ;
+        if (v < 0.0) {
+            x0 -= v;
+            y0 -= v;
+            z0 -= v;
+        } else if (v > 0.0) {
+            x1 -= v;
+            y1 -= v;
+            z1 -= v;
+        }
+        return new AABB(x0, y0, z0, x1, y1, z1);
+    }
+
     public boolean intersects(AABB o) {
         return minX < o.maxX && maxX > o.minX
             && minY < o.maxY && maxY > o.minY

@@ -14,11 +14,12 @@ import java.util.Map;
  * live world. That makes rollouts side-effect-free, thread-safe and fast enough to run
  * hundreds of thousands of times.
  *
- * <p>{@link #collisions(AABB)} is currently a linear scan — fine for capture-and-validate.
- * For mass rollouts this is the place to add a spatial index (uniform grid over block
- * coords); the API does not change.
+ * <p>{@link #collisions(AABB)} is backed by a uniform grid index over block coordinates, so a
+ * big-region capture (needed for long rollouts) stays cheap: a query only scans the blockers in
+ * the cells the box overlaps, not every blocker. The grid is built once and never mutated, so the
+ * whole snapshot is safe to share read-only across parallel rollouts.
  */
-public final class WorldSnapshot {
+public final class WorldSnapshot implements SimWorld {
     /**
      * Vanilla default block friction (DEFAULT_FRICTION). FLOAT, not double: Minecraft's
      * {@code Block.getSlipperiness()} is a float and the friction arithmetic
@@ -27,23 +28,131 @@ public final class WorldSnapshot {
      */
     public static final float DEFAULT_SLIPPERINESS = 0.6f;
 
+    /** Vanilla default horizontal velocity multiplier (Block.velocityMultiplier; soul sand/honey = 0.4F). */
+    public static final float DEFAULT_VELOCITY_MULTIPLIER = 1.0f;
+
     private final List<AABB> blockers;
+    private final Map<Long, List<AABB>> grid; // block cell -> blockers overlapping it (read-only)
     private final Map<Long, Float> slipperinessByBlock;
     private final float defaultSlipperiness;
+    private final Map<Long, Float> velocityMultiplierByBlock;
+    private final float defaultVelocityMultiplier;
+    // Climbing (Phase 1): packed-cell membership/facing. Ladders & scaffolding are also climbable.
+    private final java.util.Set<Long> climbable;
+    private final Map<Long, Integer> ladderFacing;   // ladder cell -> Direction ordinal
+    private final Map<Long, Integer> trapdoorFacing;  // OPEN trapdoor cell -> Direction ordinal
+    private final java.util.Set<Long> scaffolding;
+    // Fluids (Phase 2): per-cell fluid tag (1=water, 2=lava), up-resolved height, flow velocity.
+    private final Map<Long, Integer> fluidTag;
+    private final Map<Long, Float> fluidHeight;
+    private final Map<Long, Vec3> fluidFlow;
+    private final boolean ultrawarm;
+    /** The fully-captured region. A query box outside it has incomplete data (see {@link #covers}). */
+    private final AABB capturedBounds;
 
     public WorldSnapshot(List<AABB> blockers, Map<Long, Float> slipperinessByBlock,
                          float defaultSlipperiness) {
-        this.blockers = List.copyOf(blockers);
-        this.slipperinessByBlock = Map.copyOf(slipperinessByBlock);
-        this.defaultSlipperiness = defaultSlipperiness;
+        this(builderFrom(blockers, slipperinessByBlock, defaultSlipperiness,
+            Map.of(), DEFAULT_VELOCITY_MULTIPLIER, null));
     }
 
-    /** Block collision boxes overlapping the query box (== World.getBlockCollisions). */
+    public WorldSnapshot(List<AABB> blockers, Map<Long, Float> slipperinessByBlock,
+                         float defaultSlipperiness, AABB capturedBounds) {
+        this(builderFrom(blockers, slipperinessByBlock, defaultSlipperiness,
+            Map.of(), DEFAULT_VELOCITY_MULTIPLIER, capturedBounds));
+    }
+
+    public WorldSnapshot(List<AABB> blockers, Map<Long, Float> slipperinessByBlock,
+                         float defaultSlipperiness, Map<Long, Float> velocityMultiplierByBlock,
+                         float defaultVelocityMultiplier, AABB capturedBounds) {
+        this(builderFrom(blockers, slipperinessByBlock, defaultSlipperiness,
+            velocityMultiplierByBlock, defaultVelocityMultiplier, capturedBounds));
+    }
+
+    // Single field-init site. All world-data dimensions (collision/slipperiness/velMult/climbing/
+    // fluid) flow through the Builder, so adding a dimension never grows a constructor signature.
+    private WorldSnapshot(Builder b) {
+        this.blockers = List.copyOf(b.blockers);
+        this.slipperinessByBlock = Map.copyOf(b.slipperiness);
+        this.defaultSlipperiness = b.defaultSlipperiness;
+        this.velocityMultiplierByBlock = Map.copyOf(b.velocityMultiplier);
+        this.defaultVelocityMultiplier = b.defaultVelocityMultiplier;
+        this.climbable = java.util.Set.copyOf(b.climbable);
+        this.ladderFacing = Map.copyOf(b.ladderFacing);
+        this.trapdoorFacing = Map.copyOf(b.trapdoorFacing);
+        this.scaffolding = java.util.Set.copyOf(b.scaffolding);
+        this.fluidTag = Map.copyOf(b.fluidTag);
+        this.fluidHeight = Map.copyOf(b.fluidHeight);
+        this.fluidFlow = Map.copyOf(b.fluidFlow);
+        this.ultrawarm = b.ultrawarm;
+        this.capturedBounds = b.capturedBounds;
+        this.grid = buildGrid(this.blockers);
+    }
+
+    private static Builder builderFrom(List<AABB> blockers, Map<Long, Float> slipperinessByBlock,
+                                       float defaultSlipperiness, Map<Long, Float> velocityMultiplierByBlock,
+                                       float defaultVelocityMultiplier, AABB capturedBounds) {
+        Builder b = new Builder();
+        b.blockers.addAll(blockers);
+        b.slipperiness.putAll(slipperinessByBlock);
+        b.defaultSlipperiness = defaultSlipperiness;
+        b.velocityMultiplier.putAll(velocityMultiplierByBlock);
+        b.defaultVelocityMultiplier = defaultVelocityMultiplier;
+        b.capturedBounds = capturedBounds;
+        return b;
+    }
+
+    private static Map<Long, List<AABB>> buildGrid(List<AABB> blockers) {
+        Map<Long, List<AABB>> g = new HashMap<>();
+        for (AABB b : blockers) {
+            // Upper cell uses nextDown(max): the max face is exclusive (matches AABB.intersects's
+            // strict <), and unlike a fixed epsilon it never inverts the range for a thin box, so a
+            // sub-epsilon-width blocker is still bucketed (and thus never missed vs the linear scan).
+            int x0 = (int) Math.floor(b.minX());
+            int x1 = (int) Math.floor(Math.nextDown(b.maxX()));
+            int y0 = (int) Math.floor(b.minY());
+            int y1 = (int) Math.floor(Math.nextDown(b.maxY()));
+            int z0 = (int) Math.floor(b.minZ());
+            int z1 = (int) Math.floor(Math.nextDown(b.maxZ()));
+            for (int x = x0; x <= x1; x++) {
+                for (int y = y0; y <= y1; y++) {
+                    for (int z = z0; z <= z1; z++) {
+                        g.computeIfAbsent(packBlock(x, y, z), k -> new ArrayList<>()).add(b);
+                    }
+                }
+            }
+        }
+        return g;
+    }
+
+    /**
+     * Block collision boxes overlapping the query box (== World.getBlockCollisions). Grid-indexed:
+     * scans only the cells the box overlaps. May return a blocker more than once when it spans
+     * several queried cells — harmless, because {@link Collision} clips with min/max (idempotent)
+     * and collects step heights into a set (so duplicates and ordering never change the result).
+     */
+    @Override
     public List<AABB> collisions(AABB query) {
         List<AABB> hits = new ArrayList<>();
-        for (AABB b : blockers) {
-            if (b.intersects(query)) {
-                hits.add(b);
+        int x0 = (int) Math.floor(query.minX());
+        int x1 = (int) Math.floor(query.maxX());
+        int y0 = (int) Math.floor(query.minY());
+        int y1 = (int) Math.floor(query.maxY());
+        int z0 = (int) Math.floor(query.minZ());
+        int z1 = (int) Math.floor(query.maxZ());
+        for (int x = x0; x <= x1; x++) {
+            for (int y = y0; y <= y1; y++) {
+                for (int z = z0; z <= z1; z++) {
+                    List<AABB> cell = grid.get(packBlock(x, y, z));
+                    if (cell == null) {
+                        continue;
+                    }
+                    for (AABB b : cell) {
+                        if (b.intersects(query)) {
+                            hits.add(b);
+                        }
+                    }
+                }
             }
         }
         return hits;
@@ -53,49 +162,87 @@ public final class WorldSnapshot {
      * Slipperiness of the block at the given block coordinates (the velocity-affecting block).
      * Falls back to the snapshot default outside the captured region. FLOAT (see field doc).
      */
+    @Override
     public float slipperinessAt(int blockX, int blockY, int blockZ) {
         Float s = slipperinessByBlock.get(packBlock(blockX, blockY, blockZ));
         return s != null ? s : defaultSlipperiness;
     }
 
+    /** Horizontal velocity multiplier of the block at the given coords (soul sand/honey = 0.4F). */
+    @Override
+    public float velocityMultiplierAt(int blockX, int blockY, int blockZ) {
+        Float v = velocityMultiplierByBlock.get(packBlock(blockX, blockY, blockZ));
+        return v != null ? v : defaultVelocityMultiplier;
+    }
+
     /**
-     * Fused velocity-affecting-block slipperiness for a player state — the standalone equivalent of
-     * MC's {@code getWorld().getBlockState(getVelocityAffectingPos()).getBlock().getSlipperiness()}.
-     * The transpiler routes that whole chain to this single call (the intermediate BlockPos/
-     * BlockState/Block objects are dead). Returns FLOAT so {@code g = slip * 0.91F} stays in float.
+     * Whether {@code query} lies entirely within the captured region (i.e. collision data for it is
+     * complete). A snapshot with no captured bounds (a synthetic test world) covers everything. The
+     * rollout driver uses this to stop honestly instead of silently colliding against missing blocks.
      */
-    public static float slipperinessAt(SimPlayerState s, WorldSnapshot world) {
-        int bx = (int) Math.floor(s.pos.x());
-        int by = (int) Math.floor(s.boundingBox().minY() - 0.5000001);
-        int bz = (int) Math.floor(s.pos.z());
-        return world.slipperinessAt(bx, by, bz);
+    @Override
+    public boolean covers(AABB query) {
+        return capturedBounds == null
+            || (query.minX() >= capturedBounds.minX() && query.maxX() <= capturedBounds.maxX()
+            && query.minY() >= capturedBounds.minY() && query.maxY() <= capturedBounds.maxY()
+            && query.minZ() >= capturedBounds.minZ() && query.maxZ() <= capturedBounds.maxZ());
     }
 
-    // --- Dead-branch delegate stubs --------------------------------------------------------------
-    // These satisfy the transpiler's coverage of the levitation / client-void / climbing branches
-    // of travelMidAir/applyClimbingSpeed. Those branches are constant-folded dead at the source
-    // level (getStatusEffect -> null, isClient -> false, isClimbing -> false), so these are NEVER
-    // executed at runtime; they exist only so the emitted code (which is not dead-code-eliminated)
-    // compiles. Loosely typed (Object) because the chain locals degrade to Object in the transpiler.
-
-    public static Object velocityAffectingPos(SimPlayerState s) {
-        return null;
+    @Override
+    public boolean isClimbableAt(int x, int y, int z) {
+        return climbable.contains(packBlock(x, y, z));
     }
 
-    public static Object blockStateAt(Object world, Object pos) {
-        return null;
+    @Override
+    public boolean isLadderAt(int x, int y, int z) {
+        return ladderFacing.containsKey(packBlock(x, y, z));
     }
 
-    public static int bottomY() {
-        return -64;
+    @Override
+    public int ladderFacingAt(int x, int y, int z) {
+        return ladderFacing.getOrDefault(packBlock(x, y, z), -1);
     }
 
-    public static Object blockStateAtPos(SimPlayerState s) {
-        return null;
+    @Override
+    public boolean isOpenTrapdoorAt(int x, int y, int z) {
+        return trapdoorFacing.containsKey(packBlock(x, y, z));
     }
 
-    public static boolean isOf(Object state, Object block) {
-        return false;
+    @Override
+    public int trapdoorFacingAt(int x, int y, int z) {
+        return trapdoorFacing.getOrDefault(packBlock(x, y, z), -1);
+    }
+
+    @Override
+    public boolean isScaffoldingAt(int x, int y, int z) {
+        return scaffolding.contains(packBlock(x, y, z));
+    }
+
+    @Override
+    public boolean isFluidInTag(int x, int y, int z, FluidTag tag) {
+        Integer t = fluidTag.get(packBlock(x, y, z));
+        return t != null && t == (tag == FluidTag.WATER ? 1 : 2);
+    }
+
+    @Override
+    public float fluidHeightAt(int x, int y, int z) {
+        Float h = fluidHeight.get(packBlock(x, y, z));
+        return h != null ? h : 0.0f;
+    }
+
+    @Override
+    public Vec3 fluidFlowAt(int x, int y, int z) {
+        Vec3 v = fluidFlow.get(packBlock(x, y, z));
+        return v != null ? v : Vec3.ZERO;
+    }
+
+    @Override
+    public boolean isUltrawarm() {
+        return ultrawarm;
+    }
+
+    public AABB capturedBounds() {
+        return capturedBounds;
     }
 
     public int blockerCount() {
@@ -112,6 +259,17 @@ public final class WorldSnapshot {
         private final List<AABB> blockers = new ArrayList<>();
         private final Map<Long, Float> slipperiness = new HashMap<>();
         private float defaultSlipperiness = DEFAULT_SLIPPERINESS;
+        private final Map<Long, Float> velocityMultiplier = new HashMap<>();
+        private float defaultVelocityMultiplier = DEFAULT_VELOCITY_MULTIPLIER;
+        private final java.util.Set<Long> climbable = new java.util.HashSet<>();
+        private final Map<Long, Integer> ladderFacing = new HashMap<>();
+        private final Map<Long, Integer> trapdoorFacing = new HashMap<>();
+        private final java.util.Set<Long> scaffolding = new java.util.HashSet<>();
+        private final Map<Long, Integer> fluidTag = new HashMap<>();
+        private final Map<Long, Float> fluidHeight = new HashMap<>();
+        private final Map<Long, Vec3> fluidFlow = new HashMap<>();
+        private boolean ultrawarm = false;
+        private AABB capturedBounds; // null = unbounded (synthetic test worlds)
 
         public Builder addBlocker(AABB box) {
             blockers.add(box);
@@ -128,8 +286,81 @@ public final class WorldSnapshot {
             return this;
         }
 
+        public Builder velocityMultiplier(int x, int y, int z, float value) {
+            velocityMultiplier.put(packBlock(x, y, z), value);
+            return this;
+        }
+
+        public Builder defaultVelocityMultiplier(float value) {
+            this.defaultVelocityMultiplier = value;
+            return this;
+        }
+
+        /** Mark a climbable cell (ladder/vine/scaffolding — anything in BlockTags.CLIMBABLE). */
+        public Builder climbable(int x, int y, int z) {
+            climbable.add(packBlock(x, y, z));
+            return this;
+        }
+
+        /** Mark a ladder cell with its facing ordinal (also climbable). */
+        public Builder ladder(int x, int y, int z, int facingOrdinal) {
+            long k = packBlock(x, y, z);
+            ladderFacing.put(k, facingOrdinal);
+            climbable.add(k);
+            return this;
+        }
+
+        /** Mark an OPEN trapdoor cell with its facing ordinal (climbing-through-trapdoor). */
+        public Builder openTrapdoor(int x, int y, int z, int facingOrdinal) {
+            trapdoorFacing.put(packBlock(x, y, z), facingOrdinal);
+            return this;
+        }
+
+        /** Mark a scaffolding cell (also climbable; the climb-hold exception). */
+        public Builder scaffolding(int x, int y, int z) {
+            long k = packBlock(x, y, z);
+            scaffolding.add(k);
+            climbable.add(k);
+            return this;
+        }
+
+        /** Mark a still-water cell with its up-resolved height (0..1+). */
+        public Builder water(int x, int y, int z, float height) {
+            return water(x, y, z, height, 0.0, 0.0);
+        }
+
+        /** Mark a (possibly flowing) water cell with height and horizontal flow velocity. */
+        public Builder water(int x, int y, int z, float height, double flowX, double flowZ) {
+            long k = packBlock(x, y, z);
+            fluidTag.put(k, 1);
+            fluidHeight.put(k, height);
+            if (flowX != 0.0 || flowZ != 0.0) {
+                fluidFlow.put(k, new Vec3(flowX, 0.0, flowZ));
+            }
+            return this;
+        }
+
+        /** Mark a lava cell with its up-resolved height. */
+        public Builder lava(int x, int y, int z, float height) {
+            long k = packBlock(x, y, z);
+            fluidTag.put(k, 2);
+            fluidHeight.put(k, height);
+            return this;
+        }
+
+        public Builder ultrawarm(boolean value) {
+            this.ultrawarm = value;
+            return this;
+        }
+
+        /** The region that was fully scanned for blocks; enables {@link WorldSnapshot#covers}. */
+        public Builder bounds(AABB region) {
+            this.capturedBounds = region;
+            return this;
+        }
+
         public WorldSnapshot build() {
-            return new WorldSnapshot(blockers, slipperiness, defaultSlipperiness);
+            return new WorldSnapshot(this);
         }
     }
 }

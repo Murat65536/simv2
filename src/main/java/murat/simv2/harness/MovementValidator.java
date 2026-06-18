@@ -46,6 +46,8 @@ public final class MovementValidator {
     private static long detailed;
     private static double errSum;
     private static double errMax;
+    private static double velErrSum;
+    private static double velErrMax;
 
     private static final Deque<Vec3d> actualTrail = new ArrayDeque<>();
 
@@ -56,7 +58,7 @@ public final class MovementValidator {
         }
         active = MovementSim.supports(
             player.isTouchingWater(), player.isInLava(), player.isGliding(),
-            player.isClimbing(), player.hasVehicle(), player.getAbilities().flying);
+            player.hasVehicle(), player.getAbilities().flying);
         if (!active) {
             return;
         }
@@ -101,6 +103,15 @@ public final class MovementValidator {
             double posErr = Math.sqrt(pex * pex + pey * pey + pez * pez);
             errSum += posErr;
             errMax = Math.max(errMax, posErr);
+
+            // Velocity error matters more than position for rollouts: it compounds tick-over-tick,
+            // so a tiny per-tick velocity divergence is what blows up a long prediction.
+            double vex = Math.abs(predVel.x() - actualVel.x());
+            double vey = Math.abs(predVel.y() - actualVel.y());
+            double vez = Math.abs(predVel.z() - actualVel.z());
+            double velErr = Math.sqrt(vex * vex + vey * vey + vez * vez);
+            velErrSum += velErr;
+            velErrMax = Math.max(velErrMax, velErr);
             compared++;
 
             if (posErr > DETAIL_THRESHOLD && detailed < 60) {
@@ -117,8 +128,10 @@ public final class MovementValidator {
                     inInput.x(), inInput.z(), inYaw, inOnGround, inSprint));
             } else if (compared <= 5 || compared % LOG_EVERY == 0) {
                 SimV2.LOGGER.info(String.format(
-                    "[movement-sim] tick=%d posErr=%.6f avgErr=%.6f maxErr=%.6f (detailed=%d)",
-                    compared, posErr, errSum / compared, errMax, detailed));
+                    "[movement-sim] tick=%d posErr=%.6f avgErr=%.6f maxErr=%.6f"
+                        + " | velErr=%.6f velAvg=%.6f velMax=%.6f (detailed=%d)",
+                    compared, posErr, errSum / compared, errMax,
+                    velErr, velErrSum / compared, velErrMax, detailed));
             }
         }
         active = false;
